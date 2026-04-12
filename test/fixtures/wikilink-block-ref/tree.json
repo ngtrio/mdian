@@ -1,0 +1,17 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "wikiLink",
+          "value": "Page#^block-id",
+          "path": "Page",
+          "permalink": "Page#^block-id",
+          "blockId": "block-id"
+        }
+      ]
+    }
+  ]
+}

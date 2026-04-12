@@ -1,0 +1,44 @@
+{
+  "name": "remark-ofm",
+  "version": "0.0.0",
+  "description": "remark plugin for Obsidian Flavored Markdown",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist/"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "types": "./dist/src/index.d.ts",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "clean": "rm -rf dist coverage tsconfig.tsbuildinfo",
+    "build": "tsc --build",
+    "typecheck": "tsc --build --pretty false",
+    "pretest": "npm run build",
+    "test": "node --enable-source-maps --test dist/test/index.js",
+    "coverage": "c8 --reporter=text --reporter=lcov npm test",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "c8": "^10.1.2",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "typescript": "^5.8.3",
+    "unified": "^11.0.0"
+  },
+  "dependencies": {
+    "mdast-util-gfm": "^3.1.0",
+    "mdast-util-math": "^3.0.0",
+    "micromark-extension-gfm": "^3.0.0",
+    "micromark-extension-math": "^3.1.0"
+  }
+}

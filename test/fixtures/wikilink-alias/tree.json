@@ -1,0 +1,17 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "wikiLink",
+          "value": "Page|Alias",
+          "path": "Page",
+          "permalink": "Page",
+          "alias": "Alias"
+        }
+      ]
+    }
+  ]
+}

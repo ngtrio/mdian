@@ -1,0 +1,16 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "wikiLink",
+          "value": "Page",
+          "path": "Page",
+          "permalink": "Page"
+        }
+      ]
+    }
+  ]
+}

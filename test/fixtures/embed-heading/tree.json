@@ -1,0 +1,16 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "embed",
+          "value": "Page#Heading",
+          "path": "Page",
+          "permalink": "Page#Heading"
+        }
+      ]
+    }
+  ]
+}
