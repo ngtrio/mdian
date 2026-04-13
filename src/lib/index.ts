@@ -1,21 +1,16 @@
-import type {Processor} from 'unified'
-
-import {gfmFromMarkdown} from 'mdast-util-gfm'
-import {mathFromMarkdown} from 'mdast-util-math'
-import {gfm} from 'micromark-extension-gfm'
-import {math} from 'micromark-extension-math'
-import type {Construct, Extension as SyntaxExtension} from 'micromark-util-types'
-import {codes} from 'micromark-util-symbol'
-
-import {ofmFromMarkdown as embedFromMarkdown, embedConstruct} from './embed/index.js'
-import {ofmFromMarkdown as highlightFromMarkdown, highlightConstruct} from './highlight/index.js'
-import type {Options} from './types.js'
-import {ofmFromMarkdown as wikilinkFromMarkdown, wikiLinkConstruct} from './wikilink/index.js'
+import type { Processor, Plugin } from 'unified'
+import type { Root, RootContent } from 'hast'
+import type { Construct, Extension as SyntaxExtension } from 'micromark-util-types'
+import { codes } from 'micromark-util-symbol'
+import { embedTokenizer, embedMast, embedHast } from './embed/index.js'
+import { highlightTokenizer, highlightMast } from './highlight/index.js'
+import type { OfmRemarkOptions, OfmRehypeOptions } from './types.js'
+import { wikiLinkTokenizer, wikiLinkMast, wikiLinkHast } from './wikilink/index.js'
 
 type BucketKey = 'micromarkExtensions' | 'fromMarkdownExtensions'
 type ExtensionBucket = Array<unknown>
 
-function getBucket(processor: Processor, key: BucketKey): ExtensionBucket {
+export function getBucket(processor: Processor, key: BucketKey): ExtensionBucket {
   const data = processor.data() as Record<BucketKey, ExtensionBucket | undefined>
   const existing = data[key]
 
@@ -28,47 +23,54 @@ function getBucket(processor: Processor, key: BucketKey): ExtensionBucket {
   return created
 }
 
-export function remarkOfm(this: Processor, options: Options = {}): void {
-  getBucket(this, 'micromarkExtensions').push(gfm(options), math(options), ofm(options))
+export function remarkOfm(this: Processor, options: OfmRemarkOptions = {}): void {
+  getBucket(this, 'micromarkExtensions').push(
+    ofmSyntex()
+  )
   getBucket(this, 'fromMarkdownExtensions').push(
-    gfmFromMarkdown(),
-    mathFromMarkdown(),
-    wikilinkFromMarkdown(options),
-    embedFromMarkdown(options),
-    highlightFromMarkdown(options)
+    wikiLinkMast(options),
+    embedMast(options),
+    highlightMast(options)
   )
 }
 
-function ofm(options: Options = {}): SyntaxExtension {
+export function ofmSyntex(): SyntaxExtension {
   const text: Record<number, Construct> = {}
   const insideSpan: Array<Pick<Construct, 'resolveAll'>> = []
   const attentionMarkers: number[] = []
-  const leftSquareBracket = '['.charCodeAt(0)
-  const exclamationMark = '!'.charCodeAt(0)
 
-  if (options.wikilinks !== false) {
-    text[leftSquareBracket] = wikiLinkConstruct
-  }
+  text[codes.leftSquareBracket] = wikiLinkTokenizer
+  text[codes.exclamationMark] = embedTokenizer
+  text[codes.equalsTo] = highlightTokenizer
+  insideSpan.push(highlightTokenizer)
+  attentionMarkers.push(codes.equalsTo)
 
-  if (options.embeds !== false) {
-    text[exclamationMark] = embedConstruct
-  }
-
-  if (options.highlights !== false) {
-    text[codes.equalsTo] = highlightConstruct
-    insideSpan.push(highlightConstruct)
-    attentionMarkers.push(codes.equalsTo)
-  }
-
-  if (Object.keys(text).length === 0) {
-    return {}
-  }
 
   return {
     text,
-    ...(insideSpan.length === 0 ? {} : {insideSpan: {null: insideSpan}}),
-    ...(attentionMarkers.length === 0 ? {} : {attentionMarkers: {null: attentionMarkers}})
+    ...(insideSpan.length === 0 ? {} : { insideSpan: { null: insideSpan } }),
+    ...(attentionMarkers.length === 0 ? {} : { attentionMarkers: { null: attentionMarkers } })
   }
 }
 
-export default remarkOfm
+export const rehypeOfm: Plugin<[OfmRehypeOptions?], Root> = function rehypeOfm(options = {}) {
+  const transformWikiLink = wikiLinkHast(options)
+  const transformEmbed = embedHast(options)
+
+  return function transform(tree) {
+    visit(tree, (node) => {
+      transformWikiLink(node)
+      transformEmbed(node)
+    })
+  }
+}
+
+function visit(node: Root | RootContent, visitor: (node: Root | RootContent) => void): void {
+  visitor(node)
+
+  if ('children' in node && Array.isArray(node.children)) {
+    for (const child of node.children) {
+      visit(child, visitor)
+    }
+  }
+}

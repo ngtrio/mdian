@@ -1,2 +1,2 @@
-export {ofmFromMarkdown} from './from-markdown.js'
-export {highlightConstruct} from './syntax.js'
+export {highlightMast} from './mdast.js'
+export {highlightTokenizer} from './tokenizer.js'

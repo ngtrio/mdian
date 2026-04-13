@@ -1,22 +1,22 @@
 import assert from 'node:assert/strict'
-import {access, readdir, readFile} from 'node:fs/promises'
+import { access, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import test from 'node:test'
-import {fileURLToPath} from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 import remarkParse from 'remark-parse'
-import {unified} from 'unified'
+import { unified } from 'unified'
 
-import remarkOfm, {type Options} from '../src/index.js'
+import { remarkOfm, type OfmRemarkOptions } from '../src/index.js'
 
 interface FixtureConfig {
-  options?: Options
+  options?: OfmRemarkOptions
 }
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(here, '..', '..')
 const fixturesDir = path.join(repoRoot, 'test', 'fixtures')
-const fixtures = (await readdir(fixturesDir, {withFileTypes: true}))
+const fixtures = (await readdir(fixturesDir, { withFileTypes: true }))
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
 

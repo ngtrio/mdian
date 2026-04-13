@@ -7,7 +7,7 @@ const backslash = '\\'.charCodeAt(0)
 const carriageReturn = '\r'.charCodeAt(0)
 const lineFeed = '\n'.charCodeAt(0)
 
-export const embedConstruct: Construct = {
+export const embedTokenizer: Construct = {
   name: 'ofmEmbed',
   tokenize: tokenizeEmbed
 }

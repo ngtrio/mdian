@@ -1,3 +1,3 @@
-export {ofmFromMarkdown} from './from-markdown.js'
-export {wikiLinkConstruct} from './syntax.js'
-export {parseWikiValue} from './utils.js'
+export {wikiLinkMast} from './mdast.js'
+export {wikiLinkHast} from './hast.js'
+export {wikiLinkTokenizer} from './tokenizer.js'

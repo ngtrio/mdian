@@ -8,7 +8,24 @@
           "type": "wikiLink",
           "value": "Page#Heading",
           "path": "Page",
-          "permalink": "Page#Heading"
+          "permalink": "Page#Heading",
+          "data": {
+            "hName": "a",
+            "hProperties": {
+              "dataOfmKind": "wikilink",
+              "dataOfmValue": "Page#Heading",
+              "dataOfmPath": "Page",
+              "dataOfmPermalink": "Page#Heading",
+              "dataOfmAlias": "",
+              "dataOfmBlockId": ""
+            },
+            "hChildren": [
+              {
+                "type": "text",
+                "value": "Page"
+              }
+            ]
+          }
         }
       ]
     }

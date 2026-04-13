@@ -9,7 +9,24 @@
           "value": "Page|Alias",
           "path": "Page",
           "permalink": "Page",
-          "alias": "Alias"
+          "alias": "Alias",
+          "data": {
+            "hName": "a",
+            "hProperties": {
+              "dataOfmKind": "wikilink",
+              "dataOfmValue": "Page|Alias",
+              "dataOfmPath": "Page",
+              "dataOfmPermalink": "Page",
+              "dataOfmAlias": "Alias",
+              "dataOfmBlockId": ""
+            },
+            "hChildren": [
+              {
+                "type": "text",
+                "value": "Alias"
+              }
+            ]
+          }
         }
       ]
     }

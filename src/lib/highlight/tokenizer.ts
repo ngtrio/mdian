@@ -5,7 +5,7 @@ import {classifyCharacter} from 'micromark-util-classify-character'
 import {resolveAll} from 'micromark-util-resolve-all'
 import {codes, constants, types} from 'micromark-util-symbol'
 
-export const highlightConstruct: Construct = {
+export const highlightTokenizer: Construct = {
   name: 'ofmHighlight',
   tokenize: tokenizeHighlight,
   resolveAll: resolveAllHighlight

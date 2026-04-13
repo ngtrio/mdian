@@ -1,39 +1,29 @@
-import type {Code, Construct, State, TokenizeContext, Tokenizer} from 'micromark-util-types'
+import type {Code, Construct, Effects, State, TokenizeContext} from 'micromark-util-types'
 
 const leftSquareBracket = '['.charCodeAt(0)
 const rightSquareBracket = ']'.charCodeAt(0)
-const exclamationMark = '!'.charCodeAt(0)
 const backslash = '\\'.charCodeAt(0)
 const carriageReturn = '\r'.charCodeAt(0)
 const lineFeed = '\n'.charCodeAt(0)
 
-export const wikiLinkConstruct: Construct = {
-  name: 'ofmWikilink',
+export const wikiLinkTokenizer: Construct = {
+  name: 'ofmWikiLink',
   tokenize: tokenizeWikiLink
 }
 
-export function tokenizeWikiLink(this: TokenizeContext, effects: Parameters<Tokenizer>[0], ok: State, nok: State): State {
-  let embed = false
+export function tokenizeWikiLink(this: TokenizeContext, effects: Effects, ok: State, nok: State): State {
   let escaped = false
 
   return start
 
   function start(code: Code): State | undefined {
-    if (code === exclamationMark) {
-      embed = true
-      effects.enter('ofmEmbed')
-      effects.consume(code)
-      return openFirst
-    }
-
     effects.enter('ofmWikiLink')
     return openFirst(code)
   }
 
   function openFirst(code: Code): State | undefined {
     if (code !== leftSquareBracket) {
-      if (embed) effects.exit('ofmEmbed')
-      else effects.exit('ofmWikiLink')
+      effects.exit('ofmWikiLink')
       return nok(code)
     }
 
@@ -45,8 +35,7 @@ export function tokenizeWikiLink(this: TokenizeContext, effects: Parameters<Toke
   function openSecond(code: Code): State | undefined {
     if (code !== leftSquareBracket) {
       effects.exit('ofmWikiMarker')
-      if (embed) effects.exit('ofmEmbed')
-      else effects.exit('ofmWikiLink')
+      effects.exit('ofmWikiLink')
       return nok(code)
     }
 
@@ -91,7 +80,7 @@ export function tokenizeWikiLink(this: TokenizeContext, effects: Parameters<Toke
 
     effects.consume(code)
     effects.exit('ofmWikiMarker')
-    effects.exit(embed ? 'ofmEmbed' : 'ofmWikiLink')
+    effects.exit('ofmWikiLink')
     return ok
   }
 }

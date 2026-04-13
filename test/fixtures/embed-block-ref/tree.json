@@ -9,7 +9,24 @@
           "value": "Page#^block-id",
           "path": "Page",
           "permalink": "Page#^block-id",
-          "blockId": "block-id"
+          "blockId": "block-id",
+          "data": {
+            "hName": "span",
+            "hProperties": {
+              "dataOfmKind": "embed",
+              "dataOfmValue": "Page#^block-id",
+              "dataOfmPath": "Page",
+              "dataOfmPermalink": "Page#^block-id",
+              "dataOfmAlias": "",
+              "dataOfmBlockId": "block-id"
+            },
+            "hChildren": [
+              {
+                "type": "text",
+                "value": "Embed: Page#^block-id"
+              }
+            ]
+          }
         }
       ]
     }

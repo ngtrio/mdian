@@ -11,7 +11,13 @@
               "type": "text",
               "value": "highlight"
             }
-          ]
+          ],
+          "data": {
+            "hName": "mark",
+            "hProperties": {
+              "dataOfmKind": "highlight"
+            }
+          }
         }
       ]
     }
