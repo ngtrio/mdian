@@ -1,8 +1,8 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 
-import { remarkOfm, rehypeOfm } from "../src/index.js";
-import type { OfmRemarkOptions } from "../src/index.js";
+import { remarkOfm, rehypeOfm } from "remark-ofm";
+import type { OfmRemarkOptions } from "remark-ofm";
 import { demoExamples } from "./examples.js";
 
 const usageSnippet = [
