@@ -1,13 +1,13 @@
 import type {Element, Properties, Root, RootContent} from 'hast'
 
 import type {OfmRehypeOptions} from '../types.js'
+import { buildOfmTargetUrl } from '../ofm-url.js'
 import type { WikiLinkData } from './types.js'
 
-const defaultResolveHref = (wikilink: WikiLinkData): string =>
-  `#/wiki/${encodeURIComponent(wikilink.permalink || wikilink.path || wikilink.value)}`
-
 export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | RootContent) => void {
-  const resolveHref = options.resolveHref ?? defaultResolveHref
+  const buildHref = (wikilink: WikiLinkData): string =>
+    buildOfmTargetUrl(wikilink, options.hrefPrefix)
+
   const setTitle = options.setTitle !== false
 
   return function transform(node) {
@@ -20,11 +20,7 @@ export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | Root
       return
     }
 
-    const href = resolveHref(wikilink)
-
-    if (href !== undefined) {
-      node.properties.href = href
-    }
+    node.properties.href = buildHref(wikilink)
 
     if (setTitle) {
       node.properties.title = wikilink.permalink || wikilink.path

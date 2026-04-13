@@ -1,13 +1,11 @@
-import type {Element, Properties, Root, RootContent} from 'hast'
+import type { Element, Properties, Root, RootContent } from 'hast'
 
-import type {OfmRehypeOptions} from '../types.js'
+import type { OfmRehypeOptions } from '../types.js'
+import { buildOfmTargetUrl } from '../ofm-url.js'
 import type { EmbedData } from './types.js'
 
-const defaultResolveEmbed = (_embed: EmbedData): string | undefined =>
-  undefined
-
 export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootContent) => void {
-  const resolveEmbed = options.resolveEmbed ?? defaultResolveEmbed
+  const resolveEmbed = options.resolveEmbed
   const setTitle = options.setTitle !== false
 
   return function transform(node) {
@@ -21,11 +19,7 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
       return
     }
 
-    const src = resolveEmbed(embed)
-
-    if (src === undefined) {
-      return
-    }
+    const src = resolveEmbed?.(embed) ?? buildOfmTargetUrl(embed, options.hrefPrefix)
 
     node.tagName = 'img'
     node.properties.src = src
@@ -55,10 +49,10 @@ function getEmbedData(node: Element): EmbedData | undefined {
     permalink: readString(properties, 'dataOfmPermalink'),
     ...(readOptionalString(properties, 'dataOfmAlias') === undefined
       ? {}
-      : {alias: readOptionalString(properties, 'dataOfmAlias')}),
+      : { alias: readOptionalString(properties, 'dataOfmAlias') }),
     ...(readOptionalString(properties, 'dataOfmBlockId') === undefined
       ? {}
-      : {blockId: readOptionalString(properties, 'dataOfmBlockId')})
+      : { blockId: readOptionalString(properties, 'dataOfmBlockId') })
   }
 }
 

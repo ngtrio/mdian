@@ -4,7 +4,6 @@ import ReactMarkdown from "react-markdown";
 import { remarkOfm, rehypeOfm } from "../src/index.js";
 import type { OfmRemarkOptions } from "../src/index.js";
 import { demoExamples } from "./examples.js";
-import type { WikiLinkData } from "../src/lib/wikilink/types.js";
 
 const usageSnippet = [
   "import ReactMarkdown from 'react-markdown'",
@@ -16,7 +15,7 @@ const usageSnippet = [
   "  return (",
   "    <ReactMarkdown",
   "      remarkPlugins={[remarkOfm]}",
-  "      rehypePlugins={[rehypeOfm]}",
+  "      rehypePlugins={[[rehypeOfm, { hrefPrefix: 'notes' }]]}",
   "    >",
   "      {markdown}",
   "    </ReactMarkdown>",
@@ -138,9 +137,7 @@ export function App() {
           <div className="preview markdown-body">
             <ReactMarkdown
               remarkPlugins={[[remarkOfm, options]]}
-              rehypePlugins={[
-                [rehypeOfm, { resolveHref: resolveDemoWikiHref }],
-              ]}
+              rehypePlugins={[[rehypeOfm, { hrefPrefix: "wiki" }]]}
             >
               {markdown}
             </ReactMarkdown>
@@ -184,6 +181,3 @@ function FeatureToggle({
   );
 }
 
-function resolveDemoWikiHref(wikilink: WikiLinkData): string {
-  return `#/wiki/${encodeURIComponent(wikilink.permalink || wikilink.path || wikilink.value)}`;
-}
