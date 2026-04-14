@@ -1,6 +1,9 @@
 import type { EmbedData } from './embed/types.js'
 
 export interface OfmRemarkOptions {
+  embeds?: boolean
+  highlights?: boolean
+  wikilinks?: boolean
 }
 
 export interface OfmRehypeOptions {

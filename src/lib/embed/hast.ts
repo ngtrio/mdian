@@ -4,6 +4,10 @@ import type { OfmRehypeOptions } from '../types.js'
 import { buildOfmTargetUrl } from '../ofm-url.js'
 import type { EmbedData } from './types.js'
 
+type MutableElementWithoutChildren = Omit<Element, 'children'> & {
+  children?: RootContent[]
+}
+
 export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootContent) => void {
   const resolveEmbed = options.resolveEmbed
   const setTitle = options.setTitle !== false
@@ -20,13 +24,15 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
     }
 
     const src = resolveEmbed?.(embed) ?? buildOfmTargetUrl(embed, options.hrefPrefix)
+    const imageNode = node as MutableElementWithoutChildren
 
-    node.tagName = 'img'
-    node.properties.src = src
-    node.properties.alt = embed.value
+    imageNode.tagName = 'img'
+    imageNode.properties.src = src
+    imageNode.properties.alt = embed.value
+    delete imageNode.children
 
     if (setTitle) {
-      node.properties.title = embed.permalink || embed.path
+      imageNode.properties.title = embed.permalink || embed.path
     }
   }
 }

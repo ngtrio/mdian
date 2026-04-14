@@ -24,27 +24,43 @@ export function getBucket(processor: Processor, key: BucketKey): ExtensionBucket
 }
 
 export function remarkOfm(this: Processor, options: OfmRemarkOptions = {}): void {
-  getBucket(this, 'micromarkExtensions').push(
-    ofmSyntex()
-  )
-  getBucket(this, 'fromMarkdownExtensions').push(
-    wikiLinkMast(options),
-    embedMast(options),
-    highlightMast(options)
-  )
+  getBucket(this, 'micromarkExtensions').push(ofmSyntex(options))
+
+  const fromMarkdownExtensions = []
+
+  if (options.wikilinks ?? true) {
+    fromMarkdownExtensions.push(wikiLinkMast(options))
+  }
+
+  if (options.embeds ?? true) {
+    fromMarkdownExtensions.push(embedMast(options))
+  }
+
+  if (options.highlights ?? true) {
+    fromMarkdownExtensions.push(highlightMast(options))
+  }
+
+  getBucket(this, 'fromMarkdownExtensions').push(...fromMarkdownExtensions)
 }
 
-export function ofmSyntex(): SyntaxExtension {
+export function ofmSyntex(options: OfmRemarkOptions = {}): SyntaxExtension {
   const text: Record<number, Construct> = {}
   const insideSpan: Array<Pick<Construct, 'resolveAll'>> = []
   const attentionMarkers: number[] = []
 
-  text[codes.leftSquareBracket] = wikiLinkTokenizer
-  text[codes.exclamationMark] = embedTokenizer
-  text[codes.equalsTo] = highlightTokenizer
-  insideSpan.push(highlightTokenizer)
-  attentionMarkers.push(codes.equalsTo)
+  if (options.wikilinks ?? true) {
+    text[codes.leftSquareBracket] = wikiLinkTokenizer
+  }
 
+  if (options.embeds ?? true) {
+    text[codes.exclamationMark] = embedTokenizer
+  }
+
+  if (options.highlights ?? true) {
+    text[codes.equalsTo] = highlightTokenizer
+    insideSpan.push(highlightTokenizer)
+    attentionMarkers.push(codes.equalsTo)
+  }
 
   return {
     text,

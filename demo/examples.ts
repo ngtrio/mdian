@@ -7,7 +7,7 @@ export interface DemoExample {
 export const demoExamples: DemoExample[] = [
   {
     name: 'Mixed showcase',
-    description: 'A compact react-markdown example covering the currently implemented OFM syntax in one document.',
+    description: 'Complete feature overview with all OFM syntax types',
     value: [
       '# remark-ofm + react-markdown',
       '',
@@ -17,7 +17,9 @@ export const demoExamples: DemoExample[] = [
       '',
       'This sentence contains ==highlighted text==.',
       '',
-      '- Another wikilink: [[Roadmap#^next-step]]'
+      '- Another wikilink: [[Roadmap#^next-step]]',
+      '',
+      'You can also use **regular markdown** and `code blocks` together with OFM features.'
     ].join('\n')
   },
   {
