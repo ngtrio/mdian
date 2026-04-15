@@ -1,11 +1,11 @@
 import type {Element, Properties, Root, RootContent} from 'hast'
 
 import type {OfmRehypeOptions} from '../types.js'
+import {getOfmNodeData} from '../ofm-node.js'
 import { buildOfmTargetUrl } from '../ofm-url.js'
-import type { WikiLinkData } from './types.js'
 
 export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | RootContent) => void {
-  const buildHref = (wikilink: WikiLinkData): string =>
+  const buildHref = (wikilink: NonNullable<ReturnType<typeof getOfmNodeData>> & {kind: 'wikilink'}): string =>
     buildOfmTargetUrl(wikilink, options.hrefPrefix)
 
   const setTitle = options.setTitle !== false
@@ -15,46 +15,16 @@ export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | Root
       return
     }
 
-    const wikilink = getWikiLinkData(node)
-    if (!wikilink) {
+    const ofmNode = getOfmNodeData(node.properties)
+
+    if (ofmNode?.kind !== 'wikilink') {
       return
     }
 
-    node.properties.href = buildHref(wikilink)
+    node.properties.href = buildHref(ofmNode)
 
     if (setTitle) {
-      node.properties.title = wikilink.permalink || wikilink.path
+      node.properties.title = ofmNode.permalink || ofmNode.path
     }
   }
-}
-
-function getWikiLinkData(node: Element): WikiLinkData | undefined {
-  const properties = node.properties
-
-  if (properties.dataOfmKind !== 'wikilink') {
-    return undefined
-  }
-
-  return {
-    kind: 'wikilink',
-    value: readString(properties, 'dataOfmValue'),
-    path: readString(properties, 'dataOfmPath'),
-    permalink: readString(properties, 'dataOfmPermalink'),
-    ...(readOptionalString(properties, 'dataOfmAlias') === undefined
-      ? {}
-      : {alias: readOptionalString(properties, 'dataOfmAlias')}),
-    ...(readOptionalString(properties, 'dataOfmBlockId') === undefined
-      ? {}
-      : {blockId: readOptionalString(properties, 'dataOfmBlockId')})
-  }
-}
-
-function readString(properties: Properties, key: string): string {
-  const value = properties[key]
-  return typeof value === 'string' ? value : ''
-}
-
-function readOptionalString(properties: Properties, key: string): string | undefined {
-  const value = properties[key]
-  return typeof value === 'string' && value.length > 0 ? value : undefined
 }

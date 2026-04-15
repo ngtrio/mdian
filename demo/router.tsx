@@ -1,6 +1,7 @@
 import {Outlet, createRootRoute, createRoute, createRouter} from '@tanstack/react-router'
 
 import {App} from './app.js'
+import {WikiPage} from './wiki-page.js'
 
 const rootRoute = createRootRoute({
   component: Outlet
@@ -12,7 +13,13 @@ const indexRoute = createRoute({
   component: App
 })
 
-const routeTree = rootRoute.addChildren([indexRoute])
+const wikiPageRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'wiki/$',
+  component: WikiPage
+})
+
+const routeTree = rootRoute.addChildren([indexRoute, wikiPageRoute])
 
 export const router = createRouter({routeTree})
 

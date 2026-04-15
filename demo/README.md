@@ -5,7 +5,7 @@ Interactive playground for `remark-ofm` - an Obsidian Flavored Markdown parser f
 ## Features
 
 - **Real-time preview**: See parsed OFM syntax rendered instantly
-- **Interactive controls**: Toggle wikilinks, embeds, and highlights on/off
+- **Interactive controls**: Toggle wikilinks and highlights on/off
 - **Multiple examples**: Browse curated examples showcasing each feature
 - **Modern UI**: Dark theme with gradient backgrounds and smooth animations
 - **Responsive design**: Works on desktop and mobile devices
@@ -31,13 +31,6 @@ The demo will be available at `http://localhost:5173`
 [[Page#heading]]
 [[Page#^block-ref]]
 [[Page|Custom Alias]]
-```
-
-### Embeds
-```
-![[Page]]
-![[Page#section]]
-![[Page#^block-ref]]
 ```
 
 ### Highlights

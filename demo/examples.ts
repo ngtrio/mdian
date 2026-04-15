@@ -7,13 +7,11 @@ export interface DemoExample {
 export const demoExamples: DemoExample[] = [
   {
     name: 'Mixed showcase',
-    description: 'Complete feature overview with all OFM syntax types',
+    description: 'Feature overview focused on wikilinks, highlights, and block targets',
     value: [
       '# remark-ofm + react-markdown',
       '',
       'Visit [[Project Notes|the project note]] for more detail.',
-      '',
-      'Embed the summary here: ![[Project Notes#Overview]]',
       '',
       'This sentence contains ==highlighted text==.',
       '',
@@ -41,21 +39,6 @@ export const demoExamples: DemoExample[] = [
     name: 'Wikilink alias',
     description: 'Shows a wikilink with an alias label.',
     value: '[[Page|Alias]]\n'
-  },
-  {
-    name: 'Basic embed',
-    description: 'Shows a simple ![[Page]] embed rendered with demo metadata.',
-    value: '![[Page]]\n'
-  },
-  {
-    name: 'Embed heading',
-    description: 'Shows an embed that targets a heading.',
-    value: '![[Page#Heading]]\n'
-  },
-  {
-    name: 'Embed block ref',
-    description: 'Shows an embed with an Obsidian block reference target.',
-    value: '![[Page#^block-id]]\n'
   },
   {
     name: 'Highlight',

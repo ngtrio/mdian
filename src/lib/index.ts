@@ -2,6 +2,7 @@ import type { Processor, Plugin } from 'unified'
 import type { Root, RootContent } from 'hast'
 import type { Construct, Extension as SyntaxExtension } from 'micromark-util-types'
 import { codes } from 'micromark-util-symbol'
+import { anchorHast } from './anchor/index.js'
 import { embedTokenizer, embedMast, embedHast } from './embed/index.js'
 import { highlightTokenizer, highlightMast } from './highlight/index.js'
 import type { OfmRemarkOptions, OfmRehypeOptions } from './types.js'
@@ -70,11 +71,13 @@ export function ofmSyntex(options: OfmRemarkOptions = {}): SyntaxExtension {
 }
 
 export const rehypeOfm: Plugin<[OfmRehypeOptions?], Root> = function rehypeOfm(options = {}) {
+  const transformAnchor = anchorHast()
   const transformWikiLink = wikiLinkHast(options)
   const transformEmbed = embedHast(options)
 
   return function transform(tree) {
     visit(tree, (node) => {
+      transformAnchor(node)
       transformWikiLink(node)
       transformEmbed(node)
     })
@@ -90,3 +93,6 @@ function visit(node: Root | RootContent, visitor: (node: Root | RootContent) => 
     }
   }
 }
+
+export {findOfmAnchorTarget, getOfmAnchorKeyFromHash, normalizeOfmAnchorKey} from './anchor/index.js'
+export {buildOfmTargetUrl, decodeOfmFragment, normalizeOfmPath} from './ofm-url.js'

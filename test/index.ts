@@ -9,8 +9,18 @@ import type { Element } from 'hast'
 import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 
-import { remarkOfm, type OfmRemarkOptions } from '../src/index.js'
+import {
+  buildOfmTargetUrl,
+  decodeOfmFragment,
+  findOfmAnchorTarget,
+  getOfmAnchorKeyFromHash,
+  normalizeOfmPath,
+  remarkOfm,
+  type OfmRemarkOptions
+} from '../src/index.js'
+import { anchorHast, normalizeOfmAnchorKey } from '../src/lib/anchor/hast.js'
 import { embedHast } from '../src/lib/embed/hast.js'
+import {getOfmNodeData, stripOfmDataProps} from '../src/lib/ofm-node.js'
 import { wikiLinkHast } from '../src/lib/wikilink/hast.js'
 
 interface FixtureConfig {
@@ -222,6 +232,185 @@ test('embedHast lets resolveEmbed override the shared default URL', () => {
   })(node)
 
   assert.equal(node.properties.src, 'https://cdn.example.com/page.png')
+})
+
+test('normalizeOfmAnchorKey decodes fragments and collapses whitespace', () => {
+  assert.equal(normalizeOfmAnchorKey('#Heading%20Here'), 'heading here')
+  assert.equal(normalizeOfmAnchorKey('  ^Block-ID  '), '^block-id')
+})
+
+test('getOfmAnchorKeyFromHash matches anchor normalization behavior', () => {
+  assert.equal(getOfmAnchorKeyFromHash('#Heading%20Here'), 'heading here')
+  assert.equal(getOfmAnchorKeyFromHash('#^Block-ID'), '^block-id')
+})
+
+test('findOfmAnchorTarget locates the first matching data-anchor-key', () => {
+  const alpha = {dataset: {anchorKey: 'alpha'}}
+  const headingHere = {dataset: {anchorKey: 'heading here'}}
+  const root = {
+    querySelectorAll() {
+      return [alpha, headingHere]
+    }
+  }
+
+  assert.equal(findOfmAnchorTarget(root, '#Heading%20Here'), headingHere)
+  assert.equal(findOfmAnchorTarget(root, '#missing'), undefined)
+})
+
+test('anchorHast adds data-anchor-key to headings', () => {
+  const node: Element = {
+    type: 'element',
+    tagName: 'h2',
+    properties: {},
+    children: [
+      {type: 'text', value: 'Heading '},
+      {
+        type: 'element',
+        tagName: 'strong',
+        properties: {},
+        children: [{type: 'text', value: 'Here'}]
+      }
+    ]
+  }
+
+  anchorHast()(node)
+
+  assert.equal(node.properties['data-anchor-key'], 'heading here')
+})
+
+test('anchorHast extracts trailing block refs into element properties', () => {
+  const node: Element = {
+    type: 'element',
+    tagName: 'p',
+    properties: {},
+    children: [{type: 'text', value: 'Paragraph target. ^block-id'}]
+  }
+
+  anchorHast()(node)
+
+  assert.equal(node.properties['data-anchor-key'], '^block-id')
+  assert.equal(node.properties.dataOfmBlockId, 'block-id')
+  assert.deepEqual(node.children, [{type: 'text', value: 'Paragraph target.'}])
+})
+
+test('anchorHast leaves non-target paragraphs unchanged', () => {
+  const node: Element = {
+    type: 'element',
+    tagName: 'p',
+    properties: {},
+    children: [{type: 'text', value: 'Plain paragraph'}]
+  }
+
+  anchorHast()(node)
+
+  assert.deepEqual(node, {
+    type: 'element',
+    tagName: 'p',
+    properties: {},
+    children: [{type: 'text', value: 'Plain paragraph'}]
+  })
+})
+
+test('getOfmNodeData reads wikilink metadata from hast properties', () => {
+  const node = createWikiLinkElement({
+    value: 'Folder Name/Page Name#Heading Here|Alias',
+    path: 'Folder Name/Page Name',
+    permalink: 'Folder Name/Page Name#Heading Here',
+    alias: 'Alias'
+  })
+
+  assert.deepEqual(getOfmNodeData(node.properties), {
+    kind: 'wikilink',
+    value: 'Folder Name/Page Name#Heading Here|Alias',
+    path: 'Folder Name/Page Name',
+    permalink: 'Folder Name/Page Name#Heading Here',
+    alias: 'Alias'
+  })
+})
+
+test('getOfmNodeData reads embed metadata including block refs', () => {
+  const node = createEmbedElement({
+    value: 'Page#^block-id',
+    path: 'Page',
+    permalink: 'Page#^block-id',
+    blockId: 'block-id'
+  })
+
+  assert.deepEqual(getOfmNodeData(node.properties), {
+    kind: 'embed',
+    value: 'Page#^block-id',
+    path: 'Page',
+    permalink: 'Page#^block-id',
+    blockId: 'block-id'
+  })
+})
+
+test('getOfmNodeData recognizes highlight nodes and ignores plain elements', () => {
+  assert.deepEqual(getOfmNodeData({dataOfmKind: 'highlight'}), {kind: 'highlight'})
+  assert.equal(getOfmNodeData({}), undefined)
+})
+
+test('stripOfmDataProps removes internal ofm markers but preserves normal props', () => {
+  assert.deepEqual(
+    stripOfmDataProps({
+      dataOfmAlias: 'Alias',
+      dataOfmBlockId: 'block-id',
+      dataOfmKind: 'embed',
+      dataOfmPath: 'Page',
+      dataOfmPermalink: 'Page#Heading',
+      dataOfmValue: 'Page#Heading',
+      'data-anchor-key': 'heading',
+      'data-ofm-alias': 'Alias',
+      'data-ofm-block-id': 'block-id',
+      'data-ofm-kind': 'embed',
+      'data-ofm-path': 'Page',
+      'data-ofm-permalink': 'Page#Heading',
+      'data-ofm-value': 'Page#Heading',
+      alt: 'example',
+      className: 'embed-card'
+    }),
+    {
+      alt: 'example',
+      className: 'embed-card'
+    }
+  )
+})
+
+test('normalizeOfmPath decodes segments, trims whitespace, and drops empties', () => {
+  assert.equal(normalizeOfmPath(' Folder%20Name / Page%20Name '), 'Folder Name/Page Name')
+  assert.equal(normalizeOfmPath('Section//Nested%2FPage'), 'Section/Nested/Page')
+  assert.equal(normalizeOfmPath('Bad%ZZ/Path'), 'Bad%ZZ/Path')
+})
+
+test('decodeOfmFragment safely decodes hashes without lowercasing them', () => {
+  assert.equal(decodeOfmFragment('#Heading%20Here'), 'Heading Here')
+  assert.equal(decodeOfmFragment('^Block-ID'), '^Block-ID')
+  assert.equal(decodeOfmFragment('Bad%ZZ'), 'Bad%ZZ')
+})
+
+test('buildOfmTargetUrl normalizes paths and preserves heading or block fragments', () => {
+  assert.equal(
+    buildOfmTargetUrl(
+      {
+        path: ' Folder%20Name / Page%20Name ',
+        permalink: 'Folder Name/Page Name#Heading Here'
+      },
+      'wiki'
+    ),
+    '/wiki/Folder%20Name/Page%20Name#Heading Here'
+  )
+
+  assert.equal(
+    buildOfmTargetUrl(
+      {
+        path: 'Page',
+        permalink: 'Page#^block-id',
+        blockId: 'block-id'
+      },
+      'wiki'
+    ),
+    '/wiki/Page#^block-id'
+  )
 })
 
 function fixtureDirBase(fixtureName: string): string {
