@@ -1,346 +1,395 @@
-import { useState, useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
+import {useEffect, useRef, useState, type ComponentPropsWithoutRef} from 'react'
+import ReactMarkdown, {type Components} from 'react-markdown'
 
-import { remarkOfm, rehypeOfm } from "remark-ofm";
-import type { OfmRemarkOptions } from "remark-ofm";
-import { demoExamples } from "./examples.js";
+import {remarkOfm, rehypeOfm} from 'remark-ofm'
+import type {OfmRemarkOptions} from 'remark-ofm'
+import {demoExamples} from './examples.js'
 
 const usageSnippet = [
   "import ReactMarkdown from 'react-markdown'",
-  "import remarkOfm, {rehypeOfm} from 'remark-ofm'",
-  "",
+  "import {remarkOfm, rehypeOfm} from 'remark-ofm'",
+  '',
   "const markdown = `Visit [[Project Notes]] and ==highlight this==.`",
-  "",
-  "export function Example() {",
-  "  return (",
-  "    <ReactMarkdown",
-  "      remarkPlugins={[remarkOfm]}",
-  "      rehypePlugins={[[rehypeOfm, { hrefPrefix: 'notes' }]]}",
-  "    >",
-  "      {markdown}",
-  "    </ReactMarkdown>",
-  "  )",
-  "}",
-].join("\n");
+  '',
+  'export function Example() {',
+  '  return (',
+  '    <ReactMarkdown',
+  '      remarkPlugins={[[remarkOfm]]}',
+  "      rehypePlugins={[[rehypeOfm, {hrefPrefix: 'notes'}]]}",
+  '    >',
+  '      {markdown}',
+  '    </ReactMarkdown>',
+  '  )',
+  '}'
+].join('\n')
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
+function stripOfmProps(props: Record<string, unknown>) {
+  const {
+    dataOfmAlias: _alias,
+    dataOfmBlockId: _blockId,
+    dataOfmKind: _kind,
+    dataOfmPath: _path,
+    dataOfmPermalink: _permalink,
+    dataOfmValue: _value,
+    'data-ofm-alias': _dataAlias,
+    'data-ofm-block-id': _dataBlockId,
+    'data-ofm-kind': _dataKind,
+    'data-ofm-path': _dataPath,
+    'data-ofm-permalink': _dataPermalink,
+    'data-ofm-value': _dataValue,
+    ...rest
+  } = props
+
+  return rest
+}
+
+function readOfmProp(node: {properties?: Record<string, unknown>} | undefined, key: string): string {
+  const value = node?.properties?.[key]
+  return typeof value === 'string' ? value : ''
+}
+
+const markdownComponents: Components = {
+  a({node, className, ...props}) {
+    const anchorProps = stripOfmProps(props as Record<string, unknown>) as ComponentPropsWithoutRef<'a'>
+    const isWikiLink = readOfmProp(node, 'dataOfmKind') === 'wikilink'
+
+    return (
+      <a
+        {...anchorProps}
+        className={[className, isWikiLink ? 'wiki-link' : null].filter(Boolean).join(' ')}
+      />
+    )
+  },
+  img({node, className, alt, src, title, ...props}) {
+    const imageProps = stripOfmProps(props as Record<string, unknown>) as ComponentPropsWithoutRef<'img'>
+
+    if (readOfmProp(node, 'dataOfmKind') !== 'embed') {
+      return <img {...imageProps} alt={alt} className={className} src={src} title={title} />
+    }
+
+    const value = readOfmProp(node, 'dataOfmValue') || alt || ''
+    const path = readOfmProp(node, 'dataOfmPath')
+    const permalink = readOfmProp(node, 'dataOfmPermalink')
+    const alias = readOfmProp(node, 'dataOfmAlias')
+    const blockId = readOfmProp(node, 'dataOfmBlockId')
+    const label = alias || path || permalink || value || 'Embedded note'
+    const target = value ? `![[${value}]]` : ''
+    const detail = blockId
+      ? `block reference ^${blockId}`
+      : permalink && path && permalink !== path
+        ? `heading target ${permalink.slice(path.length + 1)}`
+        : path
+          ? `path ${path}`
+          : ''
+
+    return (
+      <span className="embed-card">
+        <span className="embed-label">embed</span>
+        <strong>{label}</strong>
+        {target ? <span className="embed-meta">{target}</span> : null}
+        {detail ? <span className="embed-note">{detail}</span> : null}
+      </span>
+    )
+  },
+  mark({className, ...props}) {
+    const markProps = stripOfmProps(props as Record<string, unknown>) as ComponentPropsWithoutRef<'mark'>
+
+    return <mark {...markProps} className={[className, 'ofm-highlight'].filter(Boolean).join(' ')} />
+  }
+}
+
+function CopyButton({text}: {text: string}) {
+  const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
-    <button
-      onClick={handleCopy}
-      className="text-xs text-slate-400 hover:text-slate-200 transition-colors flex items-center gap-1"
-    >
+    <button className="copy-button" onClick={handleCopy} type="button">
       {copied ? (
         <>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
           </svg>
-          Copied!
+          Copied
         </>
       ) : (
         <>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+            />
           </svg>
           Copy
         </>
       )}
     </button>
-  );
+  )
 }
 
 export function App() {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [markdown, setMarkdown] = useState(demoExamples[0]?.value ?? "");
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [markdown, setMarkdown] = useState(demoExamples[0]?.value ?? '')
   const [options, setOptions] = useState<OfmRemarkOptions>({
     wikilinks: true,
     embeds: true,
-    highlights: true,
-  });
-  const [showExamples, setShowExamples] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+    highlights: true
+  })
+  const [showExamples, setShowExamples] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const selectedExample = demoExamples[selectedIndex] ?? demoExamples[0];
+  const selectedExample = demoExamples[selectedIndex] ?? demoExamples[0]
+  const lineCount = markdown.split('\n').length
+  const wordCount = markdown.split(/\s+/).filter(Boolean).length
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowExamples(false);
+        setShowExamples(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200">
-      {/* Header */}
-      <header className="border-b border-slate-800/50 bg-slate-950/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                remark-ofm
-              </h1>
-              <p className="text-sm text-slate-400 mt-1">
-                Obsidian Flavored Markdown parser for unified/remark
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <a
-                href="https://github.com"
-                className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-              >
-                GitHub
-              </a>
-              <span className="text-slate-700">•</span>
-              <a
-                href="#usage"
-                className="text-slate-400 hover:text-slate-200 transition-colors text-sm"
-              >
-                Usage
-              </a>
-            </div>
+    <div className="app-shell">
+      <header className="site-header">
+        <div className="site-header__inner">
+          <div>
+            <p className="site-kicker">live parser lab / obsidian flavored markdown</p>
+            <h1>remark-ofm</h1>
           </div>
+          <nav className="site-nav" aria-label="Page sections">
+            <a href="#workspace">workspace</a>
+            <a href="#usage">usage</a>
+          </nav>
         </div>
+        <p className="site-summary">
+          A cleaner playground for testing wikilinks, embeds, and highlights in a normal
+          react-markdown flow.
+        </p>
       </header>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Example selector and toggles */}
-        <div className="mb-6 flex items-center gap-4 flex-wrap">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setShowExamples(!showExamples)}
-              className="px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-200 hover:bg-slate-800 transition-colors flex items-center gap-2"
-            >
-              <span className="font-medium">{selectedExample.name}</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+      <main className="page-shell">
+        <section className="toolbar" id="workspace">
+          <div className="toolbar-group">
+            <span className="toolbar-label">sample</span>
+            <div className="sample-picker" ref={dropdownRef}>
+              <button
+                aria-controls="demo-example-menu"
+                aria-expanded={showExamples}
+                className={showExamples ? 'picker-button is-open' : 'picker-button'}
+                onClick={() => setShowExamples(!showExamples)}
+                type="button"
+              >
+                <span>
+                  <strong>{selectedExample.name}</strong>
+                  <small>{selectedExample.description}</small>
+                </span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+                </svg>
+              </button>
 
-            {showExamples && (
-              <div className="absolute top-full mt-2 left-0 w-80 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-20 overflow-hidden">
-                {demoExamples.map((example, index) => (
-                  <button
-                    key={example.name}
-                    onClick={() => {
-                      setSelectedIndex(index);
-                      setMarkdown(example.value);
-                      setShowExamples(false);
-                    }}
-                    className={`w-full text-left px-4 py-3 hover:bg-slate-800 transition-colors ${
-                      index === selectedIndex ? 'bg-blue-500/10 border-l-2 border-blue-500' : ''
-                    }`}
-                  >
-                    <div className="font-medium text-slate-200 text-sm">{example.name}</div>
-                    <div className="text-xs text-slate-500 mt-1">{example.description}</div>
-                  </button>
-                ))}
-              </div>
-            )}
+              {showExamples && (
+                <div className="example-menu" id="demo-example-menu" role="listbox">
+                  {demoExamples.map((example, index) => (
+                    <button
+                      className={index === selectedIndex ? 'example-option is-active' : 'example-option'}
+                      key={example.name}
+                      onClick={() => {
+                        setSelectedIndex(index)
+                        setMarkdown(example.value)
+                        setShowExamples(false)
+                      }}
+                      type="button"
+                    >
+                      <strong>{example.name}</strong>
+                      <span>{example.description}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
-            <FeatureToggle
-              checked={options.wikilinks ?? true}
-              label="Wikilinks"
-              onChange={(checked) =>
-                setOptions((current) => ({ ...current, wikilinks: checked }))
-              }
-            />
-            <FeatureToggle
-              checked={options.embeds ?? true}
-              label="Embeds"
-              onChange={(checked) =>
-                setOptions((current) => ({ ...current, embeds: checked }))
-              }
-            />
-            <FeatureToggle
-              checked={options.highlights ?? true}
-              label="Highlights"
-              onChange={(checked) =>
-                setOptions((current) => ({ ...current, highlights: checked }))
-              }
-            />
+          <div className="toolbar-group toolbar-group--options">
+            <span className="toolbar-label">features</span>
+            <div className="toggle-strip">
+              <FeatureToggle
+                checked={options.wikilinks ?? true}
+                label="Wikilinks"
+                onChange={(checked) => setOptions((current) => ({...current, wikilinks: checked}))}
+              />
+              <FeatureToggle
+                checked={options.embeds ?? true}
+                label="Embeds"
+                onChange={(checked) => setOptions((current) => ({...current, embeds: checked}))}
+              />
+              <FeatureToggle
+                checked={options.highlights ?? true}
+                label="Highlights"
+                onChange={(checked) => setOptions((current) => ({...current, highlights: checked}))}
+              />
+            </div>
           </div>
+        </section>
+
+        <div className="example-note" role="note">
+          <span>focus</span>
+          <p>{selectedExample.description}</p>
         </div>
 
-        {/* Description badge */}
-        <div className="mb-4">
-          <span className="inline-block px-3 py-1 text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full">
-            {selectedExample?.description}
-          </span>
-        </div>
-
-        {/* Split view: Editor + Preview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Editor panel */}
-          <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl overflow-hidden backdrop-blur-sm">
-            <div className="px-4 py-3 border-b border-slate-800/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+        <section className="workbench">
+          <article className="panel">
+            <div className="panel-head">
+              <div>
+                <p className="panel-kicker">input</p>
+                <h2>Markdown source</h2>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setMarkdown(selectedExample.value)}
-                  className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
-                >
+              <div className="panel-actions">
+                <button onClick={() => setMarkdown(selectedExample.value)} type="button">
                   Reset
                 </button>
-                <button
-                  onClick={() => setMarkdown('')}
-                  className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
-                >
+                <button onClick={() => setMarkdown('')} type="button">
                   Clear
                 </button>
-                <span className="text-xs text-slate-500 font-medium">Markdown</span>
               </div>
             </div>
-            <textarea
-              value={markdown}
-              spellCheck={false}
-              onChange={(event) => setMarkdown(event.target.value)}
-              className="w-full min-h-[500px] p-4 bg-transparent text-slate-200 font-mono text-sm resize-none focus:outline-none leading-relaxed"
-              placeholder="Enter markdown..."
-            />
-            <div className="px-4 py-2 border-t border-slate-800/50 text-xs text-slate-500 flex justify-between">
-              <span>{markdown.split('\n').length} lines</span>
-              <span>{markdown.length} characters</span>
-              <span>{markdown.split(/\s+/).filter(Boolean).length} words</span>
-            </div>
-          </div>
 
-          {/* Preview panel */}
-          <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl overflow-hidden backdrop-blur-sm">
-            <div className="px-4 py-3 border-b border-slate-800/50 flex items-center justify-between">
-              <span className="text-xs text-slate-500 font-medium">Preview</span>
-              <div className="flex items-center gap-2">
+            <textarea
+              className="editor"
+              onChange={(event) => setMarkdown(event.target.value)}
+              placeholder="Enter markdown..."
+              spellCheck={false}
+              value={markdown}
+            />
+
+            <div className="panel-meta">
+              <span>{lineCount} lines</span>
+              <span>{markdown.length} characters</span>
+              <span>{wordCount} words</span>
+            </div>
+          </article>
+
+          <article className="panel">
+            <div className="panel-head">
+              <div>
+                <p className="panel-kicker">output</p>
+                <h2>Rendered preview</h2>
+              </div>
+              <div className="status-list" aria-label="Feature status">
                 {Object.entries(options).map(([name, enabled]) => (
-                  <span
-                    key={name}
-                    className={`px-2 py-0.5 text-xs rounded ${
-                      enabled
-                        ? "bg-green-500/20 text-green-400"
-                        : "bg-slate-800 text-slate-500"
-                    }`}
-                  >
+                  <span className={enabled ? 'status-pill is-enabled' : 'status-pill'} key={name}>
                     {name}
                   </span>
                 ))}
               </div>
             </div>
-            <div className="p-6 min-h-[500px] prose prose-invert prose-sm max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[[remarkOfm, options]]}
-                rehypePlugins={[[rehypeOfm, { hrefPrefix: "wiki" }]]}
-              >
-                {markdown}
-              </ReactMarkdown>
-            </div>
-          </div>
-        </div>
 
-        {/* Usage section */}
-        <section id="usage" className="bg-slate-900/50 border border-slate-800/50 rounded-xl overflow-hidden backdrop-blur-sm">
-          <div className="px-4 py-3 border-b border-slate-800/50 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-300">Quick Start</h3>
+            <div className="preview-surface">
+              <div className="markdown-body">
+                <ReactMarkdown
+                  components={markdownComponents}
+                  rehypePlugins={[[rehypeOfm, {hrefPrefix: 'wiki'}]]}
+                  remarkPlugins={[[remarkOfm, options]]}
+                >
+                  {markdown}
+                </ReactMarkdown>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section className="panel section-panel" id="usage">
+          <div className="section-head">
+            <div>
+              <p className="panel-kicker">reference</p>
+              <h2>Quick start</h2>
+            </div>
             <CopyButton text={usageSnippet} />
           </div>
-          <pre className="p-6 overflow-x-auto text-sm leading-relaxed">
-            <code className="text-slate-300">{usageSnippet}</code>
+          <pre className="code-block">
+            <code>{usageSnippet}</code>
           </pre>
         </section>
 
-        {/* Features grid */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <section className="feature-grid" aria-label="Supported features">
           <FeatureCard
+            description="Parse [[Wiki Links]] with optional aliases and block references."
+            syntax="[[Page]] [[Page#Heading]] [[Page#^block-id]] [[Page|Alias]]"
+            tag="01"
             title="Wikilinks"
-            description="Parse [[Wiki Links]] with optional aliases and block references"
-            syntax="[[Page]] [[Page#heading]] [[Page|^block]] [[Page|Alias]]"
-            icon="🔗"
           />
           <FeatureCard
+            description="Render ![[...]] targets as embeds while preserving note metadata in the preview."
+            syntax="![[Page]] ![[Page#section]] ![[Page#^block-id]]"
+            tag="02"
             title="Embeds"
-            description="Embed content from other notes with ![[syntax]]"
-            syntax="![[Page]] ![[Page#section]] ![[Page|^block]]"
-            icon="📄"
           />
           <FeatureCard
-            title="Highlights"
-            description="Mark important text with ==highlight== syntax"
+            description="Keep ==highlight== syntax readable without sacrificing the rest of the prose styling."
             syntax="==highlighted text=="
-            icon="✨"
+            tag="03"
+            title="Highlights"
           />
-        </div>
+        </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/50 mt-12">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <p className="text-sm text-slate-500 text-center">
-            remark-ofm integrates seamlessly with react-markdown and other unified ecosystem tools
-          </p>
-        </div>
+      <footer className="site-footer">
+        <p>
+          remark-ofm integrates with react-markdown and the wider unified ecosystem without needing a
+          separate rendering model.
+        </p>
       </footer>
     </div>
-  );
+  )
 }
 
 function FeatureToggle({
   checked,
   label,
-  onChange,
+  onChange
 }: {
-  checked: boolean;
-  label: string;
-  onChange: (checked: boolean) => void;
+  checked: boolean
+  label: string
+  onChange: (checked: boolean) => void
 }) {
   return (
-    <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 cursor-pointer hover:bg-slate-800 transition-colors">
-      <input
-        checked={checked}
-        type="checkbox"
-        onChange={(event) => onChange(event.target.checked)}
-        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-0"
-      />
-      <span className="text-xs font-medium text-slate-300">{label}</span>
+    <label className="toggle">
+      <input checked={checked} onChange={(event) => onChange(event.target.checked)} type="checkbox" />
+      <span>{label}</span>
     </label>
-  );
+  )
 }
 
 function FeatureCard({
-  title,
   description,
   syntax,
-  icon,
+  tag,
+  title
 }: {
-  title: string;
-  description: string;
-  syntax: string;
-  icon: string;
+  description: string
+  syntax: string
+  tag: string
+  title: string
 }) {
   return (
-    <div className="bg-slate-900/30 border border-slate-800/50 rounded-lg p-4 hover:bg-slate-900/50 transition-colors">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xl">{icon}</span>
-        <h4 className="font-semibold text-slate-200">{title}</h4>
+    <article className="feature-card">
+      <div className="feature-head">
+        <span className="feature-tag">{tag}</span>
+        <h3>{title}</h3>
       </div>
-      <p className="text-sm text-slate-400 mb-3">{description}</p>
-      <code className="text-xs bg-slate-800/50 px-2 py-1 rounded text-blue-300 block overflow-x-auto">
-        {syntax}
-      </code>
-    </div>
-  );
+      <p>{description}</p>
+      <code>{syntax}</code>
+    </article>
+  )
 }
