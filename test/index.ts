@@ -134,7 +134,7 @@ test('embedHast uses root-path default when hrefPrefix is omitted', () => {
   assert.equal(node.properties.src, '/Project%20Notes')
   assert.equal(node.properties.alt, 'Project Notes')
   assert.equal(node.properties.title, 'Project Notes')
-  assert.equal('children' in (node as { children?: unknown }), false)
+  assert.deepEqual(node.children, [])
 })
 
 test('embedHast uses hrefPrefix path plus fragment when provided', () => {

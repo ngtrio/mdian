@@ -1,12 +1,8 @@
-import type { Element, Properties, Root, RootContent } from 'hast'
+import type { Element, Root, RootContent } from 'hast'
 
 import type { OfmRehypeOptions } from '../types.js'
 import { buildOfmTargetUrl } from '../ofm-url.js'
 import type { EmbedData } from './types.js'
-
-type MutableElementWithoutChildren = Omit<Element, 'children'> & {
-  children?: RootContent[]
-}
 
 export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootContent) => void {
   const resolveEmbed = options.resolveEmbed
@@ -24,15 +20,14 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
     }
 
     const src = resolveEmbed?.(embed) ?? buildOfmTargetUrl(embed, options.hrefPrefix)
-    const imageNode = node as MutableElementWithoutChildren
 
-    imageNode.tagName = 'img'
-    imageNode.properties.src = src
-    imageNode.properties.alt = embed.value
-    delete imageNode.children
+    node.tagName = 'img'
+    node.properties.src = src
+    node.properties.alt = embed.value
+    node.children = []
 
     if (setTitle) {
-      imageNode.properties.title = embed.permalink || embed.path
+      node.properties.title = embed.permalink || embed.path
     }
   }
 }
@@ -62,12 +57,12 @@ function getEmbedData(node: Element): EmbedData | undefined {
   }
 }
 
-function readString(properties: Properties, key: string): string {
+function readString(properties: Element['properties'], key: string): string {
   const value = properties[key]
   return typeof value === 'string' ? value : ''
 }
 
-function readOptionalString(properties: Properties, key: string): string | undefined {
+function readOptionalString(properties: Element['properties'], key: string): string | undefined {
   const value = properties[key]
   return typeof value === 'string' && value.length > 0 ? value : undefined
 }
