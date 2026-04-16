@@ -15,11 +15,13 @@ import {
   findOfmAnchorTarget,
   getOfmAnchorKeyFromHash,
   normalizeOfmPath,
+  ofmClassNames,
   remarkOfm,
   type OfmRemarkOptions
 } from '../src/index.js'
 import { anchorHast, normalizeOfmAnchorKey } from '../src/lib/anchor/hast.js'
 import { embedHast } from '../src/lib/embed/hast.js'
+import { highlightHast } from '../src/lib/highlight/hast.js'
 import {getOfmNodeData, stripOfmDataProps} from '../src/lib/ofm-node.js'
 import { wikiLinkHast } from '../src/lib/wikilink/hast.js'
 
@@ -62,6 +64,9 @@ test('wikiLinkHast uses root-path default when hrefPrefix is omitted', () => {
 
   assert.equal(node.properties.href, '/Project%20Notes')
   assert.equal(node.properties.title, 'Project Notes')
+  assertClassNames(node, [ofmClassNames.wikilink])
+  assert.equal(node.properties.dataOfmKind, undefined)
+  assert.equal(node.properties['data-ofm-kind'], undefined)
 })
 
 test('wikiLinkHast uses hrefPrefix path plus fragment when provided', () => {
@@ -144,6 +149,8 @@ test('embedHast uses root-path default when hrefPrefix is omitted', () => {
   assert.equal(node.properties.src, '/Project%20Notes')
   assert.equal(node.properties.alt, 'Project Notes')
   assert.equal(node.properties.title, 'Project Notes')
+  assertClassNames(node, [ofmClassNames.embed])
+  assert.equal(node.properties.dataOfmKind, undefined)
   assert.deepEqual(node.children, [])
 })
 
@@ -276,6 +283,7 @@ test('anchorHast adds data-anchor-key to headings', () => {
   anchorHast()(node)
 
   assert.equal(node.properties['data-anchor-key'], 'heading here')
+  assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.headingTarget])
 })
 
 test('anchorHast extracts trailing block refs into element properties', () => {
@@ -289,8 +297,79 @@ test('anchorHast extracts trailing block refs into element properties', () => {
   anchorHast()(node)
 
   assert.equal(node.properties['data-anchor-key'], '^block-id')
-  assert.equal(node.properties.dataOfmBlockId, 'block-id')
+  assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
   assert.deepEqual(node.children, [{type: 'text', value: 'Paragraph target.'}])
+})
+
+test('anchorHast can append a styled block anchor label when enabled', () => {
+  const node: Element = {
+    type: 'element',
+    tagName: 'p',
+    properties: {},
+    children: [{type: 'text', value: 'Paragraph target. ^block-id'}]
+  }
+
+  anchorHast({renderBlockAnchorLabels: true})(node)
+
+  assert.equal(node.properties['data-anchor-key'], '^block-id')
+  assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
+  assert.deepEqual(node.children, [
+    {type: 'text', value: 'Paragraph target.'},
+    {
+      type: 'element',
+      tagName: 'span',
+      properties: {
+        className: [ofmClassNames.blockAnchorLabel]
+      },
+      children: [{type: 'text', value: '^block-id'}]
+    }
+  ])
+})
+
+test('highlightHast removes OFM metadata after rendering intent is consumed', () => {
+  const node: Element = {
+    type: 'element',
+    tagName: 'mark',
+    properties: {
+      dataOfmKind: 'highlight',
+      'data-ofm-kind': 'highlight'
+    },
+    children: [{type: 'text', value: 'highlighted'}]
+  }
+
+  highlightHast()(node)
+
+  assertClassNames(node, [ofmClassNames.highlight])
+  assert.equal(node.properties.dataOfmKind, undefined)
+  assert.equal(node.properties['data-ofm-kind'], undefined)
+})
+
+test('wikilink and anchor transforms preserve existing class names', () => {
+  const node = createWikiLinkElement({
+    value: 'Page',
+    path: 'Page',
+    permalink: 'Page'
+  })
+
+  node.properties.className = ['existing-link']
+  wikiLinkHast()(node)
+
+  assertClassNames(node, ['existing-link', ofmClassNames.wikilink])
+})
+
+test('anchorHast preserves existing class names on block targets', () => {
+  const node: Element = {
+    type: 'element',
+    tagName: 'li',
+    properties: {
+      className: ['existing-item']
+    },
+    children: [{type: 'text', value: 'List target. ^block-id'}]
+  }
+
+  anchorHast()(node)
+
+  assertClassNames(node, ['existing-item', ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
 })
 
 test('anchorHast leaves non-target paragraphs unchanged', () => {
@@ -496,6 +575,10 @@ function createEmbedElement({
     ...(alias === undefined ? {} : { alias }),
     ...(blockId === undefined ? {} : { blockId })
   })
+}
+
+function assertClassNames(node: Element, expected: string[]): void {
+  assert.deepEqual(node.properties.className, expected)
 }
 
 function createOfmElement(

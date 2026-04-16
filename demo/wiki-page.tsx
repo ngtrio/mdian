@@ -83,7 +83,7 @@ export function WikiPage() {
           <article className="preview markdown-body wiki-markdown" ref={articleRef}>
             <ReactMarkdown
               components={markdownComponents}
-              rehypePlugins={[[rehypeOfm, {hrefPrefix: 'wiki'}]]}
+              rehypePlugins={[[rehypeOfm, {hrefPrefix: 'wiki', renderBlockAnchorLabels: true}]]}
               remarkPlugins={[[remarkOfm]]}
             >
               {page.markdown}

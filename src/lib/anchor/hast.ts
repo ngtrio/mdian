@@ -1,5 +1,8 @@
 import type {Element, Root, RootContent, Text} from 'hast'
 
+import {addClassName, ofmClassNames} from '../class-name.js'
+import type {OfmRehypeOptions} from '../types.js'
+
 const blockIdPattern = /^(.*?)(?:\s+)\^([A-Za-z0-9][A-Za-z0-9_-]*)\s*$/s
 
 export interface OfmAnchorTargetLike {
@@ -41,7 +44,9 @@ export function findOfmAnchorTarget<T extends OfmAnchorTargetLike>(
   return undefined
 }
 
-export function anchorHast(): (node: Root | RootContent) => void {
+export function anchorHast(options: Pick<OfmRehypeOptions, 'renderBlockAnchorLabels'> = {}): (node: Root | RootContent) => void {
+  const renderBlockAnchorLabels = options.renderBlockAnchorLabels ?? false
+
   return function transform(node) {
     if (node.type !== 'element') {
       return
@@ -52,6 +57,7 @@ export function anchorHast(): (node: Root | RootContent) => void {
 
       if (anchorKey) {
         node.properties['data-anchor-key'] = anchorKey
+        addClassName(node.properties, ofmClassNames.anchorTarget, ofmClassNames.headingTarget)
       }
     }
 
@@ -60,7 +66,11 @@ export function anchorHast(): (node: Root | RootContent) => void {
 
       if (blockId) {
         node.properties['data-anchor-key'] = normalizeOfmAnchorKey(`^${blockId}`)
-        node.properties.dataOfmBlockId = blockId
+        addClassName(node.properties, ofmClassNames.anchorTarget, ofmClassNames.blockTarget)
+
+        if (renderBlockAnchorLabels) {
+          appendBlockAnchorLabel(node, blockId)
+        }
       }
     }
   }
@@ -108,6 +118,22 @@ function stripTrailingBlockId(node: Element): string | undefined {
 
 function isTextNode(node: RootContent | undefined): node is Text {
   return node?.type === 'text'
+}
+
+function appendBlockAnchorLabel(node: Element, blockId: string): void {
+  node.children.push({
+    type: 'element',
+    tagName: 'span',
+    properties: {
+      className: [ofmClassNames.blockAnchorLabel]
+    },
+    children: [
+      {
+        type: 'text',
+        value: `^${blockId}`
+      }
+    ]
+  })
 }
 
 function decodeUriComponentSafe(value: string): string {

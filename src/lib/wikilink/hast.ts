@@ -1,7 +1,8 @@
 import type {Element, Properties, Root, RootContent} from 'hast'
 
 import type {OfmRehypeOptions} from '../types.js'
-import {getOfmNodeData} from '../ofm-node.js'
+import {addClassName, ofmClassNames} from '../class-name.js'
+import {clearOfmDataProps, getOfmNodeData} from '../ofm-node.js'
 import { buildOfmTargetUrl } from '../ofm-url.js'
 
 export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | RootContent) => void {
@@ -22,9 +23,12 @@ export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | Root
     }
 
     node.properties.href = buildHref(ofmNode)
+    addClassName(node.properties, ofmClassNames.wikilink)
 
     if (setTitle) {
       node.properties.title = ofmNode.permalink || ofmNode.path
     }
+
+    clearOfmDataProps(node.properties)
   }
 }

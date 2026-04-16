@@ -1,7 +1,8 @@
 import type { Element, Root, RootContent } from 'hast'
 
 import type { OfmRehypeOptions } from '../types.js'
-import { getOfmNodeData } from '../ofm-node.js'
+import {addClassName, ofmClassNames} from '../class-name.js'
+import { clearOfmDataProps, getOfmNodeData } from '../ofm-node.js'
 import { buildOfmTargetUrl } from '../ofm-url.js'
 
 export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootContent) => void {
@@ -24,10 +25,13 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
     node.tagName = 'img'
     node.properties.src = src
     node.properties.alt = embed.value
+    addClassName(node.properties, ofmClassNames.embed)
     node.children = []
 
     if (setTitle) {
       node.properties.title = embed.permalink || embed.path
     }
+
+    clearOfmDataProps(node.properties)
   }
 }

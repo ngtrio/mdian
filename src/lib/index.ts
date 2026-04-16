@@ -4,7 +4,7 @@ import type { Construct, Extension as SyntaxExtension } from 'micromark-util-typ
 import { codes } from 'micromark-util-symbol'
 import { anchorHast } from './anchor/index.js'
 import { embedTokenizer, embedMast, embedHast } from './embed/index.js'
-import { highlightTokenizer, highlightMast } from './highlight/index.js'
+import { highlightTokenizer, highlightMast, highlightHast } from './highlight/index.js'
 import type { OfmRemarkOptions, OfmRehypeOptions } from './types.js'
 import { wikiLinkTokenizer, wikiLinkMast, wikiLinkHast } from './wikilink/index.js'
 
@@ -71,15 +71,17 @@ export function ofmSyntex(options: OfmRemarkOptions = {}): SyntaxExtension {
 }
 
 export const rehypeOfm: Plugin<[OfmRehypeOptions?], Root> = function rehypeOfm(options = {}) {
-  const transformAnchor = anchorHast()
+  const transformAnchor = anchorHast(options)
   const transformWikiLink = wikiLinkHast(options)
   const transformEmbed = embedHast(options)
+  const transformHighlight = highlightHast()
 
   return function transform(tree) {
     visit(tree, (node) => {
       transformAnchor(node)
       transformWikiLink(node)
       transformEmbed(node)
+      transformHighlight(node)
     })
   }
 }

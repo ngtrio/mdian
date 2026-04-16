@@ -109,20 +109,13 @@ textarea {
   font-weight: 600;
 }
 
-select,
 .panel-actions button {
   border: 1px solid var(--border);
   background: var(--surface);
 }
 
-select,
 .editor {
   width: 100%;
-}
-
-select {
-  min-height: 40px;
-  padding: 0 12px;
 }
 
 .toggle-list {
@@ -294,15 +287,15 @@ select {
   text-align: left;
 }
 
-.markdown-body [data-anchor-key] {
+.ofm-anchor-target {
   scroll-margin-top: 24px;
 }
 
-.wiki-link {
+.ofm-wikilink {
   word-break: break-word;
 }
 
-.block-anchor-label,
+.ofm-block-anchor-label,
 .wiki-target,
 .wiki-page-link span,
 .back-link {
@@ -310,11 +303,11 @@ select {
   font-size: 0.88rem;
 }
 
-.block-target {
+.ofm-block-target {
   position: relative;
 }
 
-.block-anchor-label {
+.ofm-block-anchor-label {
   display: inline-block;
   margin-left: 0.5rem;
   padding: 0 0.35rem;
@@ -326,8 +319,7 @@ select {
   background: #fff8d6;
 }
 
-.ofm-highlight,
-mark {
+.ofm-highlight {
   padding: 0.08em 0.25em;
   background: var(--highlight);
 }
