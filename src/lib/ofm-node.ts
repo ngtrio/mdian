@@ -9,6 +9,21 @@ export type OfmReferenceData = EmbedData | WikiLinkData
 
 export type OfmNodeData = OfmReferenceData | {kind: 'highlight'}
 
+const ofmDataPropKeys = [
+  'dataOfmAlias',
+  'dataOfmBlockId',
+  'dataOfmKind',
+  'dataOfmPath',
+  'dataOfmPermalink',
+  'dataOfmValue',
+  'data-ofm-alias',
+  'data-ofm-block-id',
+  'data-ofm-kind',
+  'data-ofm-path',
+  'data-ofm-permalink',
+  'data-ofm-value'
+] as const
+
 export function getOfmNodeKind(properties?: Properties | undefined): OfmNodeKind | undefined {
   const kind = properties?.dataOfmKind
   return kind === 'embed' || kind === 'highlight' || kind === 'wikilink' ? kind : undefined
@@ -40,24 +55,20 @@ export function getOfmNodeData(properties?: Properties | undefined): OfmNodeData
 }
 
 export function stripOfmDataProps(props: Record<string, unknown>): Record<string, unknown> {
-  const {
-    dataOfmAlias: _alias,
-    dataOfmBlockId: _blockId,
-    dataOfmKind: _kind,
-    dataOfmPath: _path,
-    dataOfmPermalink: _permalink,
-    dataOfmValue: _value,
-    'data-anchor-key': _anchorKey,
-    'data-ofm-alias': _dataAlias,
-    'data-ofm-block-id': _dataBlockId,
-    'data-ofm-kind': _dataKind,
-    'data-ofm-path': _dataPath,
-    'data-ofm-permalink': _dataPermalink,
-    'data-ofm-value': _dataValue,
-    ...rest
-  } = props
-
+  const rest = {...props}
+  clearOfmDataProps(rest)
+  delete rest['data-anchor-key']
   return rest
+}
+
+export function clearOfmDataProps(properties?: Properties | Record<string, unknown>): void {
+  if (!properties) {
+    return
+  }
+
+  for (const key of ofmDataPropKeys) {
+    delete properties[key]
+  }
 }
 
 function readString(properties: Properties | undefined, key: string): string {

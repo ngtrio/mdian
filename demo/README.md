@@ -5,9 +5,9 @@ Interactive playground for `remark-ofm` - an Obsidian Flavored Markdown parser f
 ## Features
 
 - **Real-time preview**: See parsed OFM syntax rendered instantly
-- **Interactive controls**: Toggle wikilinks and highlights on/off
-- **Multiple examples**: Browse curated examples showcasing each feature
-- **Modern UI**: Dark theme with gradient backgrounds and smooth animations
+- **Single demo document**: Focus on one editable example combining wikilinks, highlights, and block targets
+- **Interactive controls**: Toggle the OFM features used in the showcase
+- **Built-in wiki targets**: Follow demo wikilinks to verify heading and block target navigation
 - **Responsive design**: Works on desktop and mobile devices
 
 ## Running the Demo
@@ -25,6 +25,8 @@ The demo will be available at `http://localhost:5173`
 
 ## Supported OFM Syntax
 
+The default demo document demonstrates:
+
 ### Wikilinks
 ```
 [[Page]]
@@ -37,14 +39,6 @@ The demo will be available at `http://localhost:5173`
 ```
 ==highlighted text==
 ```
-
-## Tech Stack
-
-- React 19
-- Vite 8
-- Tailwind CSS 4
-- react-markdown
-- @tanstack/react-router
 
 ## Development
 
