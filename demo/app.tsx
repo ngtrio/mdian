@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 
-import { remarkOfm, rehypeOfm } from 'remark-ofm'
-import type { OfmRemarkOptions } from 'remark-ofm'
+import { remarkOfm, rehypeOfm } from 'mdian'
+import type { OfmRemarkOptions } from 'mdian'
 import { createMarkdownComponents } from './lib/markdown-components.js'
 
 const defaultDemoMarkdown = [
-  '# remark-ofm + react-markdown',
+  '# mdian + react-markdown',
   '',
   'Visit [[Project Notes|the project note]] for more detail.',
   '',
@@ -32,7 +32,7 @@ export function App() {
   return (
     <div className="demo-shell">
       <header className="page-header">
-        <h1>remark-ofm demo</h1>
+        <h1>mdian demo</h1>
       </header>
 
       <section className="controls">

@@ -1,4 +1,4 @@
-import {buildOfmTargetUrl, decodeOfmFragment, normalizeOfmPath} from 'remark-ofm'
+import {buildOfmTargetUrl, decodeOfmFragment, normalizeOfmPath} from 'mdian'
 
 export interface DemoWikiPage {
   markdown: string

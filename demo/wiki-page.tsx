@@ -8,7 +8,7 @@ import {
   getOfmAnchorKeyFromHash,
   remarkOfm,
   rehypeOfm
-} from 'remark-ofm'
+} from 'mdian'
 import {createMarkdownComponents} from './lib/markdown-components.js'
 import {buildWikiHref, demoWikiPages, getDemoWikiPage, normalizeWikiPath} from './lib/wiki.js'
 

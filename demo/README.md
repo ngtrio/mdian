@@ -1,6 +1,6 @@
-# remark-ofm Demo
+# mdian Demo
 
-Interactive playground for `remark-ofm` - an Obsidian Flavored Markdown parser for unified/remark.
+Interactive playground for `mdian` - an Obsidian Flavored Markdown parser for unified/remark.
 
 ## Features
 
@@ -42,4 +42,4 @@ The default demo document demonstrates:
 
 ## Development
 
-The demo uses a workspace reference to the main `remark-ofm` package, so changes to the parser will be reflected immediately in the demo during development.
+The demo uses a workspace reference to the main `mdian` package, so changes to the parser will be reflected immediately in the demo during development.

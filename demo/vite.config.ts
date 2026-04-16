@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      'remark-ofm': fileURLToPath(new URL('../src/index.ts', import.meta.url))
+      'mdian': fileURLToPath(new URL('../src/index.ts', import.meta.url))
     }
   },
   build: {

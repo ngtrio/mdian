@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ofmClassNames } from 'remark-ofm'
+import { ofmClassNames } from 'mdian'
 import { type Components } from 'react-markdown'
 
 export function createMarkdownComponents(): Components {
