@@ -11,9 +11,13 @@
   },
   "dependencies": {
     "@tanstack/react-router": "^1.168.18",
+    "katex": "^0.16.45",
+    "rehype-katex": "^7.0.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "mdian": "workspace:*"
   },
   "devDependencies": {

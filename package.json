@@ -50,10 +50,5 @@
     "typescript": "^5.8.3",
     "unified": "^11.0.0"
   },
-  "dependencies": {
-    "mdast-util-gfm": "^3.1.0",
-    "mdast-util-math": "^3.0.0",
-    "micromark-extension-gfm": "^3.0.0",
-    "micromark-extension-math": "^3.1.0"
-  }
+  "dependencies": {}
 }
