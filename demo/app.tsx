@@ -10,6 +10,18 @@ const defaultDemoMarkdown = [
   '',
   'Visit [[Project Notes|the project note]] for more detail.',
   '',
+  'Embed an image:',
+  '![[assets/cover.png]]',
+  '',
+  'Embed a markdown note:',
+  '![[Project Notes]]',
+  '',
+  'Embed a heading section:',
+  '![[Project Notes#Overview]]',
+  '',
+  'Embed a block ref:',
+  '![[Roadmap#^next-step]]',
+  '',
   'This sentence contains ==highlighted text==.',
   '',
   '- Another wikilink: [[Roadmap#^next-step]]',
@@ -43,6 +55,11 @@ export function App() {
               checked={options.wikilinks ?? true}
               label="Wikilinks"
               onChange={(checked) => setOptions((current) => ({ ...current, wikilinks: checked }))}
+            />
+            <FeatureToggle
+              checked={options.embeds ?? true}
+              label="Embeds"
+              onChange={(checked) => setOptions((current) => ({ ...current, embeds: checked }))}
             />
             <FeatureToggle
               checked={options.highlights ?? true}

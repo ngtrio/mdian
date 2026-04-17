@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `mdian` is a TypeScript package that adds Obsidian Flavored Markdown support to unified/remark pipelines. The public package entrypoint is `src/index.ts`, which re-exports the main `remarkOfm` and `rehypeOfm` plugins plus anchor/URL helpers used by consumers.
 
-The repository also contains a `demo/` Vite + React app that consumes the workspace package directly. Use it to validate parser and rehype behavior interactively, especially wiki-link navigation and block-anchor targeting.
+The repository also contains a `demo/` Vite + React app that consumes the workspace package directly. Use it to validate parser and rehype behavior interactively.
 
 ## Common commands
 

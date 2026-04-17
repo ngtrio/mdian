@@ -136,7 +136,7 @@ test('wikiLinkHast can skip title assignment', () => {
   assert.equal(node.properties.title, undefined)
 })
 
-test('embedHast uses root-path default when hrefPrefix is omitted', () => {
+test('embedHast renders extensionless note embeds as semantic containers', () => {
   const node = createEmbedElement({
     value: 'Project Notes',
     path: 'Project Notes',
@@ -145,31 +145,74 @@ test('embedHast uses root-path default when hrefPrefix is omitted', () => {
 
   embedHast()(node)
 
-  assert.equal(node.tagName, 'img')
-  assert.equal(node.properties.src, '/Project%20Notes')
-  assert.equal(node.properties.alt, 'Project Notes')
+  assert.equal(node.tagName, 'div')
+  assert.equal(node.properties['data-ofm-embed'], 'note')
+  assert.equal(node.properties['data-ofm-path-public'], 'Project Notes')
+  assert.equal(node.properties['data-ofm-permalink-public'], 'Project Notes')
   assert.equal(node.properties.title, 'Project Notes')
   assertClassNames(node, [ofmClassNames.embed])
   assert.equal(node.properties.dataOfmKind, undefined)
-  assert.deepEqual(node.children, [])
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/Project%20Notes'},
+    children: [{type: 'text', value: 'Project Notes'}]
+  }])
 })
 
-test('embedHast uses hrefPrefix path plus fragment when provided', () => {
+test('embedHast renders markdown file embeds as semantic containers with fragments', () => {
   const node = createEmbedElement({
-    value: 'Page#Heading',
-    path: 'Page',
-    permalink: 'Page#Heading'
+    value: 'Page.md#Heading',
+    path: 'Page.md',
+    permalink: 'Page.md#Heading'
+  })
+
+  embedHast({ hrefPrefix: 'notes' })(node)
+
+  assert.equal(node.tagName, 'div')
+  assert.equal(node.properties['data-ofm-embed'], 'note')
+  assert.equal(node.properties['data-ofm-path-public'], 'Page.md')
+  assert.equal(node.properties['data-ofm-permalink-public'], 'Page.md#Heading')
+  assert.equal(node.properties.title, 'Page.md#Heading')
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/notes/Page.md#Heading'},
+    children: [{type: 'text', value: 'Page.md#Heading'}]
+  }])
+})
+
+test('embedHast renders image embeds as images', () => {
+  const node = createEmbedElement({
+    value: 'assets/cover.png',
+    path: 'assets/cover.png',
+    permalink: 'assets/cover.png'
   })
 
   embedHast({ hrefPrefix: 'notes' })(node)
 
   assert.equal(node.tagName, 'img')
-  assert.equal(node.properties.src, '/notes/Page#Heading')
-  assert.equal(node.properties.alt, 'Page#Heading')
-  assert.equal(node.properties.title, 'Page#Heading')
+  assert.equal(node.properties.src, '/notes/assets/cover.png')
+  assert.equal(node.properties.alt, 'assets/cover.png')
+  assert.equal(node.properties.title, 'assets/cover.png')
 })
 
-test('embedHast resolves aliases using permalink rather than alias text', () => {
+test('embedHast renders non-image files as links', () => {
+  const node = createEmbedElement({
+    value: 'manual.pdf',
+    path: 'manual.pdf',
+    permalink: 'manual.pdf'
+  })
+
+  embedHast({ hrefPrefix: 'notes' })(node)
+
+  assert.equal(node.tagName, 'a')
+  assert.equal(node.properties.href, '/notes/manual.pdf')
+  assert.equal(node.properties.title, 'manual.pdf')
+  assert.deepEqual(node.children, [{type: 'text', value: 'manual.pdf'}])
+})
+
+test('embedHast uses permalink rather than alias text for note embed title', () => {
   const node = createEmbedElement({
     value: 'Page|Alias',
     path: 'Page',
@@ -179,12 +222,18 @@ test('embedHast resolves aliases using permalink rather than alias text', () => 
 
   embedHast({ hrefPrefix: 'notes' })(node)
 
-  assert.equal(node.properties.src, '/notes/Page')
-  assert.equal(node.properties.alt, 'Page|Alias')
+  assert.equal(node.tagName, 'div')
   assert.equal(node.properties.title, 'Page')
+  assert.equal(node.properties['data-ofm-alias-public'], 'Alias')
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/notes/Page'},
+    children: [{type: 'text', value: 'Alias'}]
+  }])
 })
 
-test('embedHast preserves block fragments with hrefPrefix', () => {
+test('embedHast preserves block fragments with hrefPrefix for note embeds', () => {
   const node = createEmbedElement({
     value: 'Page#^block-id',
     path: 'Page',
@@ -194,8 +243,14 @@ test('embedHast preserves block fragments with hrefPrefix', () => {
 
   embedHast({ hrefPrefix: 'notes' })(node)
 
-  assert.equal(node.properties.src, '/notes/Page#^block-id')
-  assert.equal(node.properties.alt, 'Page#^block-id')
+  assert.equal(node.tagName, 'div')
+  assert.equal(node.properties['data-ofm-block-id-public'], 'block-id')
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/notes/Page#^block-id'},
+    children: [{type: 'text', value: 'Page#^block-id'}]
+  }])
   assert.equal(node.properties.title, 'Page#^block-id')
 })
 
@@ -208,9 +263,15 @@ test('embedHast encodes path segments but preserves fragments with hrefPrefix', 
 
   embedHast({ hrefPrefix: 'notes' })(node)
 
-  assert.equal(node.properties.src, '/notes/Folder%20Name/Page%20Name#Heading Here')
-  assert.equal(node.properties.alt, 'Folder Name/Page Name#Heading Here')
+  assert.equal(node.tagName, 'div')
+  assert.equal(node.properties['data-ofm-path-public'], 'Folder Name/Page Name')
   assert.equal(node.properties.title, 'Folder Name/Page Name#Heading Here')
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/notes/Folder%20Name/Page%20Name#Heading Here'},
+    children: [{type: 'text', value: 'Folder Name/Page Name#Heading Here'}]
+  }])
 })
 
 test('embedHast can skip title assignment', () => {
@@ -222,23 +283,8 @@ test('embedHast can skip title assignment', () => {
 
   embedHast({ hrefPrefix: 'notes', setTitle: false })(node)
 
-  assert.equal(node.properties.src, '/notes/Page')
+  assert.equal(node.tagName, 'div')
   assert.equal(node.properties.title, undefined)
-})
-
-test('embedHast lets resolveEmbed override the shared default URL', () => {
-  const node = createEmbedElement({
-    value: 'Page',
-    path: 'Page',
-    permalink: 'Page'
-  })
-
-  embedHast({
-    hrefPrefix: 'notes',
-    resolveEmbed: () => 'https://cdn.example.com/page.png'
-  })(node)
-
-  assert.equal(node.properties.src, 'https://cdn.example.com/page.png')
 })
 
 test('normalizeOfmAnchorKey decodes fragments and collapses whitespace', () => {
