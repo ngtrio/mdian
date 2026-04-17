@@ -1,20 +1,32 @@
-import type {Element} from 'hast'
+import type { Element } from 'hast'
 
-import {Link} from '@tanstack/react-router'
-import {ofmClassNames, rehypeOfm, remarkOfm} from 'mdian'
-import ReactMarkdown, {type Components} from 'react-markdown'
-import {useMemo} from 'react'
+import { Link } from '@tanstack/react-router'
+import { ofmClassNames } from 'mdian'
+import type { OfmRemarkOptions } from 'mdian'
+import ReactMarkdown, { type Components } from 'react-markdown'
+import { useMemo } from 'react'
 
-import {getDemoWikiEmbed} from './wiki.js'
+import {
+  buildRehypePlugins,
+  buildRemarkPlugins,
+  defaultDemoRehypeOptions,
+  type DemoMarkdownFeatures
+} from './markdown-pipeline.js'
+import { defaultRemarkOptions } from './remark-options.js'
+import { getDemoWikiEmbed } from './wiki.js'
 
 interface MarkdownComponentsOptions {
   embedDepth?: number
+  features?: DemoMarkdownFeatures
+  remarkOptions?: OfmRemarkOptions
   embedTrail?: string[]
 }
 
 export function createMarkdownComponents(options: MarkdownComponentsOptions = {}): Components {
   const embedDepth = options.embedDepth ?? 0
   const embedTrail = options.embedTrail ?? []
+  const features = options.features ?? {gfm: true, math: true}
+  const remarkOptions = options.remarkOptions ?? defaultRemarkOptions
 
   return {
     a({ className, href, node: _node, ...props }) {
@@ -24,7 +36,13 @@ export function createMarkdownComponents(options: MarkdownComponentsOptions = {}
         return <a {...props} className={className} href={href} />
       }
 
-      return <Link {...props} className={className} to={href} />
+      const wikiHref = prefixWikiHref(href)
+
+      if (!wikiHref) {
+        return <a {...props} className={className} href={href} />
+      }
+
+      return <Link {...props} className={className} to={wikiHref} />
     },
     div({ className, node, children, ...props }) {
       const classes = className?.split(/\s+/) ?? []
@@ -46,7 +64,9 @@ export function createMarkdownComponents(options: MarkdownComponentsOptions = {}
           embedDepth={embedDepth}
           embedTrail={embedTrail}
           fallbackHref={readFallbackHref(node)}
+          features={features}
           path={path}
+          remarkOptions={remarkOptions}
           permalink={permalink}
           title={title}
         />
@@ -60,7 +80,9 @@ function NoteEmbed({
   embedDepth,
   embedTrail,
   fallbackHref,
+  features,
   path,
+  remarkOptions,
   permalink,
   title
 }: {
@@ -68,7 +90,9 @@ function NoteEmbed({
   embedDepth: number
   embedTrail: string[]
   fallbackHref?: string
+  features: DemoMarkdownFeatures
   path: string
+  remarkOptions: OfmRemarkOptions
   permalink: string
   title: string
 }) {
@@ -78,14 +102,21 @@ function NoteEmbed({
   const embed = getDemoWikiEmbed(path, permalink)
   const nextTrail = [...embedTrail, identity]
   const markdownComponents = useMemo(
-    () => createMarkdownComponents({embedDepth: embedDepth + 1, embedTrail: nextTrail}),
-    [embedDepth, nextTrail]
+    () => createMarkdownComponents({ embedDepth: embedDepth + 1, embedTrail: nextTrail, features, remarkOptions }),
+    [embedDepth, features, nextTrail, remarkOptions]
+  )
+  const remarkPlugins = useMemo(() => buildRemarkPlugins(remarkOptions, features), [features, remarkOptions])
+  const rehypePlugins = useMemo(
+    () => buildRehypePlugins(defaultDemoRehypeOptions, features),
+    [features]
   )
 
   if (!embed || isRecursive || isTooDeep) {
+    const wikiHref = prefixWikiHref(fallbackHref)
+
     return (
       <div className={className}>
-        <a href={fallbackHref}>{title || permalink || path}</a>
+        <a href={wikiHref}>{title || permalink || path}</a>
       </div>
     )
   }
@@ -98,8 +129,8 @@ function NoteEmbed({
       <div className="note-embed__body">
         <ReactMarkdown
           components={markdownComponents}
-          rehypePlugins={[[rehypeOfm, {hrefPrefix: 'wiki', renderBlockAnchorLabels: true}]]}
-          remarkPlugins={[[remarkOfm, {embeds: true, highlights: true, wikilinks: true}]]}
+          rehypePlugins={rehypePlugins}
+          remarkPlugins={remarkPlugins}
         >
           {embed.markdown}
         </ReactMarkdown>
@@ -125,4 +156,16 @@ function readFallbackHref(node: Element | undefined): string | undefined {
 
 function readString(value: unknown): string {
   return typeof value === 'string' ? value : ''
+}
+
+function prefixWikiHref(href: string | undefined): string | undefined {
+  if (!href || !href.startsWith('/')) {
+    return href
+  }
+
+  if (href === '/wiki' || href.startsWith('/wiki/')) {
+    return href
+  }
+
+  return `/wiki${href}`
 }

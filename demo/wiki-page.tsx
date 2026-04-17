@@ -6,10 +6,15 @@ import {
   decodeOfmFragment,
   findOfmAnchorTarget,
   getOfmAnchorKeyFromHash,
-  remarkOfm,
-  rehypeOfm
 } from 'mdian'
 import {createMarkdownComponents} from './lib/markdown-components.js'
+import {
+  buildRehypePlugins,
+  buildRemarkPlugins,
+  defaultDemoRehypeOptions,
+  type DemoMarkdownFeatures
+} from './lib/markdown-pipeline.js'
+import {defaultRemarkOptions} from './lib/remark-options.js'
 import {buildWikiHref, demoWikiPages, getDemoWikiPage, normalizeWikiPath} from './lib/wiki.js'
 
 export function WikiPage() {
@@ -19,7 +24,13 @@ export function WikiPage() {
   const pagePath = normalizeWikiPath(typeof params._splat === 'string' ? params._splat : '')
   const page = getDemoWikiPage(pagePath)
   const activeFragment = decodeOfmFragment(locationHash)
-  const markdownComponents = useMemo(() => createMarkdownComponents(), [])
+  const features = useMemo<DemoMarkdownFeatures>(() => ({gfm: true, math: true}), [])
+  const markdownComponents = useMemo(() => createMarkdownComponents({features, remarkOptions: defaultRemarkOptions}), [features])
+  const remarkPlugins = useMemo(() => buildRemarkPlugins(defaultRemarkOptions, features), [features])
+  const rehypePlugins = useMemo(
+    () => buildRehypePlugins(defaultDemoRehypeOptions, features),
+    [features]
+  )
 
   useEffect(() => {
     const root = articleRef.current
@@ -83,8 +94,8 @@ export function WikiPage() {
           <article className="preview markdown-body wiki-markdown" ref={articleRef}>
             <ReactMarkdown
               components={markdownComponents}
-              rehypePlugins={[[rehypeOfm, {hrefPrefix: 'wiki', renderBlockAnchorLabels: true}]]}
-              remarkPlugins={[[remarkOfm]]}
+              rehypePlugins={rehypePlugins}
+              remarkPlugins={remarkPlugins}
             >
               {page.markdown}
             </ReactMarkdown>
