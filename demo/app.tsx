@@ -32,6 +32,29 @@ const defaultDemoMarkdown = [
   '',
   'This sentence contains ==highlighted text==.',
   '',
+  '## Callouts',
+  '',
+  '> [!note] Note title',
+  '> Basic callout body.',
+  '',
+  '> [!tip]+ Expanded foldable',
+  '> This one starts expanded.',
+  '',
+  '> [!warning]- Collapsed foldable',
+  '> This one starts collapsed.',
+  '',
+  '> [!example] Multiple paragraphs',
+  '>',
+  '> First paragraph inside the callout.',
+  '>',
+  '> Second paragraph inside the same callout.',
+  '',
+  '> [!question] Outer callout',
+  '> Outer body line.',
+  '>',
+  '> > [!note] Inner callout',
+  '> > Nested body content.',
+  '',
   '## GFM',
   '',
   '| Syntax | Example |',
@@ -101,6 +124,11 @@ export function App() {
               checked={options.comments ?? true}
               label="Comments"
               onChange={(checked) => setOptions((current) => ({ ...current, comments: checked }))}
+            />
+            <FeatureToggle
+              checked={options.callouts ?? true}
+              label="Callouts"
+              onChange={(checked) => setOptions((current) => ({ ...current, callouts: checked }))}
             />
             <FeatureToggle
               checked={features.gfm}

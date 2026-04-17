@@ -1,4 +1,5 @@
 export interface OfmRemarkOptions {
+  callouts?: boolean
   comments?: boolean
   embeds?: boolean
   highlights?: boolean

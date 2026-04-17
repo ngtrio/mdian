@@ -1,0 +1,61 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "callout",
+      "calloutType": "tip",
+      "title": "Outer title",
+      "foldable": true,
+      "collapsed": false,
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Outer body"
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "calloutType": "note",
+          "title": "Inner title",
+          "foldable": false,
+          "collapsed": false,
+          "children": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Inner body"
+                }
+              ]
+            }
+          ],
+          "data": {
+            "hName": "div",
+            "hProperties": {
+              "dataOfmKind": "callout",
+              "dataOfmCalloutType": "note",
+              "dataOfmTitle": "Inner title",
+              "dataOfmFoldable": false,
+              "dataOfmCollapsed": false
+            }
+          }
+        }
+      ],
+      "data": {
+        "hName": "div",
+        "hProperties": {
+          "dataOfmKind": "callout",
+          "dataOfmCalloutType": "tip",
+          "dataOfmTitle": "Outer title",
+          "dataOfmFoldable": true,
+          "dataOfmCollapsed": false
+        }
+      }
+    }
+  ]
+}

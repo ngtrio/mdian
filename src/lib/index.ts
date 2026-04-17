@@ -3,6 +3,7 @@ import type { Root, RootContent } from 'hast'
 import type { Construct, Extension as SyntaxExtension } from 'micromark-util-types'
 import { codes } from 'micromark-util-symbol'
 import { anchorHast } from './anchor/index.js'
+import { calloutHast, calloutRemark } from './callout/index.js'
 import { commentMast, commentHast, commentTokenizer } from './comment/index.js'
 import { embedTokenizer, embedMast, embedHast } from './embed/index.js'
 import { highlightTokenizer, highlightMast, highlightHast } from './highlight/index.js'
@@ -26,7 +27,7 @@ export function getBucket(processor: Processor, key: BucketKey): ExtensionBucket
   return created
 }
 
-export function remarkOfm(this: Processor, options: OfmRemarkOptions = {}): void {
+export function remarkOfm(this: Processor, options: OfmRemarkOptions = {}) {
   getBucket(this, 'micromarkExtensions').push(ofmSyntex(options))
 
   const fromMarkdownExtensions = []
@@ -48,6 +49,8 @@ export function remarkOfm(this: Processor, options: OfmRemarkOptions = {}): void
   }
 
   getBucket(this, 'fromMarkdownExtensions').push(...fromMarkdownExtensions)
+
+  return calloutRemark.call(this, options)
 }
 
 export function ofmSyntex(options: OfmRemarkOptions = {}): SyntaxExtension {
@@ -82,6 +85,7 @@ export function ofmSyntex(options: OfmRemarkOptions = {}): SyntaxExtension {
 
 export const rehypeOfm: Plugin<[OfmRehypeOptions?], Root> = function rehypeOfm(options = {}) {
   const transformAnchor = anchorHast(options)
+  const transformCallout = calloutHast()
   const transformComment = commentHast()
   const transformWikiLink = wikiLinkHast(options)
   const transformEmbed = embedHast(options)
@@ -90,6 +94,7 @@ export const rehypeOfm: Plugin<[OfmRehypeOptions?], Root> = function rehypeOfm(o
   return function transform(tree) {
     visit(tree, (node) => {
       transformAnchor(node)
+      transformCallout(node)
       transformWikiLink(node)
       transformEmbed(node)
       transformHighlight(node)

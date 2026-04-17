@@ -21,6 +21,7 @@ import {
   type OfmRemarkOptions
 } from '../src/index.js'
 import { anchorHast, normalizeOfmAnchorKey } from '../src/lib/anchor/hast.js'
+import { calloutHast } from '../src/lib/callout/hast.js'
 import { embedHast } from '../src/lib/embed/hast.js'
 import { highlightHast } from '../src/lib/highlight/hast.js'
 import {getOfmNodeData, stripOfmDataProps} from '../src/lib/ofm-node.js'
@@ -50,7 +51,8 @@ for (const fixtureName of fixtures) {
       .use(remarkParse)
       .use(remarkOfm, config?.options ?? {})
 
-    assert.deepEqual(stripPositions(processor.parse(input)), expectedTree)
+    const tree = await processor.run(processor.parse(input))
+    assert.deepEqual(stripPositions(tree), expectedTree)
   })
 }
 
@@ -135,6 +137,151 @@ test('wikiLinkHast can skip title assignment', () => {
 
   assert.equal(node.properties.href, '/notes/Page')
   assert.equal(node.properties.title, undefined)
+})
+
+test('calloutHast renders foldable callouts as details with open state metadata', () => {
+  const node = createCalloutElement({
+    calloutType: 'note',
+    title: 'Callout title',
+    foldable: true,
+    collapsed: false,
+    children: [{type: 'element', tagName: 'p', properties: {}, children: [{type: 'text', value: 'Callout body'}]}]
+  })
+
+  calloutHast()(node)
+
+  assert.equal(node.tagName, 'details')
+  assert.equal(node.properties['data-ofm-callout'], 'note')
+  assert.equal(node.properties['data-ofm-foldable'], '')
+  assert.equal(node.properties['data-ofm-collapsed'], undefined)
+  assert.equal(node.properties.open, true)
+  assertClassNames(node, [ofmClassNames.callout])
+  assert.deepEqual(node.children, [
+    {
+      type: 'element',
+      tagName: 'summary',
+      properties: {className: [ofmClassNames.calloutTitle]},
+      children: [{type: 'text', value: 'Callout title'}]
+    },
+    {
+      type: 'element',
+      tagName: 'div',
+      properties: {className: [ofmClassNames.calloutContent]},
+      children: [{type: 'element', tagName: 'p', properties: {}, children: [{type: 'text', value: 'Callout body'}]}]
+    }
+  ])
+})
+
+test('calloutHast keeps collapsed metadata and nested callouts inside content', () => {
+  const nested = createCalloutElement({
+    calloutType: 'tip',
+    title: 'Inner title',
+    foldable: false,
+    collapsed: false,
+    children: [{type: 'element', tagName: 'p', properties: {}, children: [{type: 'text', value: 'Inner body'}]}]
+  })
+  const node = createCalloutElement({
+    calloutType: 'warning',
+    title: 'Outer title',
+    foldable: true,
+    collapsed: true,
+    children: [nested]
+  })
+
+  calloutHast()(node)
+
+  assert.equal(node.tagName, 'details')
+  assert.equal(node.properties['data-ofm-callout'], 'warning')
+  assert.equal(node.properties['data-ofm-foldable'], '')
+  assert.equal(node.properties['data-ofm-collapsed'], '')
+  assert.equal(node.properties.open, undefined)
+  assert.equal((node.children[0] as Element).tagName, 'summary')
+  assert.deepEqual((node.children[1] as Element).children, [nested])
+})
+
+test('remarkOfm leaves callout syntax as blockquote when callouts are disabled', async () => {
+  const input = '> [!note] Hidden\n> body'
+  const processor = unified().use(remarkParse).use(remarkOfm, {callouts: false})
+
+  const tree = await processor.run(processor.parse(input))
+
+  assert.equal(tree.children[0]?.type, 'blockquote')
+})
+
+test('calloutHast renders an empty title container when the marker omits a title', () => {
+  const node = createCalloutElement({
+    calloutType: 'note',
+    title: '',
+    foldable: false,
+    collapsed: false,
+    children: [{type: 'element', tagName: 'p', properties: {}, children: [{type: 'text', value: 'Body'}]}]
+  })
+
+  calloutHast()(node)
+
+  assert.deepEqual(node.children[0], {
+    type: 'element',
+    tagName: 'div',
+    properties: {className: [ofmClassNames.calloutTitle]},
+    children: []
+  })
+})
+
+test('remarkOfm preserves multipart callout content as separate paragraphs', async () => {
+  const input = '> [!note] Title\n>\n> first paragraph\n>\n> second paragraph'
+  const processor = unified().use(remarkParse).use(remarkOfm)
+
+  const tree = await processor.run(processor.parse(input))
+  const callout = tree.children[0]
+
+  assert.equal(callout?.type, 'callout')
+  assert.deepEqual((callout?.children ?? []).map((child) => child.type), ['paragraph', 'paragraph'])
+})
+
+test('remarkOfm still enables callout conversion without micromark callout extensions', async () => {
+  const input = '> [!note] Title\n> Body'
+  const processor = unified().use(remarkParse).use(remarkOfm)
+
+  const tree = await processor.run(processor.parse(input))
+
+  assert.equal(tree.children[0]?.type, 'callout')
+})
+
+test('calloutHast strips internal OFM properties after rendering', () => {
+  const node = createCalloutElement({
+    calloutType: 'warning',
+    title: 'Heads up',
+    foldable: true,
+    collapsed: true,
+    children: []
+  })
+
+  calloutHast()(node)
+
+  assert.equal(node.properties.dataOfmKind, undefined)
+  assert.equal(node.properties.dataOfmCalloutType, undefined)
+  assert.equal(node.properties.dataOfmTitle, undefined)
+  assert.equal(node.properties['data-ofm-callout'], 'warning')
+  assert.equal(node.properties['data-ofm-foldable'], '')
+  assert.equal(node.properties['data-ofm-collapsed'], '')
+})
+
+test('getOfmNodeData reads callout metadata before hast cleanup', () => {
+  const data = getOfmNodeData({
+    dataOfmKind: 'callout',
+    dataOfmCalloutType: 'tip',
+    dataOfmTitle: 'Read me',
+    dataOfmFoldable: true,
+    dataOfmCollapsed: false
+  })
+
+  assert.deepEqual(data, {
+    kind: 'callout',
+    calloutType: 'tip',
+    title: 'Read me',
+    foldable: true,
+    collapsed: false
+  })
 })
 
 test('embedHast renders extensionless note embeds as semantic containers', () => {
@@ -771,6 +918,33 @@ function createCommentElement(value: string): Element {
       dataOfmValue: value
     },
     children: []
+  }
+}
+
+function createCalloutElement({
+  calloutType,
+  title,
+  foldable,
+  collapsed,
+  children
+}: {
+  calloutType: string
+  title: string
+  foldable: boolean
+  collapsed: boolean
+  children: Element['children']
+}): Element {
+  return {
+    type: 'element',
+    tagName: 'div',
+    properties: {
+      dataOfmKind: 'callout',
+      dataOfmCalloutType: calloutType,
+      dataOfmTitle: title,
+      dataOfmFoldable: foldable,
+      dataOfmCollapsed: collapsed
+    },
+    children
   }
 }
 

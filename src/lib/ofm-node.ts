@@ -1,37 +1,44 @@
 import type {Properties} from 'hast'
 
+import type {CalloutData} from './callout/types.js'
 import type {EmbedData} from './embed/types.js'
 import type {WikiLinkData} from './wikilink/types.js'
 
-export type OfmNodeKind = 'comment' | 'embed' | 'highlight' | 'wikilink'
+export type OfmNodeKind = 'callout' | 'comment' | 'embed' | 'highlight' | 'wikilink'
 export type OfmInlineMetadata = {kind: 'comment', value: string} | {kind: 'highlight'}
 
 export type OfmReferenceData = EmbedData | WikiLinkData
 
-export type OfmNodeData = OfmReferenceData | OfmInlineMetadata
+export type OfmNodeData = CalloutData | OfmReferenceData | OfmInlineMetadata
 
 const ofmDataPropKeys = [
   'dataOfmAlias',
   'dataOfmBlockId',
+  'dataOfmCalloutType',
+  'dataOfmCollapsed',
+  'dataOfmFoldable',
   'dataOfmHeight',
   'dataOfmKind',
   'dataOfmPath',
   'dataOfmPermalink',
+  'dataOfmTitle',
   'dataOfmValue',
   'dataOfmWidth',
   'data-ofm-alias',
   'data-ofm-block-id',
+  'data-ofm-callout-type',
   'data-ofm-height',
   'data-ofm-kind',
   'data-ofm-path',
   'data-ofm-permalink',
+  'data-ofm-title',
   'data-ofm-value',
   'data-ofm-width'
 ] as const
 
 export function getOfmNodeKind(properties?: Properties | undefined): OfmNodeKind | undefined {
   const kind = properties?.dataOfmKind
-  return kind === 'comment' || kind === 'embed' || kind === 'highlight' || kind === 'wikilink' ? kind : undefined
+  return kind === 'callout' || kind === 'comment' || kind === 'embed' || kind === 'highlight' || kind === 'wikilink' ? kind : undefined
 }
 
 export function getOfmNodeData(properties?: Properties | undefined): OfmNodeData | undefined {
@@ -50,6 +57,16 @@ export function getOfmNodeData(properties?: Properties | undefined): OfmNodeData
 
   if (kind === 'highlight') {
     return { kind }
+  }
+
+  if (kind === 'callout') {
+    return {
+      kind,
+      calloutType: readString(properties, 'dataOfmCalloutType'),
+      title: readString(properties, 'dataOfmTitle'),
+      foldable: readBoolean(properties, 'dataOfmFoldable'),
+      collapsed: readBoolean(properties, 'dataOfmCollapsed')
+    }
   }
 
   return {
@@ -108,4 +125,8 @@ function readOptionalString(properties: Properties | undefined, key: string): st
 function readOptionalNumber(properties: Properties | undefined, key: string): number | undefined {
   const value = properties?.[key]
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
+function readBoolean(properties: Properties | undefined, key: string): boolean {
+  return properties?.[key] === true
 }

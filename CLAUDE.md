@@ -40,12 +40,6 @@ This pattern exists for `wikilink`, `embed`, and `highlight` under `src/lib/*/`.
 - `ofmSyntex()` decides which inline constructs are active based on `OfmRemarkOptions`.
 - `rehypeOfm()` walks the final hast tree and applies anchor, wikilink, embed, and highlight transforms in one pass.
 
-### Feature responsibilities
-
-- Wikilinks: parsed as custom anchor nodes, then converted to `href` + CSS classes in `src/lib/wikilink/hast.ts`.
-- Embeds: parsed similarly to wikilinks, but `src/lib/embed/hast.ts` rewrites the element to an `<img>` and can delegate `src` generation to `resolveEmbed`.
-- Highlights: `==text==` support is implemented as an inline construct plus a rehype transform that only adds OFM classes.
-- Anchors: `src/lib/anchor/hast.ts` is independent of parsing and annotates headings / trailing block refs with `data-anchor-key`, enabling fragment lookup and in-page scrolling.
 
 ### Shared utilities
 

@@ -1,0 +1,33 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "callout",
+      "calloutType": "warning",
+      "title": "Folded title",
+      "foldable": true,
+      "collapsed": true,
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Hidden by default"
+            }
+          ]
+        }
+      ],
+      "data": {
+        "hName": "div",
+        "hProperties": {
+          "dataOfmKind": "callout",
+          "dataOfmCalloutType": "warning",
+          "dataOfmTitle": "Folded title",
+          "dataOfmFoldable": true,
+          "dataOfmCollapsed": true
+        }
+      }
+    }
+  ]
+}

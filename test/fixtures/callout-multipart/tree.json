@@ -1,0 +1,42 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "callout",
+      "calloutType": "note",
+      "title": "Title",
+      "foldable": false,
+      "collapsed": false,
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "first paragraph"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "second paragraph"
+            }
+          ]
+        }
+      ],
+      "data": {
+        "hName": "div",
+        "hProperties": {
+          "dataOfmKind": "callout",
+          "dataOfmCalloutType": "note",
+          "dataOfmTitle": "Title",
+          "dataOfmFoldable": false,
+          "dataOfmCollapsed": false
+        }
+      }
+    }
+  ]
+}

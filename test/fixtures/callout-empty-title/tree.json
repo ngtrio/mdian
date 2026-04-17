@@ -1,0 +1,33 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "callout",
+      "calloutType": "note",
+      "title": "",
+      "foldable": false,
+      "collapsed": false,
+      "children": [
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "Body only"
+            }
+          ]
+        }
+      ],
+      "data": {
+        "hName": "div",
+        "hProperties": {
+          "dataOfmKind": "callout",
+          "dataOfmCalloutType": "note",
+          "dataOfmTitle": "",
+          "dataOfmFoldable": false,
+          "dataOfmCollapsed": false
+        }
+      }
+    }
+  ]
+}
