@@ -2,6 +2,9 @@ import 'micromark-util-types'
 
 declare module 'micromark-util-types' {
   interface TokenTypeMap {
+    ofmComment: 'ofmComment'
+    ofmCommentMarker: 'ofmCommentMarker'
+    ofmCommentValue: 'ofmCommentValue'
     highlight: 'highlight'
     highlightText: 'highlightText'
     ofmHighlightSequence: 'ofmHighlightSequence'

@@ -8,7 +8,7 @@ export {buildOfmTargetUrl, decodeOfmFragment, normalizeOfmPath} from './lib/ofm-
 export {ofmClassNames} from './lib/class-name.js'
 export type {
   OfmRemarkOptions,
-  OfmRehypeOptions,
+  OfmRehypeOptions
 } from './lib/types.js'
 export type {
   OfmClassName

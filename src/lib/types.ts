@@ -1,4 +1,5 @@
 export interface OfmRemarkOptions {
+  comments?: boolean
   embeds?: boolean
   highlights?: boolean
   wikilinks?: boolean

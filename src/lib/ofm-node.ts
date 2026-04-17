@@ -3,11 +3,12 @@ import type {Properties} from 'hast'
 import type {EmbedData} from './embed/types.js'
 import type {WikiLinkData} from './wikilink/types.js'
 
-export type OfmNodeKind = 'embed' | 'highlight' | 'wikilink'
+export type OfmNodeKind = 'comment' | 'embed' | 'highlight' | 'wikilink'
+export type OfmInlineMetadata = {kind: 'comment', value: string} | {kind: 'highlight'}
 
 export type OfmReferenceData = EmbedData | WikiLinkData
 
-export type OfmNodeData = OfmReferenceData | {kind: 'highlight'}
+export type OfmNodeData = OfmReferenceData | OfmInlineMetadata
 
 const ofmDataPropKeys = [
   'dataOfmAlias',
@@ -30,7 +31,7 @@ const ofmDataPropKeys = [
 
 export function getOfmNodeKind(properties?: Properties | undefined): OfmNodeKind | undefined {
   const kind = properties?.dataOfmKind
-  return kind === 'embed' || kind === 'highlight' || kind === 'wikilink' ? kind : undefined
+  return kind === 'comment' || kind === 'embed' || kind === 'highlight' || kind === 'wikilink' ? kind : undefined
 }
 
 export function getOfmNodeData(properties?: Properties | undefined): OfmNodeData | undefined {
@@ -40,8 +41,15 @@ export function getOfmNodeData(properties?: Properties | undefined): OfmNodeData
     return undefined
   }
 
+  if (kind === 'comment') {
+    return {
+      kind,
+      value: readString(properties, 'dataOfmValue')
+    }
+  }
+
   if (kind === 'highlight') {
-    return {kind}
+    return { kind }
   }
 
   return {

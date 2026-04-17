@@ -1,0 +1,30 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "Before "
+        },
+        {
+          "type": "comment",
+          "value": "hidden note",
+          "data": {
+            "hName": "span",
+            "hProperties": {
+              "dataOfmKind": "comment",
+              "dataOfmValue": "hidden note"
+            },
+            "hChildren": []
+          }
+        },
+        {
+          "type": "text",
+          "value": " after"
+        }
+      ]
+    }
+  ]
+}

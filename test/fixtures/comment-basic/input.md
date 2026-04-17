@@ -1,0 +1,1 @@
+Before %%hidden note%% after

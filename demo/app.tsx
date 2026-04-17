@@ -28,6 +28,8 @@ const defaultDemoMarkdown = [
   'Embed a block ref:',
   '![[Roadmap#^next-step]]',
   '',
+  'This text stays visible. %%This comment is hidden in preview.%%',
+  '',
   'This sentence contains ==highlighted text==.',
   '',
   '## GFM',
@@ -96,6 +98,11 @@ export function App() {
               onChange={(checked) => setOptions((current) => ({ ...current, highlights: checked }))}
             />
             <FeatureToggle
+              checked={options.comments ?? true}
+              label="Comments"
+              onChange={(checked) => setOptions((current) => ({ ...current, comments: checked }))}
+            />
+            <FeatureToggle
               checked={features.gfm}
               label="GFM"
               onChange={(checked) => setFeatures((current) => ({ ...current, gfm: checked }))}
@@ -106,7 +113,7 @@ export function App() {
               onChange={(checked) => setFeatures((current) => ({ ...current, math: checked }))}
             />
           </div>
-          <p className="helper-text">CommonMark is on by default. Toggle GitHub Flavored Markdown and LaTeX support here.</p>
+          <p className="helper-text">CommonMark is on by default. Toggle OFM, GitHub Flavored Markdown, and LaTeX support here.</p>
         </div>
       </section>
 

@@ -3,6 +3,7 @@ import type { Root, RootContent } from 'hast'
 import type { Construct, Extension as SyntaxExtension } from 'micromark-util-types'
 import { codes } from 'micromark-util-symbol'
 import { anchorHast } from './anchor/index.js'
+import { commentMast, commentHast, commentTokenizer } from './comment/index.js'
 import { embedTokenizer, embedMast, embedHast } from './embed/index.js'
 import { highlightTokenizer, highlightMast, highlightHast } from './highlight/index.js'
 import type { OfmRemarkOptions, OfmRehypeOptions } from './types.js'
@@ -10,6 +11,7 @@ import { wikiLinkTokenizer, wikiLinkMast, wikiLinkHast } from './wikilink/index.
 
 type BucketKey = 'micromarkExtensions' | 'fromMarkdownExtensions'
 type ExtensionBucket = Array<unknown>
+const percentSign = '%'.charCodeAt(0)
 
 export function getBucket(processor: Processor, key: BucketKey): ExtensionBucket {
   const data = processor.data() as Record<BucketKey, ExtensionBucket | undefined>
@@ -28,6 +30,10 @@ export function remarkOfm(this: Processor, options: OfmRemarkOptions = {}): void
   getBucket(this, 'micromarkExtensions').push(ofmSyntex(options))
 
   const fromMarkdownExtensions = []
+
+  if (options.comments ?? true) {
+    fromMarkdownExtensions.push(commentMast(options))
+  }
 
   if (options.wikilinks ?? true) {
     fromMarkdownExtensions.push(wikiLinkMast(options))
@@ -48,6 +54,10 @@ export function ofmSyntex(options: OfmRemarkOptions = {}): SyntaxExtension {
   const text: Record<number, Construct> = {}
   const insideSpan: Array<Pick<Construct, 'resolveAll'>> = []
   const attentionMarkers: number[] = []
+
+  if (options.comments ?? true) {
+    text[percentSign] = commentTokenizer
+  }
 
   if (options.wikilinks ?? true) {
     text[codes.leftSquareBracket] = wikiLinkTokenizer
@@ -72,6 +82,7 @@ export function ofmSyntex(options: OfmRemarkOptions = {}): SyntaxExtension {
 
 export const rehypeOfm: Plugin<[OfmRehypeOptions?], Root> = function rehypeOfm(options = {}) {
   const transformAnchor = anchorHast(options)
+  const transformComment = commentHast()
   const transformWikiLink = wikiLinkHast(options)
   const transformEmbed = embedHast(options)
   const transformHighlight = highlightHast()
@@ -82,18 +93,35 @@ export const rehypeOfm: Plugin<[OfmRehypeOptions?], Root> = function rehypeOfm(o
       transformWikiLink(node)
       transformEmbed(node)
       transformHighlight(node)
+      return transformComment(node)
     })
   }
 }
 
-function visit(node: Root | RootContent, visitor: (node: Root | RootContent) => void): void {
-  visitor(node)
+function visit(node: Root | RootContent, visitor: (node: Root | RootContent) => boolean | void): boolean {
+  if (visitor(node) === true) {
+    return true
+  }
 
   if ('children' in node && Array.isArray(node.children)) {
-    for (const child of node.children) {
-      visit(child, visitor)
+    for (let index = 0; index < node.children.length;) {
+      const child = node.children[index]
+
+      if (!child) {
+        index++
+        continue
+      }
+
+      if (visit(child, visitor)) {
+        node.children.splice(index, 1)
+        continue
+      }
+
+      index++
     }
   }
+
+  return false
 }
 
 export {findOfmAnchorTarget, getOfmAnchorKeyFromHash, normalizeOfmAnchorKey} from './anchor/index.js'

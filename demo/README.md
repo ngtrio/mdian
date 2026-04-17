@@ -5,7 +5,7 @@ Interactive playground for `mdian` - an Obsidian Flavored Markdown parser for un
 ## Features
 
 - **Real-time preview**: See parsed OFM syntax rendered instantly
-- **Single demo document**: Focus on one editable example combining wikilinks, highlights, and block targets
+- **Single demo document**: Focus on one editable example combining wikilinks, comments, highlights, and block targets
 - **Interactive controls**: Toggle the OFM features used in the showcase
 - **Built-in wiki targets**: Follow demo wikilinks to verify heading and block target navigation
 - **Responsive design**: Works on desktop and mobile devices
@@ -38,6 +38,11 @@ The default demo document demonstrates:
 ### Highlights
 ```
 ==highlighted text==
+```
+
+### Comments
+```
+%%hidden note%%
 ```
 
 ## Development

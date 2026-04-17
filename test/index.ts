@@ -4,7 +4,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import type { Element } from 'hast'
+import type { Element, Root } from 'hast'
 
 import remarkParse from 'remark-parse'
 import { unified } from 'unified'
@@ -16,6 +16,7 @@ import {
   getOfmAnchorKeyFromHash,
   normalizeOfmPath,
   ofmClassNames,
+  rehypeOfm,
   remarkOfm,
   type OfmRemarkOptions
 } from '../src/index.js'
@@ -495,6 +496,32 @@ test('highlightHast removes OFM metadata after rendering intent is consumed', ()
   assert.equal(node.properties['data-ofm-kind'], undefined)
 })
 
+test('rehypeOfm removes OFM comment placeholders from rendered trees', () => {
+  const tree = {
+    type: 'root' as const,
+    children: [
+      {
+        type: 'element' as const,
+        tagName: 'p',
+        properties: {},
+        children: [
+          {type: 'text' as const, value: 'Before '},
+          createCommentElement('hidden note'),
+          {type: 'text' as const, value: ' after'}
+        ]
+      }
+    ]
+  }
+
+  const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
+  transform(tree)
+
+  assert.deepEqual(tree.children[0]?.children, [
+    {type: 'text', value: 'Before '},
+    {type: 'text', value: ' after'}
+  ])
+})
+
 test('wikilink and anchor transforms preserve existing class names', () => {
   const node = createWikiLinkElement({
     value: 'Page',
@@ -575,7 +602,11 @@ test('getOfmNodeData reads embed metadata including block refs', () => {
   })
 })
 
-test('getOfmNodeData recognizes highlight nodes and ignores plain elements', () => {
+test('getOfmNodeData recognizes comment and highlight nodes and ignores plain elements', () => {
+  assert.deepEqual(getOfmNodeData(createCommentElement('hidden note').properties), {
+    kind: 'comment',
+    value: 'hidden note'
+  })
   assert.deepEqual(getOfmNodeData({dataOfmKind: 'highlight'}), {kind: 'highlight'})
   assert.equal(getOfmNodeData({}), undefined)
 })
@@ -729,6 +760,18 @@ function createEmbedElement({
     ...(blockId === undefined ? {} : { blockId }),
     ...(size === undefined ? {} : { size })
   })
+}
+
+function createCommentElement(value: string): Element {
+  return {
+    type: 'element',
+    tagName: 'span',
+    properties: {
+      dataOfmKind: 'comment',
+      dataOfmValue: value
+    },
+    children: []
+  }
 }
 
 function assertClassNames(node: Element, expected: string[]): void {
