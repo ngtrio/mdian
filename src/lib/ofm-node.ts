@@ -12,16 +12,20 @@ export type OfmNodeData = OfmReferenceData | {kind: 'highlight'}
 const ofmDataPropKeys = [
   'dataOfmAlias',
   'dataOfmBlockId',
+  'dataOfmHeight',
   'dataOfmKind',
   'dataOfmPath',
   'dataOfmPermalink',
   'dataOfmValue',
+  'dataOfmWidth',
   'data-ofm-alias',
   'data-ofm-block-id',
+  'data-ofm-height',
   'data-ofm-kind',
   'data-ofm-path',
   'data-ofm-permalink',
-  'data-ofm-value'
+  'data-ofm-value',
+  'data-ofm-width'
 ] as const
 
 export function getOfmNodeKind(properties?: Properties | undefined): OfmNodeKind | undefined {
@@ -50,7 +54,19 @@ export function getOfmNodeData(properties?: Properties | undefined): OfmNodeData
       : {alias: readOptionalString(properties, 'dataOfmAlias')}),
     ...(readOptionalString(properties, 'dataOfmBlockId') === undefined
       ? {}
-      : {blockId: readOptionalString(properties, 'dataOfmBlockId')})
+      : {blockId: readOptionalString(properties, 'dataOfmBlockId')}),
+    ...(readOptionalNumber(properties, 'dataOfmWidth') === undefined && readOptionalNumber(properties, 'dataOfmHeight') === undefined
+      ? {}
+      : {
+          size: {
+            ...(readOptionalNumber(properties, 'dataOfmWidth') === undefined
+              ? {}
+              : {width: readOptionalNumber(properties, 'dataOfmWidth')}),
+            ...(readOptionalNumber(properties, 'dataOfmHeight') === undefined
+              ? {}
+              : {height: readOptionalNumber(properties, 'dataOfmHeight')})
+          }
+        })
   }
 }
 
@@ -79,4 +95,9 @@ function readString(properties: Properties | undefined, key: string): string {
 function readOptionalString(properties: Properties | undefined, key: string): string | undefined {
   const value = properties?.[key]
   return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function readOptionalNumber(properties: Properties | undefined, key: string): number | undefined {
+  const value = properties?.[key]
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }

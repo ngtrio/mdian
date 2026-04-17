@@ -11,7 +11,7 @@ const defaultDemoMarkdown = [
   'Visit [[Project Notes|the project note]] for more detail.',
   '',
   'Embed an image:',
-  '![[assets/cover.png]]',
+  '![[assets/image.svg|50x60]]',
   '',
   'Embed a markdown note:',
   '![[Project Notes]]',
@@ -33,7 +33,7 @@ export function App() {
   const [markdown, setMarkdown] = useState(defaultDemoMarkdown)
   const [options, setOptions] = useState<OfmRemarkOptions>({
     wikilinks: true,
-    embeds: false,
+    embeds: true,
     highlights: true
   })
   const markdownComponents = useMemo(() => createMarkdownComponents(), [])
@@ -109,7 +109,7 @@ export function App() {
           <div className="preview markdown-body">
             <ReactMarkdown
               components={markdownComponents}
-              rehypePlugins={[[rehypeOfm, {hrefPrefix: 'wiki', renderBlockAnchorLabels: true}]]}
+              rehypePlugins={[[rehypeOfm, { renderBlockAnchorLabels: true }]]}
               remarkPlugins={[[remarkOfm, options]]}
             >
               {markdown}

@@ -104,7 +104,7 @@ textarea {
   gap: 8px;
 }
 
-.field > span {
+.field>span {
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -211,11 +211,11 @@ textarea {
   padding: 16px;
 }
 
-.markdown-body > :first-child {
+.markdown-body> :first-child {
   margin-top: 0;
 }
 
-.markdown-body > :last-child {
+.markdown-body> :last-child {
   margin-bottom: 0;
 }
 
@@ -243,7 +243,7 @@ textarea {
   padding-left: 1.4rem;
 }
 
-.markdown-body li + li {
+.markdown-body li+li {
   margin-top: 0.25rem;
 }
 
@@ -272,7 +272,11 @@ textarea {
 }
 
 .markdown-body img {
+  display: block;
   max-width: 100%;
+  margin: 0 0 1rem;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
 }
 
 .markdown-body table {
@@ -324,7 +328,7 @@ textarea {
   background: var(--highlight);
 }
 
-.wiki-shell .panel + .panel,
+.wiki-shell .panel+.panel,
 .wiki-target {
   margin-top: 20px;
 }

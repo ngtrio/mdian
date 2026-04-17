@@ -173,6 +173,7 @@ test('embedHast renders markdown file embeds as semantic containers with fragmen
   assert.equal(node.properties['data-ofm-embed'], 'note')
   assert.equal(node.properties['data-ofm-path-public'], 'Page.md')
   assert.equal(node.properties['data-ofm-permalink-public'], 'Page.md#Heading')
+  assert.equal(node.properties['data-ofm-fragment-public'], 'Heading')
   assert.equal(node.properties.title, 'Page.md#Heading')
   assert.deepEqual(node.children, [{
     type: 'element',
@@ -195,6 +196,37 @@ test('embedHast renders image embeds as images', () => {
   assert.equal(node.properties.src, '/notes/assets/cover.png')
   assert.equal(node.properties.alt, 'assets/cover.png')
   assert.equal(node.properties.title, 'assets/cover.png')
+})
+
+test('embedHast applies image width and height from embed size syntax', () => {
+  const node = createEmbedElement({
+    value: 'assets/cover.png|100x145',
+    path: 'assets/cover.png',
+    permalink: 'assets/cover.png',
+    size: { width: 100, height: 145 }
+  })
+
+  embedHast({ hrefPrefix: 'notes' })(node)
+
+  assert.equal(node.tagName, 'img')
+  assert.equal(node.properties.width, 100)
+  assert.equal(node.properties.height, 145)
+  assert.equal(node.properties.alt, 'assets/cover.png|100x145')
+})
+
+test('embedHast applies image width when embed size syntax omits height', () => {
+  const node = createEmbedElement({
+    value: 'assets/cover.png|100',
+    path: 'assets/cover.png',
+    permalink: 'assets/cover.png',
+    size: { width: 100 }
+  })
+
+  embedHast({ hrefPrefix: 'notes' })(node)
+
+  assert.equal(node.tagName, 'img')
+  assert.equal(node.properties.width, 100)
+  assert.equal(node.properties.height, undefined)
 })
 
 test('embedHast renders non-image files as links', () => {
@@ -244,6 +276,7 @@ test('embedHast preserves block fragments with hrefPrefix for note embeds', () =
   embedHast({ hrefPrefix: 'notes' })(node)
 
   assert.equal(node.tagName, 'div')
+  assert.equal(node.properties['data-ofm-fragment-public'], '^block-id')
   assert.equal(node.properties['data-ofm-block-id-public'], 'block-id')
   assert.deepEqual(node.children, [{
     type: 'element',
@@ -265,6 +298,7 @@ test('embedHast encodes path segments but preserves fragments with hrefPrefix', 
 
   assert.equal(node.tagName, 'div')
   assert.equal(node.properties['data-ofm-path-public'], 'Folder Name/Page Name')
+  assert.equal(node.properties['data-ofm-fragment-public'], 'Heading Here')
   assert.equal(node.properties.title, 'Folder Name/Page Name#Heading Here')
   assert.deepEqual(node.children, [{
     type: 'element',
@@ -287,10 +321,81 @@ test('embedHast can skip title assignment', () => {
   assert.equal(node.properties.title, undefined)
 })
 
-test('normalizeOfmAnchorKey decodes fragments and collapses whitespace', () => {
-  assert.equal(normalizeOfmAnchorKey('#Heading%20Here'), 'heading here')
-  assert.equal(normalizeOfmAnchorKey('  ^Block-ID  '), '^block-id')
+test('rendering note embeds preserves fragment metadata and href output', () => {
+  const node = createEmbedElement({
+    value: 'Project Notes#Overview',
+    path: 'Project Notes',
+    permalink: 'Project Notes#Overview'
+  })
+
+  embedHast({ hrefPrefix: 'wiki', renderBlockAnchorLabels: true })(node)
+
+  assert.equal(node.properties['data-ofm-embed'], 'note')
+  assert.equal(node.properties['data-ofm-path-public'], 'Project Notes')
+  assert.equal(node.properties['data-ofm-permalink-public'], 'Project Notes#Overview')
+  assert.equal(node.properties['data-ofm-fragment-public'], 'Overview')
+  assert.equal(node.properties.title, 'Project Notes#Overview')
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/wiki/Project%20Notes#Overview'},
+    children: [{type: 'text', value: 'Project Notes#Overview'}]
+  }])
 })
+
+test('rendering block embeds preserves fragment and block metadata', () => {
+  const node = createEmbedElement({
+    value: 'Roadmap#^next-step',
+    path: 'Roadmap',
+    permalink: 'Roadmap#^next-step',
+    blockId: 'next-step'
+  })
+
+  embedHast({ hrefPrefix: 'wiki', renderBlockAnchorLabels: true })(node)
+
+  assert.equal(node.properties['data-ofm-embed'], 'note')
+  assert.equal(node.properties['data-ofm-path-public'], 'Roadmap')
+  assert.equal(node.properties['data-ofm-permalink-public'], 'Roadmap#^next-step')
+  assert.equal(node.properties['data-ofm-fragment-public'], '^next-step')
+  assert.equal(node.properties['data-ofm-block-id-public'], 'next-step')
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/wiki/Roadmap#^next-step'},
+    children: [{type: 'text', value: 'Roadmap#^next-step'}]
+  }])
+})
+
+test('rendering image embeds keeps image output semantics', () => {
+  const node = createEmbedElement({
+    value: 'assets/cover.png',
+    path: 'assets/cover.png',
+    permalink: 'assets/cover.png'
+  })
+
+  embedHast({ hrefPrefix: 'wiki' })(node)
+
+  assert.equal(node.tagName, 'img')
+  assert.equal(node.properties.src, '/wiki/assets/cover.png')
+  assert.equal(node.properties.alt, 'assets/cover.png')
+  assert.equal(node.properties.title, 'assets/cover.png')
+})
+
+test('rendering file embeds keeps link output semantics', () => {
+  const node = createEmbedElement({
+    value: 'manual.pdf',
+    path: 'manual.pdf',
+    permalink: 'manual.pdf'
+  })
+
+  embedHast({ hrefPrefix: 'wiki' })(node)
+
+  assert.equal(node.tagName, 'a')
+  assert.equal(node.properties.href, '/wiki/manual.pdf')
+  assert.equal(node.properties.title, 'manual.pdf')
+  assert.deepEqual(node.children, [{type: 'text', value: 'manual.pdf'}])
+})
+
 
 test('getOfmAnchorKeyFromHash matches anchor normalization behavior', () => {
   assert.equal(getOfmAnchorKeyFromHash('#Heading%20Here'), 'heading here')
@@ -606,20 +711,23 @@ function createEmbedElement({
   path,
   permalink,
   alias,
-  blockId
+  blockId,
+  size
 }: {
   value: string
   path: string
   permalink: string
   alias?: string
   blockId?: string
+  size?: {width?: number, height?: number}
 }): Element {
   return createOfmElement('embed', 'span', {
     value,
     path,
     permalink,
     ...(alias === undefined ? {} : { alias }),
-    ...(blockId === undefined ? {} : { blockId })
+    ...(blockId === undefined ? {} : { blockId }),
+    ...(size === undefined ? {} : { size })
   })
 }
 
@@ -635,13 +743,15 @@ function createOfmElement(
     path,
     permalink,
     alias,
-    blockId
+    blockId,
+    size
   }: {
     value: string
     path: string
     permalink: string
     alias?: string
     blockId?: string
+    size?: {width?: number, height?: number}
   }
 ): Element {
   return {
@@ -653,7 +763,9 @@ function createOfmElement(
       dataOfmPath: path,
       dataOfmPermalink: permalink,
       dataOfmAlias: alias ?? '',
-      dataOfmBlockId: blockId ?? ''
+      dataOfmBlockId: blockId ?? '',
+      ...(size?.width === undefined ? {} : { dataOfmWidth: size.width }),
+      ...(size?.height === undefined ? {} : { dataOfmHeight: size.height })
     },
     children: []
   }

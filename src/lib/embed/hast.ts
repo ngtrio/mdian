@@ -3,7 +3,7 @@ import type { Element, Root, RootContent, Text } from 'hast'
 import type { OfmRehypeOptions } from '../types.js'
 import {addClassName, ofmClassNames} from '../class-name.js'
 import { clearOfmDataProps, getOfmNodeData } from '../ofm-node.js'
-import { buildOfmTargetUrl } from '../ofm-url.js'
+import { buildOfmTargetUrl, decodeOfmFragment } from '../ofm-url.js'
 
 const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'])
 
@@ -28,6 +28,12 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
       node.tagName = 'img'
       node.properties.src = href
       node.properties.alt = embed.value
+      if (embed.size?.width !== undefined) {
+        node.properties.width = embed.size.width
+      }
+      if (embed.size?.height !== undefined) {
+        node.properties.height = embed.size.height
+      }
       node.children = []
       addClassName(node.properties, ofmClassNames.embed)
       applyTitle(node.properties, title, setTitle)
@@ -36,6 +42,8 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
     }
 
     if (isMarkdownEmbed(embed.path)) {
+      const fragment = getPermalinkFragment(embed.permalink)
+
       node.tagName = 'div'
       node.properties['data-ofm-embed'] = 'note'
       node.properties['data-ofm-path-public'] = embed.path
@@ -43,6 +51,10 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
 
       if (embed.alias) {
         node.properties['data-ofm-alias-public'] = embed.alias
+      }
+
+      if (fragment) {
+        node.properties['data-ofm-fragment-public'] = fragment
       }
 
       if (embed.blockId) {
@@ -83,6 +95,17 @@ function getPathExtension(path: string): string | undefined {
   }
 
   return fileName.slice(fileName.lastIndexOf('.')).toLowerCase()
+}
+
+function getPermalinkFragment(permalink: string): string | undefined {
+  const hashIndex = permalink.indexOf('#')
+
+  if (hashIndex === -1) {
+    return undefined
+  }
+
+  const fragment = decodeOfmFragment(permalink.slice(hashIndex))
+  return fragment.length > 0 ? fragment : undefined
 }
 
 function createFallbackLink(href: string, label: string): Element {
