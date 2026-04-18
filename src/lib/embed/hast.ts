@@ -1,9 +1,9 @@
 import type { Element, Root, RootContent, Text } from 'hast'
 
+import type {EmbedData} from './types.js'
 import type { OfmRehypeOptions } from '../types.js'
-import {addClassName, ofmClassNames} from '../class-name.js'
-import { clearOfmDataProps, getOfmNodeData } from '../ofm-node.js'
-import { buildOfmTargetUrl, decodeOfmFragment } from '../ofm-url.js'
+import {addClassName, ofmClassNames} from '../shared/class-name.js'
+import { buildOfmTargetUrl, decodeOfmFragment } from '../shared/ofm-url.js'
 
 const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'])
 
@@ -127,4 +127,71 @@ function applyTitle(properties: Record<string, unknown>, title: string, setTitle
 
 function getFallbackLabel(node: {alias?: string | null | undefined, path: string, permalink: string}): string {
   return node.alias || node.permalink || node.path
+}
+
+const embedDataPropNames = [
+  'dataOfmAlias',
+  'dataOfmBlockId',
+  'dataOfmHeight',
+  'dataOfmKind',
+  'dataOfmPath',
+  'dataOfmPermalink',
+  'dataOfmValue',
+  'dataOfmWidth'
+] as const
+
+function getOfmNodeData(properties?: Record<string, unknown>): EmbedData | undefined {
+  if (properties?.dataOfmKind !== 'embed') {
+    return undefined
+  }
+
+  const value = readString(properties, 'dataOfmValue')
+  const path = readString(properties, 'dataOfmPath')
+  const permalink = readString(properties, 'dataOfmPermalink')
+  const alias = readOptionalString(properties, 'dataOfmAlias')
+  const blockId = readOptionalString(properties, 'dataOfmBlockId')
+  const width = readOptionalNumber(properties, 'dataOfmWidth')
+  const height = readOptionalNumber(properties, 'dataOfmHeight')
+
+  return {
+    kind: 'embed',
+    value,
+    path,
+    permalink,
+    ...(alias === undefined ? {} : {alias}),
+    ...(blockId === undefined ? {} : {blockId}),
+    ...(width === undefined && height === undefined
+      ? {}
+      : {
+          size: {
+            ...(width === undefined ? {} : {width}),
+            ...(height === undefined ? {} : {height})
+          }
+        })
+  }
+}
+
+function clearOfmDataProps(properties?: Record<string, unknown>): void {
+  if (!properties) {
+    return
+  }
+
+  for (const key of embedDataPropNames) {
+    delete properties[key]
+  }
+}
+
+function readString(properties: Record<string, unknown> | undefined, key: string): string {
+  const value = properties?.[key]
+  return typeof value === 'string' ? value : ''
+}
+
+function readOptionalString(properties: Record<string, unknown> | undefined, key: string): string | undefined {
+  const value = properties?.[key]
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function readOptionalNumber(properties: Record<string, unknown> | undefined, key: string): number | undefined {
+  const value = properties?.[key]
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }

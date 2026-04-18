@@ -1,7 +1,6 @@
 import type {Element, ElementContent, Properties, RootContent, Text} from 'hast'
 
-import {addClassName, ofmClassNames} from '../class-name.js'
-import {clearOfmDataProps} from '../ofm-node.js'
+import {addClassName, ofmClassNames} from '../shared/class-name.js'
 
 export function calloutHast() {
   return function transform(node: RootContent | {type: 'root', children: RootContent[]}): void {
@@ -76,4 +75,22 @@ function isElement(node: unknown): node is Element {
     && 'properties' in node
     && 'children' in node
   )
+}
+
+const calloutDataPropNames = [
+  'dataOfmCalloutType',
+  'dataOfmCollapsed',
+  'dataOfmFoldable',
+  'dataOfmKind',
+  'dataOfmTitle'
+] as const
+
+function clearOfmDataProps(properties?: Properties | Record<string, unknown>): void {
+  if (!properties) {
+    return
+  }
+
+  for (const key of calloutDataPropNames) {
+    delete properties[key]
+  }
 }

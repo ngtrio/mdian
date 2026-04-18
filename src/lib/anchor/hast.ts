@@ -1,6 +1,7 @@
 import type {Element, Root, RootContent, Text} from 'hast'
 
-import {addClassName, ofmClassNames} from '../class-name.js'
+import {addClassName, ofmClassNames} from '../shared/class-name.js'
+import {decodeOfmFragment} from '../shared/ofm-url.js'
 import type {OfmRehypeOptions} from '../types.js'
 
 const blockIdPattern = /^(.*?)(?:\s+)\^([A-Za-z0-9][A-Za-z0-9_-]*)\s*$/s
@@ -16,9 +17,7 @@ export interface OfmAnchorRootLike<T extends OfmAnchorTargetLike = OfmAnchorTarg
 }
 
 export function normalizeOfmAnchorKey(value: string | null | undefined): string {
-  const rawValue = value?.startsWith('#') ? value.slice(1) : value ?? ''
-
-  return decodeUriComponentSafe(rawValue).trim().replace(/\s+/g, ' ').toLowerCase()
+  return decodeOfmFragment(value ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
 }
 
 export function getOfmAnchorKeyFromHash(value: string | null | undefined): string {
@@ -29,7 +28,7 @@ export function findOfmAnchorTarget<T extends OfmAnchorTargetLike>(
   root: OfmAnchorRootLike<T>,
   value: string | null | undefined
 ): T | undefined {
-  const targetKey = getOfmAnchorKeyFromHash(value)
+  const targetKey = normalizeOfmAnchorKey(value)
 
   if (!targetKey) {
     return undefined
@@ -44,7 +43,7 @@ export function findOfmAnchorTarget<T extends OfmAnchorTargetLike>(
   return undefined
 }
 
-export function anchorHast(options: Pick<OfmRehypeOptions, 'renderBlockAnchorLabels'> = {}): (node: Root | RootContent) => void {
+export function anchorHast(options: Partial<Pick<OfmRehypeOptions, 'renderBlockAnchorLabels'>> = {}): (node: Root | RootContent) => void {
   const renderBlockAnchorLabels = options.renderBlockAnchorLabels ?? false
 
   return function transform(node) {

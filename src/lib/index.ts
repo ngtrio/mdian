@@ -1,18 +1,40 @@
 import type { Processor, Plugin } from 'unified'
-import type { Root, RootContent } from 'hast'
-import type { Construct, Extension as SyntaxExtension } from 'micromark-util-types'
-import { codes } from 'micromark-util-symbol'
-import { anchorHast } from './anchor/index.js'
-import { calloutHast, calloutRemark } from './callout/index.js'
-import { commentMast, commentHast, commentTokenizer } from './comment/index.js'
-import { embedTokenizer, embedMast, embedHast } from './embed/index.js'
-import { highlightTokenizer, highlightMast, highlightHast } from './highlight/index.js'
+import type { Root as HastRoot, RootContent } from 'hast'
+import type { Root as MdastRoot } from 'mdast'
+import {
+  buildSyntaxExtension,
+  createSyntaxBuilder,
+  type OfmRehypeFeature,
+  type OfmRemarkFeature,
+  type RemarkTransform
+} from './feature.js'
+import { anchorRehypeFeature } from './anchor/index.js'
+import { calloutRehypeFeature, calloutRemarkFeature } from './callout/index.js'
+import { commentRehypeFeature, commentRemarkFeature } from './comment/index.js'
+import { embedRehypeFeature, embedRemarkFeature } from './embed/index.js'
+import { highlightRehypeFeature, highlightRemarkFeature } from './highlight/index.js'
 import type { OfmRemarkOptions, OfmRehypeOptions } from './types.js'
-import { wikiLinkTokenizer, wikiLinkMast, wikiLinkHast } from './wikilink/index.js'
+import { wikiLinkRehypeFeature, wikiLinkRemarkFeature } from './wikilink/index.js'
 
 type BucketKey = 'micromarkExtensions' | 'fromMarkdownExtensions'
 type ExtensionBucket = Array<unknown>
-const percentSign = '%'.charCodeAt(0)
+
+const remarkFeatures: OfmRemarkFeature[] = [
+  commentRemarkFeature,
+  wikiLinkRemarkFeature,
+  embedRemarkFeature,
+  highlightRemarkFeature,
+  calloutRemarkFeature
+]
+
+const rehypeFeatures: OfmRehypeFeature[] = [
+  anchorRehypeFeature,
+  calloutRehypeFeature,
+  wikiLinkRehypeFeature,
+  embedRehypeFeature,
+  highlightRehypeFeature,
+  commentRehypeFeature
+]
 
 export function getBucket(processor: Processor, key: BucketKey): ExtensionBucket {
   const data = processor.data() as Record<BucketKey, ExtensionBucket | undefined>
@@ -27,83 +49,73 @@ export function getBucket(processor: Processor, key: BucketKey): ExtensionBucket
   return created
 }
 
-export function remarkOfm(this: Processor, options: OfmRemarkOptions = {}) {
+export const remarkOfm: Plugin<[OfmRemarkOptions?], MdastRoot> = function remarkOfm(this: Processor, options: OfmRemarkOptions = {}) {
   getBucket(this, 'micromarkExtensions').push(ofmSyntex(options))
 
-  const fromMarkdownExtensions = []
+  const fromMarkdownExtensions: unknown[] = []
+  const transforms: RemarkTransform[] = []
 
-  if (options.comments ?? true) {
-    fromMarkdownExtensions.push(commentMast(options))
-  }
+  for (const feature of remarkFeatures) {
+    if (!feature.enabled(options)) {
+      continue
+    }
 
-  if (options.wikilinks ?? true) {
-    fromMarkdownExtensions.push(wikiLinkMast(options))
-  }
+    if (feature.fromMarkdown) {
+      fromMarkdownExtensions.push(feature.fromMarkdown(options))
+    }
 
-  if (options.embeds ?? true) {
-    fromMarkdownExtensions.push(embedMast(options))
-  }
-
-  if (options.highlights ?? true) {
-    fromMarkdownExtensions.push(highlightMast(options))
+    if (feature.createRemarkTransform) {
+      const transform = feature.createRemarkTransform(this, options)
+      if (typeof transform === 'function') {
+        transforms.push(transform)
+      }
+    }
   }
 
   getBucket(this, 'fromMarkdownExtensions').push(...fromMarkdownExtensions)
 
-  return calloutRemark.call(this, options)
-}
-
-export function ofmSyntex(options: OfmRemarkOptions = {}): SyntaxExtension {
-  const text: Record<number, Construct> = {}
-  const insideSpan: Array<Pick<Construct, 'resolveAll'>> = []
-  const attentionMarkers: number[] = []
-
-  if (options.comments ?? true) {
-    text[percentSign] = commentTokenizer
+  if (transforms.length === 0) {
+    return
   }
 
-  if (options.wikilinks ?? true) {
-    text[codes.leftSquareBracket] = wikiLinkTokenizer
-  }
-
-  if (options.embeds ?? true) {
-    text[codes.exclamationMark] = embedTokenizer
-  }
-
-  if (options.highlights ?? true) {
-    text[codes.equalsTo] = highlightTokenizer
-    insideSpan.push(highlightTokenizer)
-    attentionMarkers.push(codes.equalsTo)
-  }
-
-  return {
-    text,
-    ...(insideSpan.length === 0 ? {} : { insideSpan: { null: insideSpan } }),
-    ...(attentionMarkers.length === 0 ? {} : { attentionMarkers: { null: attentionMarkers } })
+  return function transform(tree: MdastRoot) {
+    for (const apply of transforms) {
+      apply(tree)
+    }
   }
 }
 
-export const rehypeOfm: Plugin<[OfmRehypeOptions?], Root> = function rehypeOfm(options = {}) {
-  const transformAnchor = anchorHast(options)
-  const transformCallout = calloutHast()
-  const transformComment = commentHast()
-  const transformWikiLink = wikiLinkHast(options)
-  const transformEmbed = embedHast(options)
-  const transformHighlight = highlightHast()
+export function ofmSyntex(options: OfmRemarkOptions = {}) {
+  const builder = createSyntaxBuilder()
 
-  return function transform(tree) {
+  for (const feature of remarkFeatures) {
+    if (!feature.enabled(options) || !feature.extendSyntax) {
+      continue
+    }
+
+    feature.extendSyntax(builder, options)
+  }
+
+  return buildSyntaxExtension(builder)
+}
+
+export const rehypeOfm: Plugin<[OfmRehypeOptions?], HastRoot> = function rehypeOfm(options = {}) {
+  const transforms = rehypeFeatures.map((feature) => feature.createRehypeTransform(options))
+
+  return function transform(tree: HastRoot) {
     visit(tree, (node) => {
-      transformAnchor(node)
-      transformCallout(node)
-      transformWikiLink(node)
-      transformEmbed(node)
-      transformHighlight(node)
-      return transformComment(node)
+      for (const apply of transforms) {
+        if (apply(node) === true) {
+          return true
+        }
+      }
+
+      return
     })
   }
 }
 
-function visit(node: Root | RootContent, visitor: (node: Root | RootContent) => boolean | void): boolean {
+function visit(node: HastRoot | RootContent, visitor: (node: HastRoot | RootContent) => boolean | void): boolean {
   if (visitor(node) === true) {
     return true
   }
@@ -129,5 +141,5 @@ function visit(node: Root | RootContent, visitor: (node: Root | RootContent) => 
   return false
 }
 
-export {findOfmAnchorTarget, getOfmAnchorKeyFromHash, normalizeOfmAnchorKey} from './anchor/index.js'
-export {buildOfmTargetUrl, decodeOfmFragment, normalizeOfmPath} from './ofm-url.js'
+export {findOfmAnchorTarget, normalizeOfmAnchorKey} from './anchor/index.js'
+export {buildOfmTargetUrl, decodeOfmFragment, normalizeOfmPath} from './shared/ofm-url.js'

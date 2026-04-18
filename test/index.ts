@@ -24,7 +24,7 @@ import { anchorHast, normalizeOfmAnchorKey } from '../src/lib/anchor/hast.js'
 import { calloutHast } from '../src/lib/callout/hast.js'
 import { embedHast } from '../src/lib/embed/hast.js'
 import { highlightHast } from '../src/lib/highlight/hast.js'
-import {getOfmNodeData, stripOfmDataProps} from '../src/lib/ofm-node.js'
+import {getOfmNodeData, stripOfmDataProps} from '../src/lib/shared/ofm-node.js'
 import { wikiLinkHast } from '../src/lib/wikilink/hast.js'
 
 interface FixtureConfig {
@@ -630,8 +630,7 @@ test('highlightHast removes OFM metadata after rendering intent is consumed', ()
     type: 'element',
     tagName: 'mark',
     properties: {
-      dataOfmKind: 'highlight',
-      'data-ofm-kind': 'highlight'
+      dataOfmKind: 'highlight'
     },
     children: [{type: 'text', value: 'highlighted'}]
   }
@@ -640,7 +639,6 @@ test('highlightHast removes OFM metadata after rendering intent is consumed', ()
 
   assertClassNames(node, [ofmClassNames.highlight])
   assert.equal(node.properties.dataOfmKind, undefined)
-  assert.equal(node.properties['data-ofm-kind'], undefined)
 })
 
 test('rehypeOfm removes OFM comment placeholders from rendered trees', () => {
@@ -768,12 +766,6 @@ test('stripOfmDataProps removes internal ofm markers but preserves normal props'
       dataOfmPermalink: 'Page#Heading',
       dataOfmValue: 'Page#Heading',
       'data-anchor-key': 'heading',
-      'data-ofm-alias': 'Alias',
-      'data-ofm-block-id': 'block-id',
-      'data-ofm-kind': 'embed',
-      'data-ofm-path': 'Page',
-      'data-ofm-permalink': 'Page#Heading',
-      'data-ofm-value': 'Page#Heading',
       alt: 'example',
       className: 'embed-card'
     }),

@@ -5,7 +5,6 @@ import ReactMarkdown from 'react-markdown'
 import {
   decodeOfmFragment,
   findOfmAnchorTarget,
-  getOfmAnchorKeyFromHash,
 } from 'mdian'
 import {createMarkdownComponents} from './lib/markdown-components.js'
 import {
@@ -34,13 +33,12 @@ export function WikiPage() {
 
   useEffect(() => {
     const root = articleRef.current
-    const targetKey = getOfmAnchorKeyFromHash(locationHash)
 
     if (!root) {
       return
     }
 
-    if (!targetKey) {
+    if (!locationHash) {
       window.scrollTo({top: 0, behavior: 'auto'})
       return
     }

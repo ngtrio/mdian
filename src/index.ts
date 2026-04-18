@@ -4,15 +4,15 @@ export {
   getOfmAnchorKeyFromHash,
   normalizeOfmAnchorKey
 } from './lib/anchor/index.js'
-export {buildOfmTargetUrl, decodeOfmFragment, normalizeOfmPath} from './lib/ofm-url.js'
-export {ofmClassNames} from './lib/class-name.js'
+export {buildOfmTargetUrl, decodeOfmFragment, normalizeOfmPath} from './lib/shared/ofm-url.js'
+export {ofmClassNames} from './lib/shared/class-name.js'
 export type {
   OfmRemarkOptions,
   OfmRehypeOptions
 } from './lib/types.js'
 export type {
   OfmClassName
-} from './lib/class-name.js'
+} from './lib/shared/class-name.js'
 export type {
   OfmAnchorRootLike,
   OfmAnchorTargetLike
