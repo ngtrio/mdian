@@ -68,8 +68,12 @@ test('wikiLinkHast uses root-path default when hrefPrefix is omitted', () => {
   assert.equal(node.properties.href, '/Project%20Notes')
   assert.equal(node.properties.title, 'Project Notes')
   assertClassNames(node, [ofmClassNames.wikilink])
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'Project Notes',
+    permalink: 'Project Notes'
+  })
   assert.equal(node.properties.dataOfmKind, undefined)
-  assert.equal(node.properties['data-ofm-kind'], undefined)
 })
 
 test('wikiLinkHast uses hrefPrefix path plus fragment when provided', () => {
@@ -83,6 +87,12 @@ test('wikiLinkHast uses hrefPrefix path plus fragment when provided', () => {
 
   assert.equal(node.properties.href, '/notes/Page#Heading')
   assert.equal(node.properties.title, 'Page#Heading')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'Page',
+    permalink: 'Page#Heading',
+    fragment: 'Heading'
+  })
 })
 
 test('wikiLinkHast resolves aliases using permalink rather than alias text', () => {
@@ -97,6 +107,12 @@ test('wikiLinkHast resolves aliases using permalink rather than alias text', () 
 
   assert.equal(node.properties.href, '/notes/Page')
   assert.equal(node.properties.title, 'Page')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'Page',
+    permalink: 'Page',
+    alias: 'Alias'
+  })
 })
 
 test('wikiLinkHast preserves block fragments with hrefPrefix', () => {
@@ -111,6 +127,13 @@ test('wikiLinkHast preserves block fragments with hrefPrefix', () => {
 
   assert.equal(node.properties.href, '/notes/Page#^block-id')
   assert.equal(node.properties.title, 'Page#^block-id')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'Page',
+    permalink: 'Page#^block-id',
+    blockId: 'block-id',
+    fragment: '^block-id'
+  })
 })
 
 test('wikiLinkHast encodes path segments but preserves fragments with hrefPrefix', () => {
@@ -124,6 +147,12 @@ test('wikiLinkHast encodes path segments but preserves fragments with hrefPrefix
 
   assert.equal(node.properties.href, '/notes/Folder%20Name/Page%20Name#Heading Here')
   assert.equal(node.properties.title, 'Folder Name/Page Name#Heading Here')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'Folder Name/Page Name',
+    permalink: 'Folder Name/Page Name#Heading Here',
+    fragment: 'Heading Here'
+  })
 })
 
 test('wikiLinkHast can skip title assignment', () => {
@@ -151,6 +180,7 @@ test('calloutHast renders foldable callouts as details with open state metadata'
   calloutHast()(node)
 
   assert.equal(node.tagName, 'details')
+  assertOfmPublicProps(node, {kind: 'callout'})
   assert.equal(node.properties['data-ofm-callout'], 'note')
   assert.equal(node.properties['data-ofm-foldable'], '')
   assert.equal(node.properties['data-ofm-collapsed'], undefined)
@@ -191,6 +221,7 @@ test('calloutHast keeps collapsed metadata and nested callouts inside content', 
   calloutHast()(node)
 
   assert.equal(node.tagName, 'details')
+  assertOfmPublicProps(node, {kind: 'callout'})
   assert.equal(node.properties['data-ofm-callout'], 'warning')
   assert.equal(node.properties['data-ofm-foldable'], '')
   assert.equal(node.properties['data-ofm-collapsed'], '')
@@ -261,6 +292,7 @@ test('calloutHast strips internal OFM properties after rendering', () => {
   assert.equal(node.properties.dataOfmKind, undefined)
   assert.equal(node.properties.dataOfmCalloutType, undefined)
   assert.equal(node.properties.dataOfmTitle, undefined)
+  assertOfmPublicProps(node, {kind: 'callout'})
   assert.equal(node.properties['data-ofm-callout'], 'warning')
   assert.equal(node.properties['data-ofm-foldable'], '')
   assert.equal(node.properties['data-ofm-collapsed'], '')
@@ -294,11 +326,14 @@ test('embedHast renders extensionless note embeds as semantic containers', () =>
   embedHast()(node)
 
   assert.equal(node.tagName, 'div')
-  assert.equal(node.properties['data-ofm-embed'], 'note')
-  assert.equal(node.properties['data-ofm-path-public'], 'Project Notes')
-  assert.equal(node.properties['data-ofm-permalink-public'], 'Project Notes')
   assert.equal(node.properties.title, 'Project Notes')
   assertClassNames(node, [ofmClassNames.embed])
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Project Notes',
+    permalink: 'Project Notes'
+  })
   assert.equal(node.properties.dataOfmKind, undefined)
   assert.deepEqual(node.children, [{
     type: 'element',
@@ -318,11 +353,14 @@ test('embedHast renders markdown file embeds as semantic containers with fragmen
   embedHast({ hrefPrefix: 'notes' })(node)
 
   assert.equal(node.tagName, 'div')
-  assert.equal(node.properties['data-ofm-embed'], 'note')
-  assert.equal(node.properties['data-ofm-path-public'], 'Page.md')
-  assert.equal(node.properties['data-ofm-permalink-public'], 'Page.md#Heading')
-  assert.equal(node.properties['data-ofm-fragment-public'], 'Heading')
   assert.equal(node.properties.title, 'Page.md#Heading')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Page.md',
+    permalink: 'Page.md#Heading',
+    fragment: 'Heading'
+  })
   assert.deepEqual(node.children, [{
     type: 'element',
     tagName: 'a',
@@ -344,6 +382,12 @@ test('embedHast renders image embeds as images', () => {
   assert.equal(node.properties.src, '/notes/assets/cover.png')
   assert.equal(node.properties.alt, 'assets/cover.png')
   assert.equal(node.properties.title, 'assets/cover.png')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'image',
+    path: 'assets/cover.png',
+    permalink: 'assets/cover.png'
+  })
 })
 
 test('embedHast applies image width and height from embed size syntax', () => {
@@ -360,6 +404,7 @@ test('embedHast applies image width and height from embed size syntax', () => {
   assert.equal(node.properties.width, 100)
   assert.equal(node.properties.height, 145)
   assert.equal(node.properties.alt, 'assets/cover.png|100x145')
+  assert.equal(node.properties['data-ofm-variant'], 'image')
 })
 
 test('embedHast applies image width when embed size syntax omits height', () => {
@@ -389,6 +434,12 @@ test('embedHast renders non-image files as links', () => {
   assert.equal(node.tagName, 'a')
   assert.equal(node.properties.href, '/notes/manual.pdf')
   assert.equal(node.properties.title, 'manual.pdf')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'file',
+    path: 'manual.pdf',
+    permalink: 'manual.pdf'
+  })
   assert.deepEqual(node.children, [{type: 'text', value: 'manual.pdf'}])
 })
 
@@ -404,7 +455,13 @@ test('embedHast uses permalink rather than alias text for note embed title', () 
 
   assert.equal(node.tagName, 'div')
   assert.equal(node.properties.title, 'Page')
-  assert.equal(node.properties['data-ofm-alias-public'], 'Alias')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Page',
+    permalink: 'Page',
+    alias: 'Alias'
+  })
   assert.deepEqual(node.children, [{
     type: 'element',
     tagName: 'a',
@@ -424,8 +481,14 @@ test('embedHast preserves block fragments with hrefPrefix for note embeds', () =
   embedHast({ hrefPrefix: 'notes' })(node)
 
   assert.equal(node.tagName, 'div')
-  assert.equal(node.properties['data-ofm-fragment-public'], '^block-id')
-  assert.equal(node.properties['data-ofm-block-id-public'], 'block-id')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Page',
+    permalink: 'Page#^block-id',
+    blockId: 'block-id',
+    fragment: '^block-id'
+  })
   assert.deepEqual(node.children, [{
     type: 'element',
     tagName: 'a',
@@ -445,8 +508,13 @@ test('embedHast encodes path segments but preserves fragments with hrefPrefix', 
   embedHast({ hrefPrefix: 'notes' })(node)
 
   assert.equal(node.tagName, 'div')
-  assert.equal(node.properties['data-ofm-path-public'], 'Folder Name/Page Name')
-  assert.equal(node.properties['data-ofm-fragment-public'], 'Heading Here')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Folder Name/Page Name',
+    permalink: 'Folder Name/Page Name#Heading Here',
+    fragment: 'Heading Here'
+  })
   assert.equal(node.properties.title, 'Folder Name/Page Name#Heading Here')
   assert.deepEqual(node.children, [{
     type: 'element',
@@ -478,10 +546,13 @@ test('rendering note embeds preserves fragment metadata and href output', () => 
 
   embedHast({ hrefPrefix: 'wiki', renderBlockAnchorLabels: true })(node)
 
-  assert.equal(node.properties['data-ofm-embed'], 'note')
-  assert.equal(node.properties['data-ofm-path-public'], 'Project Notes')
-  assert.equal(node.properties['data-ofm-permalink-public'], 'Project Notes#Overview')
-  assert.equal(node.properties['data-ofm-fragment-public'], 'Overview')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Project Notes',
+    permalink: 'Project Notes#Overview',
+    fragment: 'Overview'
+  })
   assert.equal(node.properties.title, 'Project Notes#Overview')
   assert.deepEqual(node.children, [{
     type: 'element',
@@ -501,11 +572,14 @@ test('rendering block embeds preserves fragment and block metadata', () => {
 
   embedHast({ hrefPrefix: 'wiki', renderBlockAnchorLabels: true })(node)
 
-  assert.equal(node.properties['data-ofm-embed'], 'note')
-  assert.equal(node.properties['data-ofm-path-public'], 'Roadmap')
-  assert.equal(node.properties['data-ofm-permalink-public'], 'Roadmap#^next-step')
-  assert.equal(node.properties['data-ofm-fragment-public'], '^next-step')
-  assert.equal(node.properties['data-ofm-block-id-public'], 'next-step')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Roadmap',
+    permalink: 'Roadmap#^next-step',
+    blockId: 'next-step',
+    fragment: '^next-step'
+  })
   assert.deepEqual(node.children, [{
     type: 'element',
     tagName: 'a',
@@ -527,6 +601,7 @@ test('rendering image embeds keeps image output semantics', () => {
   assert.equal(node.properties.src, '/wiki/assets/cover.png')
   assert.equal(node.properties.alt, 'assets/cover.png')
   assert.equal(node.properties.title, 'assets/cover.png')
+  assert.equal(node.properties['data-ofm-variant'], 'image')
 })
 
 test('rendering file embeds keeps link output semantics', () => {
@@ -541,6 +616,7 @@ test('rendering file embeds keeps link output semantics', () => {
   assert.equal(node.tagName, 'a')
   assert.equal(node.properties.href, '/wiki/manual.pdf')
   assert.equal(node.properties.title, 'manual.pdf')
+  assert.equal(node.properties['data-ofm-variant'], 'file')
   assert.deepEqual(node.children, [{type: 'text', value: 'manual.pdf'}])
 })
 
@@ -582,6 +658,7 @@ test('anchorHast adds data-anchor-key to headings', () => {
   anchorHast()(node)
 
   assert.equal(node.properties['data-anchor-key'], 'heading here')
+  assertOfmPublicProps(node, {kind: 'anchor-target', variant: 'heading'})
   assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.headingTarget])
 })
 
@@ -596,6 +673,7 @@ test('anchorHast extracts trailing block refs into element properties', () => {
   anchorHast()(node)
 
   assert.equal(node.properties['data-anchor-key'], '^block-id')
+  assertOfmPublicProps(node, {kind: 'anchor-target', variant: 'block', blockId: 'block-id'})
   assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
   assert.deepEqual(node.children, [{type: 'text', value: 'Paragraph target.'}])
 })
@@ -611,6 +689,7 @@ test('anchorHast can append a styled block anchor label when enabled', () => {
   anchorHast({renderBlockAnchorLabels: true})(node)
 
   assert.equal(node.properties['data-anchor-key'], '^block-id')
+  assertOfmPublicProps(node, {kind: 'anchor-target', variant: 'block', blockId: 'block-id'})
   assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
   assert.deepEqual(node.children, [
     {type: 'text', value: 'Paragraph target.'},
@@ -637,6 +716,7 @@ test('highlightHast removes OFM metadata after rendering intent is consumed', ()
 
   highlightHast()(node)
 
+  assertOfmPublicProps(node, {kind: 'highlight'})
   assertClassNames(node, [ofmClassNames.highlight])
   assert.equal(node.properties.dataOfmKind, undefined)
 })
@@ -770,6 +850,7 @@ test('stripOfmDataProps removes internal ofm markers but preserves normal props'
       className: 'embed-card'
     }),
     {
+      'data-anchor-key': 'heading',
       alt: 'example',
       className: 'embed-card'
     }
@@ -942,6 +1023,27 @@ function createCalloutElement({
 
 function assertClassNames(node: Element, expected: string[]): void {
   assert.deepEqual(node.properties.className, expected)
+}
+
+function assertOfmPublicProps(
+  node: Element,
+  expected: {
+    alias?: string
+    blockId?: string
+    fragment?: string
+    kind: string
+    path?: string
+    permalink?: string
+    variant?: string
+  }
+): void {
+  assert.equal(node.properties['data-ofm-kind'], expected.kind)
+  assert.equal(node.properties['data-ofm-variant'], expected.variant)
+  assert.equal(node.properties['data-ofm-path'], expected.path)
+  assert.equal(node.properties['data-ofm-permalink'], expected.permalink)
+  assert.equal(node.properties['data-ofm-alias'], expected.alias)
+  assert.equal(node.properties['data-ofm-block-id'], expected.blockId)
+  assert.equal(node.properties['data-ofm-fragment'], expected.fragment)
 }
 
 function createOfmElement(

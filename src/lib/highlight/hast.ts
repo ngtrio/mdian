@@ -1,6 +1,8 @@
 import type {Root, RootContent} from 'hast'
 
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
+import {stripOfmDataProps} from '../shared/ofm-node.js'
+import {setOfmPublicProps} from '../shared/public-props.js'
 
 export function highlightHast(): (node: Root | RootContent) => void {
   return function transform(node) {
@@ -12,15 +14,8 @@ export function highlightHast(): (node: Root | RootContent) => void {
       return
     }
 
+    setOfmPublicProps(node.properties, {kind: 'highlight'})
     addClassName(node.properties, ofmClassNames.highlight)
-    clearOfmDataProps(node.properties)
+    stripOfmDataProps(node.properties)
   }
-}
-
-function clearOfmDataProps(properties?: Record<string, unknown>): void {
-  if (!properties) {
-    return
-  }
-
-  delete properties.dataOfmKind
 }

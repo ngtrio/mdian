@@ -110,20 +110,30 @@ If you change parser or rehype behavior that affects rendered markup, verify bot
 
 ### Style extension
 
-All generated HTML elements carry `ofm-*` class names, available as the `ofmClassNames` constant and `OfmClassName` union type:
+All generated HTML elements carry `ofm-*` class names for styling, available as the `ofmClassNames` constant and `OfmClassName` union type:
 
 | Class | Element |
 |-------|---------|
 | `ofm-wikilink` | `<a>` from `[[link]]` |
-| `ofm-embed` | `<a>` / `<img>` from `![[path]]` |
+| `ofm-embed` | `<a>` / `<img>` / note-embed `<div>` from `![[path]]` |
 | `ofm-highlight` | `<mark>` from `==text==` |
-| `ofm-callout` | `<div>` callout container |
-| `ofm-callout-title` | `<div>` callout title line |
+| `ofm-callout` | `<div>` / `<details>` callout container |
+| `ofm-callout-title` | `<div>` / `<summary>` callout title line |
 | `ofm-callout-content` | `<div>` callout body |
 | `ofm-anchor-target` | Any element with `data-anchor-key` |
 | `ofm-heading-target` | `<h1>`–`<h6>` with anchor key |
 | `ofm-block-target` | `<p>`/`<li>` with block-id anchor |
 | `ofm-block-anchor-label` | `<span>` for visible `^blockId` label |
+
+Programmatic integration should use the public `data-ofm-*` contract emitted by `rehypeOfm()`:
+
+- `data-ofm-kind="wikilink"`
+- `data-ofm-kind="embed"` with `data-ofm-variant="note" | "image" | "file"`
+- `data-ofm-kind="callout"`
+- `data-ofm-kind="highlight"`
+- `data-ofm-kind="anchor-target"` with `data-ofm-variant="heading" | "block"`
+
+Additional public metadata may include `data-ofm-path`, `data-ofm-permalink`, `data-ofm-alias`, `data-ofm-fragment`, `data-ofm-block-id`, `data-ofm-callout`, `data-ofm-foldable`, and `data-ofm-collapsed`.
 
 `addClassName(properties, ...classNames)` merges OFM or custom class names onto a hast properties object.
 

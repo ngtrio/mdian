@@ -37,7 +37,6 @@ export type OfmNodeData =
     }
 
 const ofmDataPropNames = [
-  'data-anchor-key',
   'dataOfmAlias',
   'dataOfmBlockId',
   'dataOfmCalloutType',

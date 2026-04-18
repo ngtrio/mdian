@@ -1,6 +1,7 @@
 import type {Element, Root, RootContent, Text} from 'hast'
 
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
+import {setOfmPublicProps} from '../shared/public-props.js'
 import {decodeOfmFragment} from '../shared/ofm-url.js'
 import type {OfmRehypeOptions} from '../types.js'
 
@@ -56,6 +57,7 @@ export function anchorHast(options: Partial<Pick<OfmRehypeOptions, 'renderBlockA
 
       if (anchorKey) {
         node.properties['data-anchor-key'] = anchorKey
+        setOfmPublicProps(node.properties, {kind: 'anchor-target', variant: 'heading'})
         addClassName(node.properties, ofmClassNames.anchorTarget, ofmClassNames.headingTarget)
       }
     }
@@ -65,6 +67,7 @@ export function anchorHast(options: Partial<Pick<OfmRehypeOptions, 'renderBlockA
 
       if (blockId) {
         node.properties['data-anchor-key'] = normalizeOfmAnchorKey(`^${blockId}`)
+        setOfmPublicProps(node.properties, {kind: 'anchor-target', variant: 'block', blockId})
         addClassName(node.properties, ofmClassNames.anchorTarget, ofmClassNames.blockTarget)
 
         if (renderBlockAnchorLabels) {
@@ -133,12 +136,4 @@ function appendBlockAnchorLabel(node: Element, blockId: string): void {
       }
     ]
   })
-}
-
-function decodeUriComponentSafe(value: string): string {
-  try {
-    return decodeURIComponent(value)
-  } catch {
-    return value
-  }
 }

@@ -1,7 +1,6 @@
 import type { Element } from 'hast'
 
 import { Link } from '@tanstack/react-router'
-import { ofmClassNames } from 'mdian'
 import type { OfmRemarkOptions } from 'mdian'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import { useMemo } from 'react'
@@ -29,10 +28,10 @@ export function createMarkdownComponents(options: MarkdownComponentsOptions = {}
   const remarkOptions = options.remarkOptions ?? defaultRemarkOptions
 
   return {
-    a({ className, href, node: _node, ...props }) {
-      const isWikiLink = className?.split(/\s+/).includes(ofmClassNames.wikilink) ?? false
+    a({ className, href, node, ...props }) {
+      const kind = readString(node?.properties?.['data-ofm-kind'])
 
-      if (!isWikiLink) {
+      if (kind !== 'wikilink') {
         return <a {...props} className={className} href={href} />
       }
 
@@ -45,17 +44,16 @@ export function createMarkdownComponents(options: MarkdownComponentsOptions = {}
       return <Link {...props} className={className} to={wikiHref} />
     },
     div({ className, node, children, ...props }) {
-      const classes = className?.split(/\s+/) ?? []
-      const isEmbed = classes.includes(ofmClassNames.embed)
       const properties = node?.properties ?? {}
-      const embedType = readString(properties.dataOfmEmbed ?? properties['data-ofm-embed'])
+      const kind = readString(properties['data-ofm-kind'])
+      const variant = readString(properties['data-ofm-variant'])
 
-      if (!isEmbed || embedType !== 'note') {
+      if (kind !== 'embed' || variant !== 'note') {
         return <div {...props} className={className}>{children}</div>
       }
 
-      const path = readString(properties['data-ofm-path-public'] ?? properties.dataOfmPath ?? properties['data-ofm-path'])
-      const permalink = readString(properties['data-ofm-permalink-public'] ?? properties.dataOfmPermalink ?? properties['data-ofm-permalink'])
+      const path = readString(properties['data-ofm-path'])
+      const permalink = readString(properties['data-ofm-permalink'])
       const title = readString(properties.title)
 
       return (

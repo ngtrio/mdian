@@ -1,6 +1,8 @@
 import type {Element, ElementContent, Properties, RootContent, Text} from 'hast'
 
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
+import {getOfmNodeData, stripOfmDataProps} from '../shared/ofm-node.js'
+import {setOfmPublicProps} from '../shared/public-props.js'
 
 export function calloutHast() {
   return function transform(node: RootContent | {type: 'root', children: RootContent[]}): void {
@@ -8,34 +10,29 @@ export function calloutHast() {
       return
     }
 
-    if (node.tagName !== 'div' || node.properties.dataOfmKind !== 'callout') {
+    const ofmNode = getOfmNodeData(node.properties)
+
+    if (node.tagName !== 'div' || ofmNode?.kind !== 'callout') {
       return
     }
 
-    const calloutType = typeof node.properties.dataOfmCalloutType === 'string'
-      ? node.properties.dataOfmCalloutType
-      : ''
-    const title = typeof node.properties.dataOfmTitle === 'string'
-      ? node.properties.dataOfmTitle
-      : ''
-    const foldable = node.properties.dataOfmFoldable === true || node.properties.dataOfmFoldable === ''
-    const collapsed = node.properties.dataOfmCollapsed === true || node.properties.dataOfmCollapsed === ''
     const contentChildren = [...node.children]
 
     const properties: Properties = {
       ...node.properties,
-      'data-ofm-callout': calloutType,
-      ...(foldable ? {'data-ofm-foldable': ''} : {}),
-      ...(collapsed ? {'data-ofm-collapsed': ''} : {})
+      'data-ofm-callout': ofmNode.calloutType,
+      ...(ofmNode.foldable ? {'data-ofm-foldable': ''} : {}),
+      ...(ofmNode.collapsed ? {'data-ofm-collapsed': ''} : {})
     }
 
-    clearOfmDataProps(properties)
+    setOfmPublicProps(properties, {kind: 'callout'})
+    stripOfmDataProps(properties)
     addClassName(properties, ofmClassNames.callout)
 
-    node.tagName = foldable ? 'details' : 'div'
+    node.tagName = ofmNode.foldable ? 'details' : 'div'
     node.properties = properties
     node.children = [
-      createSection(foldable ? 'summary' : 'div', ofmClassNames.calloutTitle, title),
+      createSection(ofmNode.foldable ? 'summary' : 'div', ofmClassNames.calloutTitle, ofmNode.title),
       {
         type: 'element',
         tagName: 'div',
@@ -44,8 +41,8 @@ export function calloutHast() {
       }
     ]
 
-    if (foldable) {
-      if (!collapsed) {
+    if (ofmNode.foldable) {
+      if (!ofmNode.collapsed) {
         node.properties.open = true
       } else {
         delete node.properties.open
@@ -75,22 +72,4 @@ function isElement(node: unknown): node is Element {
     && 'properties' in node
     && 'children' in node
   )
-}
-
-const calloutDataPropNames = [
-  'dataOfmCalloutType',
-  'dataOfmCollapsed',
-  'dataOfmFoldable',
-  'dataOfmKind',
-  'dataOfmTitle'
-] as const
-
-function clearOfmDataProps(properties?: Properties | Record<string, unknown>): void {
-  if (!properties) {
-    return
-  }
-
-  for (const key of calloutDataPropNames) {
-    delete properties[key]
-  }
 }
