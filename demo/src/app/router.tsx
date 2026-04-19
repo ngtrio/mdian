@@ -21,10 +21,21 @@ const wikiPageRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([indexRoute, wikiPageRoute])
 
-export const router = createRouter({routeTree})
+export const router = createRouter({
+  routeTree,
+  basepath: resolveRouterBasePath(import.meta.env.BASE_URL)
+})
 
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
   }
+}
+
+function resolveRouterBasePath(baseUrl: string): string {
+  if (!baseUrl || baseUrl === '/') {
+    return '/'
+  }
+
+  return baseUrl.replace(/\/$/, '')
 }

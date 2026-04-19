@@ -105,7 +105,7 @@ function NoteEmbed({
     return createElement(
       'div',
       { className },
-      createElement('a', { href: wikiHref }, title || permalink || path)
+      createElement(Link, { to: wikiHref ?? fallbackHref ?? '/' }, title || permalink || path)
     )
   }
 
