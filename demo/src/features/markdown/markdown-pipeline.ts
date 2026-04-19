@@ -57,7 +57,15 @@ function createDemoMarkdownPresetWithContext(
   })
 
   return {
-    components: mdian.components,
+    components: {
+      ...mdian.components,
+      img({src, ...props}) {
+        return createElement('img', {
+          ...props,
+          ...(typeof src === 'string' ? {src: resolveDemoAssetHref(src)} : {})
+        })
+      }
+    },
     remarkPlugins: [
       remarkGfm,
       remarkMath,
@@ -143,4 +151,18 @@ function prefixWikiHref(href: string | undefined): string | undefined {
   }
 
   return `/wiki${href}`
+}
+
+function resolveDemoAssetHref(href: string): string {
+  if (!href.startsWith('/assets/')) {
+    return href
+  }
+
+  const baseUrl = import.meta.env.BASE_URL
+
+  if (!baseUrl || baseUrl === '/') {
+    return href
+  }
+
+  return `${baseUrl.replace(/\/$/, '')}${href}`
 }
