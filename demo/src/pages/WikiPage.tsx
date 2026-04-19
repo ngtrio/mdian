@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useRef} from 'react'
-import {useLocation, useParams} from '@tanstack/react-router'
+import {Link, useLocation, useParams} from '@tanstack/react-router'
 import ReactMarkdown from 'react-markdown'
 
 import {
@@ -7,7 +7,7 @@ import {
   findOfmAnchorTarget,
 } from 'mdian'
 import {createDemoMarkdownPreset} from '../features/markdown/markdown-pipeline.js'
-import {buildWikiHref, demoWikiPages, getDemoWikiPage, normalizeWikiPath} from '../features/wiki/wiki.js'
+import {getDemoWikiPage, normalizeWikiPath} from '../features/wiki/wiki.js'
 
 export function WikiPage() {
   const params = useParams({strict: false})
@@ -51,32 +51,27 @@ export function WikiPage() {
   }, [locationHash, pagePath])
 
   return (
-    <div className="demo-shell wiki-shell">
+    <div className="demo-shell demo-shell--showcase wiki-shell">
       <p className="back-link">
-        <a href="/">Back to playground</a>
+        <Link to="/">Back to showcase</Link>
       </p>
 
-      <header className="page-header">
-        <h1>{page?.title ?? 'Missing note'}</h1>
-        <p>
-          {page?.summary ?? `No demo note matches "${pagePath || 'this route'}". Choose one of the built-in pages below.`}
-        </p>
+      <header className="demo-hero-header wiki-hero-header">
+        <div>
+          <h1>{page?.title ?? 'Missing note'}</h1>
+          <p>
+            {page?.summary ?? `No demo note matches "${pagePath || 'this route'}".`}
+          </p>
+        </div>
+        <div className="wiki-target" aria-label="Current wiki target">
+          <span>Path: /{pagePath || 'missing-page'}</span>
+          {activeFragment ? <span>Target: #{activeFragment}</span> : null}
+        </div>
       </header>
 
-      <div className="wiki-target" aria-label="Current wiki target">
-        <span>Path: /{pagePath || 'missing-page'}</span>
-        {activeFragment ? <span>Target: #{activeFragment}</span> : null}
-      </div>
-
       {page ? (
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>{page.path}</h2>
-              <p>Rendered wiki target.</p>
-            </div>
-          </div>
-          <article className="preview markdown-body wiki-markdown" ref={articleRef}>
+        <section className="hero-stage hero-stage--wiki panel">
+          <article className="preview preview--hero markdown-body wiki-markdown" ref={articleRef}>
             <ReactMarkdown
               components={preset.components}
               rehypePlugins={preset.rehypePlugins}
@@ -99,23 +94,6 @@ export function WikiPage() {
           </p>
         </section>
       )}
-
-      <section className="panel page-list-panel">
-        <div className="panel-header">
-          <div>
-            <h2>Demo notes</h2>
-            <p>Open one to test wiki navigation.</p>
-          </div>
-        </div>
-        <div className="wiki-page-list" aria-label="Available demo notes">
-          {demoWikiPages.map((wikiPage) => (
-            <a className="wiki-page-link" href={buildWikiHref(wikiPage.path)} key={wikiPage.path}>
-              <strong>{wikiPage.path}</strong>
-              <span>{wikiPage.summary}</span>
-            </a>
-          ))}
-        </div>
-      </section>
     </div>
   )
 }

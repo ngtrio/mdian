@@ -5,6 +5,9 @@
   --ofm-surface-strong: rgba(148, 163, 184, 0.14);
   --ofm-highlight: #fff3a3;
   --ofm-muted: rgba(15, 23, 42, 0.68);
+  --ofm-callout-accent: #4f6b8a;
+  --ofm-callout-background: rgba(79, 107, 138, 0.1);
+  --ofm-callout-title-color: #223247;
 }
 
 .ofm-anchor-target {
@@ -37,17 +40,21 @@
 }
 
 .ofm-callout {
+  --ofm-callout-accent: #4f6b8a;
+  --ofm-callout-background: rgba(79, 107, 138, 0.1);
+  --ofm-callout-title-color: #223247;
   margin: 1rem 0;
   padding: 0.875rem 1rem;
   border: 1px solid var(--ofm-border);
-  border-left: 4px solid var(--ofm-border-strong);
+  border-left: 4px solid var(--ofm-callout-accent);
   border-radius: 0.75rem;
-  background: var(--ofm-surface);
+  background: linear-gradient(180deg, var(--ofm-callout-background), var(--ofm-surface));
 }
 
 .ofm-callout-title {
   display: block;
   margin-bottom: 0.5rem;
+  color: var(--ofm-callout-title-color);
   font-weight: 600;
 }
 
@@ -57,6 +64,98 @@
 
 .ofm-callout-content > :last-child {
   margin-bottom: 0;
+}
+
+.ofm-callout[data-ofm-callout='note'],
+.ofm-callout[data-ofm-callout='abstract'],
+.ofm-callout[data-ofm-callout='summary'],
+.ofm-callout[data-ofm-callout='info'],
+.ofm-callout[data-ofm-callout='todo'] {
+  --ofm-callout-accent: #2563eb;
+  --ofm-callout-background: rgba(37, 99, 235, 0.1);
+  --ofm-callout-title-color: #1d4ed8;
+}
+
+.ofm-callout[data-ofm-callout='tip'],
+.ofm-callout[data-ofm-callout='success'],
+.ofm-callout[data-ofm-callout='check'],
+.ofm-callout[data-ofm-callout='done'] {
+  --ofm-callout-accent: #059669;
+  --ofm-callout-background: rgba(5, 150, 105, 0.1);
+  --ofm-callout-title-color: #047857;
+}
+
+.ofm-callout[data-ofm-callout='question'],
+.ofm-callout[data-ofm-callout='help'],
+.ofm-callout[data-ofm-callout='faq'] {
+  --ofm-callout-accent: #0891b2;
+  --ofm-callout-background: rgba(8, 145, 178, 0.1);
+  --ofm-callout-title-color: #0e7490;
+}
+
+.ofm-callout[data-ofm-callout='warning'],
+.ofm-callout[data-ofm-callout='caution'],
+.ofm-callout[data-ofm-callout='attention'] {
+  --ofm-callout-accent: #d97706;
+  --ofm-callout-background: rgba(217, 119, 6, 0.12);
+  --ofm-callout-title-color: #b45309;
+}
+
+.ofm-callout[data-ofm-callout='failure'],
+.ofm-callout[data-ofm-callout='fail'],
+.ofm-callout[data-ofm-callout='missing'],
+.ofm-callout[data-ofm-callout='danger'],
+.ofm-callout[data-ofm-callout='error'],
+.ofm-callout[data-ofm-callout='bug'] {
+  --ofm-callout-accent: #dc2626;
+  --ofm-callout-background: rgba(220, 38, 38, 0.1);
+  --ofm-callout-title-color: #b91c1c;
+}
+
+.ofm-callout[data-ofm-callout='example'] {
+  --ofm-callout-accent: #7c3aed;
+  --ofm-callout-background: rgba(124, 58, 237, 0.1);
+  --ofm-callout-title-color: #6d28d9;
+}
+
+.ofm-callout[data-ofm-callout='quote'],
+.ofm-callout[data-ofm-callout='cite'] {
+  --ofm-callout-accent: #475569;
+  --ofm-callout-background: rgba(71, 85, 105, 0.1);
+  --ofm-callout-title-color: #334155;
+}
+
+details.ofm-callout {
+  padding-bottom: 0.875rem;
+}
+
+details.ofm-callout > .ofm-callout-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+details.ofm-callout > .ofm-callout-title::-webkit-details-marker {
+  display: none;
+}
+
+details.ofm-callout > .ofm-callout-title::before {
+  content: '▸';
+  flex: none;
+  color: var(--ofm-callout-accent);
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+details.ofm-callout[open] > .ofm-callout-title {
+  margin-bottom: 0.5rem;
+}
+
+details.ofm-callout[open] > .ofm-callout-title::before {
+  transform: rotate(90deg);
 }
 
 .ofm-block-target {
