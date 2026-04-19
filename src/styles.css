@@ -1,0 +1,75 @@
+:root {
+  --ofm-border: rgba(15, 23, 42, 0.14);
+  --ofm-border-strong: rgba(15, 23, 42, 0.24);
+  --ofm-surface: rgba(148, 163, 184, 0.08);
+  --ofm-surface-strong: rgba(148, 163, 184, 0.14);
+  --ofm-highlight: #fff3a3;
+  --ofm-muted: rgba(15, 23, 42, 0.68);
+}
+
+.ofm-anchor-target {
+  scroll-margin-top: 2rem;
+}
+
+.ofm-wikilink {
+  word-break: break-word;
+}
+
+.ofm-highlight {
+  padding: 0 0.12em;
+  border-radius: 0.16em;
+  background: var(--ofm-highlight);
+  color: inherit;
+}
+
+.ofm-embed {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ofm-border);
+  border-radius: 0.75rem;
+  background: var(--ofm-surface);
+}
+
+.ofm-embed img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.ofm-callout {
+  margin: 1rem 0;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--ofm-border);
+  border-left: 4px solid var(--ofm-border-strong);
+  border-radius: 0.75rem;
+  background: var(--ofm-surface);
+}
+
+.ofm-callout-title {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.ofm-callout-content > :first-child {
+  margin-top: 0;
+}
+
+.ofm-callout-content > :last-child {
+  margin-bottom: 0;
+}
+
+.ofm-block-target {
+  position: relative;
+}
+
+.ofm-block-anchor-label {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--ofm-border);
+  border-radius: 999px;
+  background: var(--ofm-surface-strong);
+  color: var(--ofm-muted);
+  font-size: 0.88em;
+}

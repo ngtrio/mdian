@@ -6,15 +6,8 @@ import {
   decodeOfmFragment,
   findOfmAnchorTarget,
 } from 'mdian'
-import {createMarkdownComponents} from './lib/markdown-components.js'
-import {
-  buildRehypePlugins,
-  buildRemarkPlugins,
-  defaultDemoRehypeOptions,
-  type DemoMarkdownFeatures
-} from './lib/markdown-pipeline.js'
-import {defaultRemarkOptions} from './lib/remark-options.js'
-import {buildWikiHref, demoWikiPages, getDemoWikiPage, normalizeWikiPath} from './lib/wiki.js'
+import {createDemoMarkdownPreset} from '../features/markdown/markdown-pipeline.js'
+import {buildWikiHref, demoWikiPages, getDemoWikiPage, normalizeWikiPath} from '../features/wiki/wiki.js'
 
 export function WikiPage() {
   const params = useParams({strict: false})
@@ -23,13 +16,7 @@ export function WikiPage() {
   const pagePath = normalizeWikiPath(typeof params._splat === 'string' ? params._splat : '')
   const page = getDemoWikiPage(pagePath)
   const activeFragment = decodeOfmFragment(locationHash)
-  const features = useMemo<DemoMarkdownFeatures>(() => ({gfm: true, math: true}), [])
-  const markdownComponents = useMemo(() => createMarkdownComponents({features, remarkOptions: defaultRemarkOptions}), [features])
-  const remarkPlugins = useMemo(() => buildRemarkPlugins(defaultRemarkOptions, features), [features])
-  const rehypePlugins = useMemo(
-    () => buildRehypePlugins(defaultDemoRehypeOptions, features),
-    [features]
-  )
+  const preset = useMemo(() => createDemoMarkdownPreset(), [])
 
   useEffect(() => {
     const root = articleRef.current
@@ -91,9 +78,9 @@ export function WikiPage() {
           </div>
           <article className="preview markdown-body wiki-markdown" ref={articleRef}>
             <ReactMarkdown
-              components={markdownComponents}
-              rehypePlugins={rehypePlugins}
-              remarkPlugins={remarkPlugins}
+              components={preset.components}
+              rehypePlugins={preset.rehypePlugins}
+              remarkPlugins={preset.remarkPlugins}
             >
               {page.markdown}
             </ReactMarkdown>

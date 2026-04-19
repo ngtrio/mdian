@@ -1,4 +1,4 @@
-export { remarkOfm, rehypeOfm } from './lib/index.js'
+export {remarkOfm, rehypeOfm} from './lib/index.js'
 export {
   findOfmAnchorTarget,
   getOfmAnchorKeyFromHash,

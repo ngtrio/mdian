@@ -20,6 +20,7 @@ import {
   remarkOfm,
   type OfmRemarkOptions
 } from '../src/index.js'
+import {createOfmComponents, createOfmReactMarkdown} from '../src/react-markdown/index.js'
 import { anchorHast, normalizeOfmAnchorKey } from '../src/lib/anchor/hast.js'
 import { calloutHast } from '../src/lib/callout/hast.js'
 import { embedHast } from '../src/lib/embed/hast.js'
@@ -55,6 +56,44 @@ for (const fixtureName of fixtures) {
     assert.deepEqual(stripPositions(tree), expectedTree)
   })
 }
+
+test('createOfmReactMarkdown returns react-markdown adapter plugins', () => {
+  const adapter = createOfmReactMarkdown({
+    ofm: {
+      callouts: false,
+      comments: true,
+      hrefPrefix: 'wiki',
+      renderBlockAnchorLabels: true,
+      setTitle: true
+    }
+  })
+
+  assert.deepEqual(adapter.remarkPlugin, [remarkOfm, {callouts: false, comments: true}])
+  assert.deepEqual(adapter.rehypePlugin, [rehypeOfm, {
+    hrefPrefix: 'wiki',
+    renderBlockAnchorLabels: true,
+    setTitle: true
+  }])
+  assert.equal(adapter.components, undefined)
+})
+
+test('createOfmReactMarkdown can include the default OFM-aware components map', () => {
+  const adapter = createOfmReactMarkdown({components: {}})
+
+  assert.equal(typeof adapter.components?.a, 'function')
+  assert.equal(typeof adapter.components?.div, 'function')
+})
+
+test('createOfmComponents exposes the OFM element overrides used by react-markdown', () => {
+  const components = createOfmComponents()
+
+  assert.equal(typeof components.a, 'function')
+  assert.equal(typeof components.div, 'function')
+})
+
+test('build emits the public styles entrypoint', async () => {
+  await access(path.join(repoRoot, 'dist', 'styles.css'))
+})
 
 test('wikiLinkHast uses root-path default when hrefPrefix is omitted', () => {
   const node = createWikiLinkElement({

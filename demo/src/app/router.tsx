@@ -1,7 +1,7 @@
 import {Outlet, createRootRoute, createRoute, createRouter} from '@tanstack/react-router'
 
-import {App} from './app.js'
-import {WikiPage} from './wiki-page.js'
+import {App} from './App.js'
+import {WikiPage} from '../pages/WikiPage.js'
 
 const rootRoute = createRootRoute({
   component: Outlet

@@ -306,15 +306,6 @@ textarea {
   text-align: left;
 }
 
-.ofm-anchor-target {
-  scroll-margin-top: 24px;
-}
-
-.ofm-wikilink {
-  word-break: break-word;
-}
-
-.ofm-block-anchor-label,
 .wiki-target,
 .wiki-page-link span,
 .back-link {
@@ -322,91 +313,8 @@ textarea {
   font-size: 0.88rem;
 }
 
-.ofm-block-target {
-  position: relative;
-}
-
-.ofm-block-anchor-label {
-  display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0 0.35rem;
-  border: 1px solid var(--border);
-  background: var(--surface-muted);
-}
-
 .is-targeted {
   background: #fff8d6;
-}
-
-.ofm-highlight {
-  padding: 0.08em 0.25em;
-  background: var(--highlight);
-}
-
-.markdown-body .ofm-callout {
-  margin: 0 0 1rem;
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
-  border-left: 4px solid var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  border-radius: 8px;
-  color: var(--text);
-}
-
-.markdown-body details.ofm-callout {
-  padding: 0;
-}
-
-.markdown-body details.ofm-callout[open] {
-  padding-bottom: 12px;
-}
-
-.markdown-body .ofm-callout-title {
-  margin: 0 0 0.5rem;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.markdown-body details.ofm-callout > .ofm-callout-title {
-  margin: 0;
-  padding: 12px 14px;
-  cursor: pointer;
-}
-
-.markdown-body details.ofm-callout > .ofm-callout-content {
-  padding: 0 14px;
-}
-
-.markdown-body .ofm-callout-content > :last-child {
-  margin-bottom: 0;
-}
-
-.markdown-body .ofm-callout[data-ofm-collapsed] .ofm-callout-content {
-  display: none;
-}
-
-.markdown-body details.ofm-callout[open] > .ofm-callout-content {
-  display: block;
-}
-
-.markdown-body .ofm-callout[data-ofm-callout='warning'] {
-  border-left-color: #d97706;
-  background: #fff7ed;
-}
-
-.markdown-body .ofm-callout[data-ofm-callout='tip'] {
-  border-left-color: #059669;
-  background: #ecfdf5;
-}
-
-.markdown-body .ofm-callout[data-ofm-callout='question'] {
-  border-left-color: #7c3aed;
-  background: #f5f3ff;
-}
-
-.markdown-body .ofm-callout[data-ofm-callout='example'] {
-  border-left-color: #2563eb;
-  background: #eff6ff;
 }
 
 .markdown-body .katex-display {

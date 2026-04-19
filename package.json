@@ -4,7 +4,9 @@
   "description": "remark plugin for Obsidian Flavored Markdown",
   "license": "MIT",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/styles.css"
+  ],
   "files": [
     "dist/"
   ],
@@ -12,7 +14,12 @@
     ".": {
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
-    }
+    },
+    "./react-markdown": {
+      "types": "./dist/src/react-markdown/index.d.ts",
+      "default": "./dist/src/react-markdown/index.js"
+    },
+    "./styles.css": "./dist/styles.css"
   },
   "types": "./dist/src/index.d.ts",
   "packageManager": "pnpm@10.0.0",
@@ -21,10 +28,12 @@
   },
   "scripts": {
     "clean": "rm -rf dist coverage tsconfig.tsbuildinfo",
-    "build": "tsc --build",
+    "build": "tsc --build && node scripts/copy-assets.mjs",
     "typecheck": "tsc --build --pretty false",
     "pretest": "pnpm run build",
-    "test": "node --enable-source-maps --test dist/test/index.js",
+    "test:node": "node --enable-source-maps --test dist/test/index.js",
+    "test:react-markdown": "vitest run --environment jsdom test/*.test.tsx",
+    "test": "pnpm run test:node && pnpm run test:react-markdown",
     "coverage": "c8 --reporter=text --reporter=lcov pnpm test",
     "check": "pnpm run typecheck && pnpm test",
     "demo:dev": "pnpm --dir demo dev",
@@ -33,22 +42,34 @@
     "demo:typecheck": "pnpm --dir demo typecheck"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.0",
     "@types/hast": "^3.0.4",
     "@types/mdast": "^4.0.4",
     "@types/node": "^24.0.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "c8": "^10.1.2",
     "esbuild": "^0.28.0",
+    "jsdom": "^26.1.0",
     "mdast-util-from-markdown": "^2.0.3",
     "micromark-util-chunked": "^2.0.1",
     "micromark-util-classify-character": "^2.0.1",
     "micromark-util-resolve-all": "^2.0.1",
     "micromark-util-symbol": "^2.0.1",
     "micromark-util-types": "^2.0.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.8.3",
-    "unified": "^11.0.0"
+    "unified": "^11.0.0",
+    "vitest": "^4.0.4"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "peerDependencies": {
+    "react": ">=19",
+    "react-markdown": ">=10"
+  }
 }

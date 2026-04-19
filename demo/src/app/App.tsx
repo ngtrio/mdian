@@ -1,96 +1,14 @@
 import { useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 
-import type { OfmRemarkOptions } from 'mdian'
-import { createMarkdownComponents } from './lib/markdown-components.js'
-import {
-  buildRehypePlugins,
-  buildRemarkPlugins,
-  defaultDemoRehypeOptions,
-  type DemoMarkdownFeatures
-} from './lib/markdown-pipeline.js'
-import { defaultRemarkOptions } from './lib/remark-options.js'
-
-const defaultDemoMarkdown = [
-  '# mdian + react-markdown',
-  '',
-  'Visit [[Project Notes|the project note]] for more detail.',
-  '',
-  'Embed an image:',
-  '![[assets/image.svg|50x60]]',
-  '',
-  'Embed a markdown note:',
-  '![[Project Notes]]',
-  '',
-  'Embed a heading section:',
-  '![[Project Notes#Overview]]',
-  '',
-  'Embed a block ref:',
-  '![[Roadmap#^next-step]]',
-  '',
-  'This text stays visible. %%This comment is hidden in preview.%%',
-  '',
-  'This sentence contains ==highlighted text==.',
-  '',
-  '## Callouts',
-  '',
-  '> [!note] Note title',
-  '> Basic callout body.',
-  '',
-  '> [!tip]+ Expanded foldable',
-  '> This one starts expanded.',
-  '',
-  '> [!warning]- Collapsed foldable',
-  '> This one starts collapsed.',
-  '',
-  '> [!example] Multiple paragraphs',
-  '>',
-  '> First paragraph inside the callout.',
-  '>',
-  '> Second paragraph inside the same callout.',
-  '',
-  '> [!question] Outer callout',
-  '> Outer body line.',
-  '>',
-  '> > [!note] Inner callout',
-  '> > Nested body content.',
-  '',
-  '## GFM',
-  '',
-  '| Syntax | Example |',
-  '| --- | --- |',
-  '| ~~Strikethrough~~ | ~~gone~~ |',
-  '| Task list | `- [x] done` |',
-  '',
-  '- [x] Render task lists',
-  '- [ ] Keep tables aligned',
-  '',
-  '## LaTeX',
-  '',
-  'Inline math works: $E = mc^2$.',
-  '',
-  '$$',
-  '\\int_0^1 x^2\\,dx = \\frac{1}{3}',
-  '$$',
-  '',
-  '- Another wikilink: [[Roadmap#^next-step]]',
-  '',
-  'You can also use **regular markdown** and `code blocks` together with OFM features.'
-].join('\n')
+import type { OfmMarkdownOptions } from 'mdian/react-markdown'
+import { createDemoMarkdownPreset } from '../features/markdown/markdown-pipeline.js'
+import { defaultDemoMarkdown } from '../fixtures/default-demo-markdown.js'
 
 export function App() {
   const [markdown, setMarkdown] = useState(defaultDemoMarkdown)
-  const [options, setOptions] = useState<OfmRemarkOptions>({...defaultRemarkOptions})
-  const [features, setFeatures] = useState<DemoMarkdownFeatures>({gfm: true, math: true})
-  const markdownComponents = useMemo(
-    () => createMarkdownComponents({features, remarkOptions: options}),
-    [features, options]
-  )
-  const remarkPlugins = useMemo(() => buildRemarkPlugins(options, features), [features, options])
-  const rehypePlugins = useMemo(
-    () => buildRehypePlugins(defaultDemoRehypeOptions, features),
-    [features]
-  )
+  const [options, setOptions] = useState<OfmMarkdownOptions>({})
+  const preset = useMemo(() => createDemoMarkdownPreset(options), [options])
 
   const lineCount = markdown.split('\n').length
   const wordCount = markdown.split(/\s+/).filter(Boolean).length
@@ -130,18 +48,8 @@ export function App() {
               label="Callouts"
               onChange={(checked) => setOptions((current) => ({ ...current, callouts: checked }))}
             />
-            <FeatureToggle
-              checked={features.gfm}
-              label="GFM"
-              onChange={(checked) => setFeatures((current) => ({ ...current, gfm: checked }))}
-            />
-            <FeatureToggle
-              checked={features.math}
-              label="LaTeX"
-              onChange={(checked) => setFeatures((current) => ({ ...current, math: checked }))}
-            />
           </div>
-          <p className="helper-text">CommonMark is on by default. Toggle OFM, GitHub Flavored Markdown, and LaTeX support here.</p>
+          <p className="helper-text">CommonMark, GFM, and LaTeX are enabled by default. Toggle OFM features here.</p>
         </div>
       </section>
 
@@ -183,9 +91,9 @@ export function App() {
 
           <div className="preview markdown-body">
             <ReactMarkdown
-              components={markdownComponents}
-              rehypePlugins={rehypePlugins}
-              remarkPlugins={remarkPlugins}
+              components={preset.components}
+              rehypePlugins={preset.rehypePlugins}
+              remarkPlugins={preset.remarkPlugins}
             >
               {markdown}
             </ReactMarkdown>
