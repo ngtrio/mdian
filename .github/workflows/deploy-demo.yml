@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'demo/**'
+      - 'src/**'
+      - 'pnpm-lock.yaml'
   workflow_dispatch:
 
 permissions:
