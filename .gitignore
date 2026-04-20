@@ -6,3 +6,4 @@ tsconfig.tsbuildinfo
 demo/dist/
 docs/
 .worktrees/
+.claude/settings.local.json
