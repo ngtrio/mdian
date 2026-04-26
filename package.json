@@ -1,8 +1,12 @@
 {
   "name": "mdian",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "remark plugin for Obsidian Flavored Markdown",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ngtrio/mdian.git"
+  },
   "type": "module",
   "sideEffects": [
     "./dist/styles.css"
