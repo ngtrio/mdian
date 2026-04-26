@@ -63,7 +63,7 @@ export const demoSamples: DemoSample[] = [
       '# Callout Tour',
       '',
       '> [!note] Product note',
-      '> This sample shows how callouts feel inside normal reading flow.',
+      '> This [[sample]] shows how ==callouts== feel inside normal reading flow.',
       '',
       '> [!tip]+ Expanded foldable',
       '> This one starts expanded so the stage feels full immediately.',

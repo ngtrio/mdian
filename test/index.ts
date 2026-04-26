@@ -308,6 +308,65 @@ test('remarkOfm preserves multipart callout content as separate paragraphs', asy
   assert.deepEqual((callout?.children ?? []).map((child) => child.type), ['paragraph', 'paragraph'])
 })
 
+test('remarkOfm converts callouts when the first body paragraph contains wiki links', async () => {
+  const input = '> [!warning] 交叉观察\n> 正文含 [[Alpha]] 和 [[Beta]]'
+  const processor = unified().use(remarkParse).use(remarkOfm)
+
+  const tree = await processor.run(processor.parse(input))
+  const callout = tree.children[0]
+  const body = callout?.type === 'callout' ? callout.children[0] : undefined
+
+  assert.equal(callout?.type, 'callout')
+  assert.equal(callout?.title, '交叉观察')
+  assert.equal(body?.type, 'paragraph')
+  assert.deepEqual((body?.children ?? []).map((child) => child.type), ['text', 'wikiLink', 'text', 'wikiLink'])
+  assert.deepEqual(
+    (body?.children ?? [])
+      .filter((child) => child.type === 'wikiLink')
+      .map((child) => ({path: child.path, permalink: child.permalink})),
+    [
+      {path: 'Alpha', permalink: 'Alpha'},
+      {path: 'Beta', permalink: 'Beta'}
+    ]
+  )
+})
+
+test('remarkOfm converts callouts when the first body paragraph contains inline code nodes', async () => {
+  const input = '> [!note] 基础说明\n> 正文含 `[[Code]]` 和 `[[More]]`'
+  const processor = unified().use(remarkParse).use(remarkOfm)
+
+  const tree = await processor.run(processor.parse(input))
+  const callout = tree.children[0]
+  const body = callout?.type === 'callout' ? callout.children[0] : undefined
+
+  assert.equal(callout?.type, 'callout')
+  assert.equal(callout?.title, '基础说明')
+  assert.equal(body?.type, 'paragraph')
+  assert.deepEqual((body?.children ?? []).map((child) => child.type), ['text', 'inlineCode', 'text', 'inlineCode'])
+  assert.deepEqual(
+    (body?.children ?? [])
+      .filter((child) => child.type === 'inlineCode')
+      .map((child) => child.value),
+    ['[[Code]]', '[[More]]']
+  )
+})
+
+test('remarkOfm preserves mixed inline body content before later callout paragraphs', async () => {
+  const input = '> [!note] 基础说明\n> 第一段含 [[Alpha]] 和 `[[Code]]`\n>\n> 第二段文本'
+  const processor = unified().use(remarkParse).use(remarkOfm)
+
+  const tree = await processor.run(processor.parse(input))
+  const callout = tree.children[0]
+  const [firstParagraph, secondParagraph] = callout?.type === 'callout' ? callout.children : []
+
+  assert.equal(callout?.type, 'callout')
+  assert.deepEqual((callout?.children ?? []).map((child) => child.type), ['paragraph', 'paragraph'])
+  assert.equal(firstParagraph?.type, 'paragraph')
+  assert.deepEqual((firstParagraph?.children ?? []).map((child) => child.type), ['text', 'wikiLink', 'text', 'inlineCode'])
+  assert.equal(secondParagraph?.type, 'paragraph')
+  assert.deepEqual(stripPositions(secondParagraph?.children), [{type: 'text', value: '第二段文本'}])
+})
+
 test('remarkOfm still enables callout conversion without micromark callout extensions', async () => {
   const input = '> [!note] Title\n> Body'
   const processor = unified().use(remarkParse).use(remarkOfm)

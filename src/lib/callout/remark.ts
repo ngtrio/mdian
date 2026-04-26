@@ -1,5 +1,5 @@
 import type {Plugin} from 'unified'
-import type {Root, Parent, Content, Blockquote, Paragraph, PhrasingContent, RootContent} from 'mdast'
+import type {Root, Parent, Content, Blockquote, Paragraph, PhrasingContent, RootContent, Text} from 'mdast'
 import type {Properties} from 'hast'
 
 import type {OfmRemarkOptions} from '../types.js'
@@ -42,7 +42,7 @@ function toCallout(node: Blockquote): Callout | undefined {
 
   const contentChildren: RootContent[] = []
   if (parsed.body) {
-    contentChildren.push(createParagraph(parsed.body))
+    contentChildren.push(parsed.body)
   }
   contentChildren.push(...restChildren.map((child) => child.type === 'blockquote' ? toCallout(child) ?? child : child))
 
@@ -66,34 +66,62 @@ function toCallout(node: Blockquote): Callout | undefined {
   }
 }
 
-function parseCalloutParagraph(node: Paragraph): {calloutType: string, title: string, foldable: boolean, collapsed: boolean, body: string} | undefined {
-  if (node.children.length !== 1 || node.children[0]?.type !== 'text') {
+function parseCalloutParagraph(node: Paragraph): {calloutType: string, title: string, foldable: boolean, collapsed: boolean, body?: Paragraph} | undefined {
+  const [firstChild, ...restChildren] = node.children
+  if (firstChild?.type !== 'text') {
     return undefined
   }
 
-  const value = node.children[0].value
-  const [header, ...bodyLines] = value.split('\n')
-  const match = calloutPattern.exec(header ?? '')
+  const lineBreakIndex = firstChild.value.indexOf('\n')
+  const header = lineBreakIndex === -1 ? firstChild.value : firstChild.value.slice(0, lineBreakIndex)
+  const match = calloutPattern.exec(header)
   if (!match) {
     return undefined
   }
 
+  if (lineBreakIndex === -1 && restChildren.length > 0) {
+    return undefined
+  }
+
   const marker = match[2]
+  const bodyChildren: PhrasingContent[] = []
+
+  if (lineBreakIndex !== -1) {
+    const firstBodyValue = firstChild.value.slice(lineBreakIndex + 1)
+    if (firstBodyValue.length > 0) {
+      bodyChildren.push(createText(firstChild, firstBodyValue))
+    }
+    bodyChildren.push(...restChildren)
+  }
+
+  const body = createParagraph(bodyChildren)
 
   return {
     calloutType: (match[1] ?? '').toLowerCase(),
     title: (match[3] ?? '').trim(),
     foldable: marker === '+' || marker === '-',
     collapsed: marker === '-',
-    body: bodyLines.join('\n').trim()
+    ...(body === undefined ? {} : {body})
   }
 }
 
-function createParagraph(value: string): Paragraph {
+function createParagraph(children: PhrasingContent[]): Paragraph | undefined {
+  if (!hasParagraphContent(children)) {
+    return undefined
+  }
+
   return {
     type: 'paragraph',
-    children: [{type: 'text', value} as PhrasingContent]
+    children
   }
+}
+
+function createText(node: Text, value: string): Text {
+  return {...node, value}
+}
+
+function hasParagraphContent(children: PhrasingContent[]): boolean {
+  return children.some((child) => child.type !== 'text' || child.value.trim().length > 0)
 }
 
 function visitParent(node: Root | Parent, visitor: (node: Parent) => void): void {
