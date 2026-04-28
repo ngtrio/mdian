@@ -45,26 +45,97 @@ export type OfmPublicKind = ValueOf<typeof ofmPublicKind>
 export type OfmPublicProvider = ValueOf<typeof ofmPublicProvider>
 export type OfmPublicVariant = ValueOf<typeof ofmPublicVariant>
 
-export interface OfmPublicProps {
+interface OfmTargetPublicFields {
   alias?: string
   blockId?: string
   fragment?: string
-  kind: OfmPublicKind
-  path?: string
-  permalink?: string
-  provider?: OfmPublicProvider
-  variant?: OfmPublicVariant
+  path: string
+  permalink: string
 }
+
+export interface OfmWikiLinkPublicProps extends OfmTargetPublicFields {
+  kind: typeof ofmPublicKind.wikilink
+}
+
+export interface OfmNoteLikeEmbedPublicProps extends OfmTargetPublicFields {
+  kind: typeof ofmPublicKind.embed
+  variant: typeof ofmPublicVariant.file | typeof ofmPublicVariant.image | typeof ofmPublicVariant.note
+}
+
+export interface OfmExternalEmbedPublicProps {
+  kind: typeof ofmPublicKind.embed
+  provider: OfmPublicProvider
+  variant: typeof ofmPublicVariant.external
+}
+
+export interface OfmAnchorHeadingPublicProps {
+  kind: typeof ofmPublicKind.anchorTarget
+  variant: typeof ofmPublicVariant.heading
+}
+
+export interface OfmAnchorBlockPublicProps {
+  blockId: string
+  kind: typeof ofmPublicKind.anchorTarget
+  variant: typeof ofmPublicVariant.block
+}
+
+export interface OfmCalloutPublicProps {
+  kind: typeof ofmPublicKind.callout
+}
+
+export interface OfmHighlightPublicProps {
+  kind: typeof ofmPublicKind.highlight
+}
+
+export type OfmPublicProps =
+  | OfmAnchorBlockPublicProps
+  | OfmAnchorHeadingPublicProps
+  | OfmCalloutPublicProps
+  | OfmExternalEmbedPublicProps
+  | OfmHighlightPublicProps
+  | OfmNoteLikeEmbedPublicProps
+  | OfmWikiLinkPublicProps
 
 export function setOfmPublicProps(properties: Properties, value: OfmPublicProps): void {
   properties[ofmPublicPropKeys.kind] = value.kind
-  setOptionalString(properties, ofmPublicPropKeys.variant, value.variant)
-  setOptionalString(properties, ofmPublicPropKeys.path, value.path)
-  setOptionalString(properties, ofmPublicPropKeys.permalink, value.permalink)
-  setOptionalString(properties, ofmPublicPropKeys.alias, value.alias)
-  setOptionalString(properties, ofmPublicPropKeys.blockId, value.blockId)
-  setOptionalString(properties, ofmPublicPropKeys.fragment, value.fragment)
-  setOptionalString(properties, ofmPublicPropKeys.provider, value.provider)
+  delete properties[ofmPublicPropKeys.variant]
+  delete properties[ofmPublicPropKeys.path]
+  delete properties[ofmPublicPropKeys.permalink]
+  delete properties[ofmPublicPropKeys.alias]
+  delete properties[ofmPublicPropKeys.blockId]
+  delete properties[ofmPublicPropKeys.fragment]
+  delete properties[ofmPublicPropKeys.provider]
+
+  switch (value.kind) {
+    case ofmPublicKind.wikilink:
+      setOptionalString(properties, ofmPublicPropKeys.path, value.path)
+      setOptionalString(properties, ofmPublicPropKeys.permalink, value.permalink)
+      setOptionalString(properties, ofmPublicPropKeys.alias, value.alias)
+      setOptionalString(properties, ofmPublicPropKeys.blockId, value.blockId)
+      setOptionalString(properties, ofmPublicPropKeys.fragment, value.fragment)
+      return
+    case ofmPublicKind.embed:
+      setOptionalString(properties, ofmPublicPropKeys.variant, value.variant)
+
+      if (value.variant === ofmPublicVariant.external) {
+        setOptionalString(properties, ofmPublicPropKeys.provider, value.provider)
+        return
+      }
+
+      setOptionalString(properties, ofmPublicPropKeys.path, value.path)
+      setOptionalString(properties, ofmPublicPropKeys.permalink, value.permalink)
+      setOptionalString(properties, ofmPublicPropKeys.alias, value.alias)
+      setOptionalString(properties, ofmPublicPropKeys.blockId, value.blockId)
+      setOptionalString(properties, ofmPublicPropKeys.fragment, value.fragment)
+      return
+    case ofmPublicKind.anchorTarget:
+      setOptionalString(properties, ofmPublicPropKeys.variant, value.variant)
+      setOptionalString(properties, ofmPublicPropKeys.blockId, 'blockId' in value ? value.blockId : undefined)
+      return
+    case ofmPublicKind.callout:
+    case ofmPublicKind.highlight:
+      return
+  }
 }
 
 export function readOfmPublicProps(node: Element | undefined): OfmPublicProps | undefined {
@@ -75,23 +146,103 @@ export function readOfmPublicProps(node: Element | undefined): OfmPublicProps | 
     return undefined
   }
 
-  const variant = readOptionalVariant(properties, ofmPublicPropKeys.variant)
-  const path = readOptionalString(properties, ofmPublicPropKeys.path)
-  const permalink = readOptionalString(properties, ofmPublicPropKeys.permalink)
-  const alias = readOptionalString(properties, ofmPublicPropKeys.alias)
-  const blockId = readOptionalString(properties, ofmPublicPropKeys.blockId)
-  const fragment = readOptionalString(properties, ofmPublicPropKeys.fragment)
-  const provider = readOptionalProvider(properties, ofmPublicPropKeys.provider)
+  switch (kind) {
+    case ofmPublicKind.wikilink: {
+      const path = readRequiredString(properties, ofmPublicPropKeys.path)
+      const permalink = readRequiredString(properties, ofmPublicPropKeys.permalink)
 
-  return {
-    kind,
-    ...(variant === undefined ? {} : {variant}),
-    ...(path === undefined ? {} : {path}),
-    ...(permalink === undefined ? {} : {permalink}),
-    ...(alias === undefined ? {} : {alias}),
-    ...(blockId === undefined ? {} : {blockId}),
-    ...(fragment === undefined ? {} : {fragment}),
-    ...(provider === undefined ? {} : {provider})
+      if (path === undefined || permalink === undefined) {
+        return undefined
+      }
+
+      const alias = readOptionalString(properties, ofmPublicPropKeys.alias)
+      const blockId = readOptionalString(properties, ofmPublicPropKeys.blockId)
+      const fragment = readOptionalString(properties, ofmPublicPropKeys.fragment)
+
+      return {
+        kind,
+        path,
+        permalink,
+        ...(alias === undefined ? {} : {alias}),
+        ...(blockId === undefined ? {} : {blockId}),
+        ...(fragment === undefined ? {} : {fragment})
+      }
+    }
+    case ofmPublicKind.embed: {
+      const variant = readOptionalVariant(properties, ofmPublicPropKeys.variant)
+
+      if (variant === undefined) {
+        return undefined
+      }
+
+      if (variant === ofmPublicVariant.external) {
+        const provider = readOptionalProvider(properties, ofmPublicPropKeys.provider)
+
+        return provider === undefined ? undefined : {
+          kind,
+          variant,
+          provider
+        }
+      }
+
+      if (
+        variant !== ofmPublicVariant.file
+        && variant !== ofmPublicVariant.image
+        && variant !== ofmPublicVariant.note
+      ) {
+        return undefined
+      }
+
+      const path = readRequiredString(properties, ofmPublicPropKeys.path)
+      const permalink = readRequiredString(properties, ofmPublicPropKeys.permalink)
+
+      if (path === undefined || permalink === undefined) {
+        return undefined
+      }
+
+      const alias = readOptionalString(properties, ofmPublicPropKeys.alias)
+      const blockId = readOptionalString(properties, ofmPublicPropKeys.blockId)
+      const fragment = readOptionalString(properties, ofmPublicPropKeys.fragment)
+
+      return {
+        kind,
+        variant,
+        path,
+        permalink,
+        ...(alias === undefined ? {} : {alias}),
+        ...(blockId === undefined ? {} : {blockId}),
+        ...(fragment === undefined ? {} : {fragment})
+      }
+    }
+    case ofmPublicKind.anchorTarget: {
+      const variant = readOptionalVariant(properties, ofmPublicPropKeys.variant)
+
+      if (variant === ofmPublicVariant.heading) {
+        return {
+          kind,
+          variant
+        }
+      }
+
+      if (variant !== ofmPublicVariant.block) {
+        return undefined
+      }
+
+      const blockId = readRequiredString(properties, ofmPublicPropKeys.blockId)
+
+      if (blockId === undefined) {
+        return undefined
+      }
+
+      return {
+        kind,
+        variant,
+        blockId
+      }
+    }
+    case ofmPublicKind.callout:
+    case ofmPublicKind.highlight:
+      return {kind}
   }
 }
 
@@ -118,6 +269,10 @@ function setOptionalString(properties: Properties, key: string, value: string | 
 function readOptionalString(properties: Properties | undefined, key: string): string | undefined {
   const value = properties?.[key]
   return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function readRequiredString(properties: Properties | undefined, key: string): string | undefined {
+  return readOptionalString(properties, key)
 }
 
 function readOptionalKind(properties: Properties | undefined, key: string): OfmPublicKind | undefined {

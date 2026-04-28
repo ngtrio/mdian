@@ -1,10 +1,10 @@
 # mdian
 
-`mdian` is a TypeScript integration layer for rendering Obsidian Flavored Markdown (OFM) with `react-markdown`.
+`mdian` is a TypeScript toolkit for parsing and rendering Obsidian Flavored Markdown (OFM) with unified-compatible pipelines.
 
 It provides:
 
-- `createOfmReactMarkdown` to enable OFM syntax in a `react-markdown` pipeline
+- `remarkOfm` and `rehypeOfm` for OFM syntax and HTML transforms
 - URL and anchor helpers for applications that need OFM-style wiki navigation
 - a small CSS entrypoint for sensible default styling
 
@@ -17,91 +17,48 @@ It provides:
 - Highlights: `==highlight==`
 - Comments: `%%hidden note%%`
 - Callouts
+- External embeds from standard Markdown image syntax for supported YouTube and X/Twitter URLs
 
 See the showcase at https://ngtrio.github.io/mdian
 
 Regular Markdown still works as usual. GFM and math are not bundled by this package; add `remark-gfm`, `remark-math`, `rehype-katex`, or other plugins yourself when needed.
 
-## `react-markdown` Usage
+## Usage
 
-`mdian/react-markdown` returns the plugin pair plus OFM-aware component overrides:
+`mdian` ships the core OFM plugins for unified-compatible pipelines.
 
-```tsx
-import ReactMarkdown from 'react-markdown'
-import {createOfmReactMarkdown} from 'mdian/react-markdown'
+Use `remarkOfm` and `rehypeOfm` in any unified-compatible pipeline:
+
+```ts
+import rehypeStringify from 'rehype-stringify'
+import {rehypeOfm, remarkOfm} from 'mdian'
+import remarkParse from 'remark-parse'
+import remarkRehype from 'remark-rehype'
+import {unified} from 'unified'
 import 'mdian/styles.css'
 
-const ofm = createOfmReactMarkdown({
-  ofm: {
-    hrefPrefix: 'wiki',
-    renderBlockAnchorLabels: true
-  },
-  components: {
-    renderWikiLink({children, href, path, permalink}) {
-      return <a href={href} data-path={path} data-permalink={permalink}>{children}</a>
-    },
-    renderNoteEmbed({children, href, title}) {
-      return <aside><a href={href}>{title}</a>{children}</aside>
-    }
-  }
-})
-
-export function Markdown({source}: {source: string}) {
-  return (
-    <ReactMarkdown
-      components={ofm.components}
-      remarkPlugins={[ofm.remarkPlugin]}
-      rehypePlugins={[ofm.rehypePlugin]}
-    >
-      {source}
-    </ReactMarkdown>
-  )
-}
-```
-
-If you also need GFM or math, add those plugins around the `mdian` adapter in the same pipeline.
-
-## Wiki Helpers
-
-The root `mdian` entrypoint exposes helpers for wiring OFM links and hashes into your own router or note viewer:
-
-```ts
-import {
-  buildOfmTargetUrl,
-  decodeOfmFragment,
-  findOfmAnchorTarget,
-  normalizeOfmPath
-} from 'mdian'
-```
-
-- `normalizeOfmPath` normalizes decoded wiki-style paths.
-- `decodeOfmFragment` decodes heading or block fragments without lowercasing them.
-- `buildOfmTargetUrl` builds application-facing hrefs from an OFM target plus an optional route prefix.
-- `findOfmAnchorTarget` finds the rendered heading or block target for a hash.
-
-Example:
-
-```ts
-import {
-  buildOfmTargetUrl,
-  decodeOfmFragment,
-  findOfmAnchorTarget,
-  normalizeOfmPath
-} from 'mdian'
-
-const pagePath = normalizeOfmPath(params.slug ?? '')
-const fragment = decodeOfmFragment(window.location.hash)
-const href = buildOfmTargetUrl(
-  {
-    path: 'Roadmap',
-    permalink: 'Roadmap#Next Steps'
-  },
-  'wiki'
+const html = String(
+  await unified()
+    .use(remarkParse)
+    .use(remarkOfm, {wikilinks: true, embeds: true})
+    .use(remarkRehype)
+    .use(rehypeOfm, {hrefPrefix: 'wiki', renderBlockAnchorLabels: true})
+    .use(rehypeStringify)
+    .process(source)
 )
-
-const target = findOfmAnchorTarget(document.body, `#${fragment}`)
 ```
 
+If you also need GFM or math, add those plugins around `remarkOfm` and `rehypeOfm` in the same pipeline.
+
+## External Embeds
+
+`rehypeOfm` also upgrades plain Markdown image URLs from supported providers into embeds:
+
+- `![](https://www.youtube.com/watch?v=...)`, `![](https://youtu.be/...)`, and `![](https://www.youtube.com/shorts/...)` render as YouTube `<iframe>` embeds.
+- `![](https://x.com/.../status/...)` and `![](https://twitter.com/.../status/...)` render as tweet embed blockquotes with `data-ofm-provider="twitter"`.
+
+Set `externalEmbeds: false` to keep those URLs on the normal Markdown image path.
+If you want interactive X/Twitter widgets instead of a plain blockquote fallback, load the provider script in your app after render.
 
 ## Development
 
@@ -113,3 +70,7 @@ pnpm build
 pnpm test
 pnpm demo:dev
 ```
+
+## License
+
+Apache-2.0.

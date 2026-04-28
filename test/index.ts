@@ -13,9 +13,10 @@ import {
   buildOfmTargetUrl,
   decodeOfmFragment,
   findOfmAnchorTarget,
-  normalizeOfmPath
+  normalizeOfmPath,
+  rehypeOfm as publicRehypeOfm,
+  remarkOfm as publicRemarkOfm
 } from '../src/index.js'
-import {createOfmReactMarkdown} from '../src/react-markdown/index.js'
 import { anchorHast, normalizeOfmAnchorKey } from '../src/lib/anchor/hast.js'
 import { calloutHast } from '../src/lib/callout/hast.js'
 import { embedHast } from '../src/lib/embed/hast.js'
@@ -56,43 +57,9 @@ for (const fixtureName of fixtures) {
   })
 }
 
-test('createOfmReactMarkdown returns react-markdown adapter plugins', () => {
-  const adapter = createOfmReactMarkdown({
-    ofm: {
-      callouts: false,
-      comments: true,
-      externalEmbeds: false,
-      hrefPrefix: 'wiki',
-      renderBlockAnchorLabels: true,
-      setTitle: true
-    }
-  })
-
-  assert.deepEqual(adapter.remarkPlugin, [remarkOfm, {callouts: false, comments: true}])
-  assert.deepEqual(adapter.rehypePlugin, [rehypeOfm, {
-    externalEmbeds: false,
-    hrefPrefix: 'wiki',
-    renderBlockAnchorLabels: true,
-    setTitle: true
-  }])
-  assert.equal(adapter.components, undefined)
-})
-
-test('createOfmReactMarkdown can include the default OFM-aware components map', () => {
-  const adapter = createOfmReactMarkdown({components: {}})
-
-  assert.equal(typeof adapter.components?.a, 'function')
-  assert.equal(typeof adapter.components?.div, 'function')
-})
-
-test('createOfmReactMarkdown preserves regular react-markdown components', () => {
-  const code = () => null
-  const adapter = createOfmReactMarkdown({
-    components: {},
-    reactComponents: {code}
-  })
-
-  assert.equal(adapter.components?.code, code)
+test('root public API re-exports the core OFM plugins', () => {
+  assert.equal(publicRemarkOfm, remarkOfm)
+  assert.equal(publicRehypeOfm, rehypeOfm)
 })
 
 test('readOfmPublicProps reads shared OFM public props from an element', () => {
@@ -134,9 +101,7 @@ test('readOfmPublicProps ignores invalid public-prop values on an element', () =
     children: []
   }
 
-  assert.deepEqual(readOfmPublicProps(node), {
-    kind: 'embed'
-  })
+  assert.equal(readOfmPublicProps(node), undefined)
 
   node.properties['data-ofm-kind'] = 'not-ofm'
   assert.equal(readOfmPublicProps(node), undefined)

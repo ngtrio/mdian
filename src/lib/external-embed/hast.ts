@@ -1,7 +1,7 @@
-import type {Element, Root, RootContent, Text} from 'hast'
+import type { Element, Root, RootContent, Text } from 'hast'
 
-import type {OfmRehypeOptions} from '../types.js'
-import {addClassName, ofmClassNames} from '../shared/class-name.js'
+import type { OfmRehypeOptions } from '../types.js'
+import { addClassName, ofmClassNames } from '../shared/class-name.js'
 import {
   ofmPublicKind,
   ofmPublicProvider,
@@ -37,10 +37,6 @@ export function externalEmbedHast(options: OfmRehypeOptions = {}): (node: Root |
 
   return function transform(node) {
     if (!externalEmbedsEnabled || node.type !== 'element' || node.tagName !== 'img') {
-      return
-    }
-
-    if (typeof node.properties['data-ofm-kind'] === 'string') {
       return
     }
 
@@ -177,8 +173,8 @@ function createTwitterLink(href: string): Element {
   return {
     type: 'element',
     tagName: 'a',
-    properties: {href},
-    children: [{type: 'text', value: href} satisfies Text]
+    properties: { href },
+    children: [{ type: 'text', value: href } satisfies Text]
   }
 }
 

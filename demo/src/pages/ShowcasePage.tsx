@@ -1,24 +1,18 @@
-import {useEffect, useMemo, useRef, useState} from 'react'
-import ReactMarkdown from 'react-markdown'
+import {useEffect, useState} from 'react'
 
 import {
   defaultDemoSampleKey,
   demoSamples,
   getDemoSample,
   type DemoSampleKey
-} from '../features/demo/demo-samples.js'
-import {createDemoMarkdownPreset} from '../features/markdown/markdown-pipeline.js'
-import {useDemoExternalEmbeds} from '../features/markdown/use-external-embed.js'
+} from '../content/demo-content.js'
+import {DemoMarkdown} from '../features/markdown/demo-markdown.js'
 
-export function App() {
+export function ShowcasePage() {
   const [activeSampleKey, setActiveSampleKey] = useState<DemoSampleKey>(defaultDemoSampleKey)
   const activeSample = getDemoSample(activeSampleKey)
   const [markdown, setMarkdown] = useState(activeSample.markdown)
-  const previewRef = useRef<HTMLElement>(null)
-  const preset = useMemo(() => createDemoMarkdownPreset(), [])
   const lineCount = markdown.split('\n').length
-
-  useDemoExternalEmbeds(previewRef, markdown)
 
   useEffect(() => {
     document.documentElement.classList.add('demo-scroll-lock')
@@ -91,15 +85,10 @@ export function App() {
               </div>
             </div>
 
-            <article className="preview preview--hero markdown-body" ref={previewRef}>
-              <ReactMarkdown
-                components={preset.components}
-                rehypePlugins={preset.rehypePlugins}
-                remarkPlugins={preset.remarkPlugins}
-              >
-                {markdown}
-              </ReactMarkdown>
-            </article>
+            <DemoMarkdown
+              className="preview preview--hero markdown-body"
+              markdown={markdown}
+            />
           </section>
         </div>
       </section>

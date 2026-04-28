@@ -1,7 +1,7 @@
 {
   "name": "mdian",
-  "version": "0.0.4",
-  "description": "remark plugin for Obsidian Flavored Markdown",
+  "version": "0.0.5",
+  "description": "remark and rehype plugins for Obsidian Flavored Markdown",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -20,11 +20,6 @@
       "import": "./dist/src/index.js",
       "default": "./dist/src/index.js"
     },
-    "./react-markdown": {
-      "types": "./dist/src/react-markdown/index.d.ts",
-      "import": "./dist/src/react-markdown/index.js",
-      "default": "./dist/src/react-markdown/index.js"
-    },
     "./styles.css": "./dist/styles.css"
   },
   "types": "./dist/src/index.d.ts",
@@ -38,27 +33,21 @@
     "typecheck": "tsc --build --pretty false",
     "pretest": "pnpm run build",
     "test:node": "node --enable-source-maps --test dist/test/index.js",
-    "test:react-markdown": "vitest run --environment jsdom test/*.test.tsx",
-    "test": "pnpm run test:node && pnpm run test:react-markdown",
+    "demo:test": "vitest run --root demo --environment jsdom",
+    "test": "pnpm run test:node && pnpm run demo:test",
     "coverage": "c8 --reporter=text --reporter=lcov pnpm test",
     "check": "pnpm run typecheck && pnpm test",
-    "demo:dev": "pnpm --dir demo dev",
-    "demo:build": "pnpm --dir demo build",
+    "demo:dev": "pnpm run build && pnpm --dir demo dev",
+    "demo:build": "pnpm run build && pnpm --dir demo build",
     "demo:preview": "pnpm --dir demo preview",
-    "demo:typecheck": "pnpm --dir demo typecheck"
+    "demo:typecheck": "pnpm run build && pnpm --dir demo typecheck"
   },
   "devDependencies": {
-    "@testing-library/react": "^16.3.2",
     "@types/node": "^25.6.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
     "c8": "^11.0.0",
     "esbuild": "^0.28.0",
     "jsdom": "^29.0.2",
     "mdast-util-from-markdown": "^2.0.3",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
-    "react-markdown": "^10.1.0",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "tsx": "^4.21.0",
@@ -74,9 +63,5 @@
     "micromark-util-symbol": "^2.0.1",
     "micromark-util-types": "^2.0.2",
     "unified": "^11.0.5"
-  },
-  "peerDependencies": {
-    "react": ">=19",
-    "react-markdown": ">=10"
   }
 }

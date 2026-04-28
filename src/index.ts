@@ -6,6 +6,8 @@ import {
   decodeOfmFragment,
   normalizeOfmPath
 } from './lib/shared/ofm-url.js'
+export {rehypeOfm, remarkOfm} from './lib/index.js'
+export type {OfmRehypeOptions, OfmRemarkOptions} from './lib/types.js'
 
 interface OfmTargetUrlInput {
   blockId?: string

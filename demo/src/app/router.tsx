@@ -1,6 +1,6 @@
 import {Outlet, createRootRoute, createRoute, createRouter} from '@tanstack/react-router'
 
-import {App} from './App.js'
+import {ShowcasePage} from '../pages/ShowcasePage.js'
 import {WikiPage} from '../pages/WikiPage.js'
 
 const rootRoute = createRootRoute({
@@ -10,7 +10,7 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: App
+  component: ShowcasePage
 })
 
 const wikiPageRoute = createRoute({

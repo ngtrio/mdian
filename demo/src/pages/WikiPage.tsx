@@ -1,26 +1,21 @@
-import {useEffect, useMemo, useRef} from 'react'
+import {useEffect, useRef} from 'react'
 import {Link, useLocation, useParams} from '@tanstack/react-router'
-import ReactMarkdown from 'react-markdown'
 
 import {
   decodeOfmFragment,
   findOfmAnchorTarget,
 } from 'mdian'
-import {createDemoMarkdownPreset} from '../features/markdown/markdown-pipeline.js'
-import {useDemoExternalEmbeds} from '../features/markdown/use-external-embed.js'
-import {getDemoWikiPage, normalizeWikiPath} from '../features/wiki/wiki.js'
+import {getDemoWikiPage, normalizeDemoWikiPath} from '../content/demo-content.js'
+import {DemoMarkdown} from '../features/markdown/demo-markdown.js'
 
 export function WikiPage() {
   const params = useParams({strict: false})
   const locationHash = useLocation({select: (location) => location.hash})
-  const articleRef = useRef<HTMLElement>(null)
-  const pagePath = normalizeWikiPath(typeof params._splat === 'string' ? params._splat : '')
+  const articleRef = useRef<HTMLDivElement>(null)
+  const pagePath = normalizeDemoWikiPath(typeof params._splat === 'string' ? params._splat : '')
   const page = getDemoWikiPage(pagePath)
   const activeFragment = decodeOfmFragment(locationHash)
-  const preset = useMemo(() => createDemoMarkdownPreset(), [])
   const contentKey = `${pagePath}:${page?.markdown ?? ''}`
-
-  useDemoExternalEmbeds(articleRef, contentKey)
 
   useEffect(() => {
     const root = articleRef.current
@@ -75,15 +70,13 @@ export function WikiPage() {
 
       {page ? (
         <section className="hero-stage hero-stage--wiki panel">
-          <article className="preview preview--hero markdown-body wiki-markdown" ref={articleRef}>
-            <ReactMarkdown
-              components={preset.components}
-              rehypePlugins={preset.rehypePlugins}
-              remarkPlugins={preset.remarkPlugins}
-            >
-              {page.markdown}
-            </ReactMarkdown>
-          </article>
+          <div ref={articleRef}>
+            <DemoMarkdown
+              className="preview preview--hero markdown-body wiki-markdown"
+              contentKey={contentKey}
+              markdown={page.markdown}
+            />
+          </div>
         </section>
       ) : (
         <section className="panel">
