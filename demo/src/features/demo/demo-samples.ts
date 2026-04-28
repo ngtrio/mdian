@@ -1,6 +1,12 @@
 import {buildWikiHref} from '../wiki/wiki.js'
 
-export type DemoSampleKey = 'wikilinks' | 'embeds' | 'callouts' | 'highlights' | 'comments'
+export type DemoSampleKey =
+  | 'wikilinks'
+  | 'embeds'
+  | 'external-embeds'
+  | 'callouts'
+  | 'highlights'
+  | 'comments'
 
 export interface DemoSample {
   description: string
@@ -52,6 +58,27 @@ export const demoSamples: DemoSample[] = [
       '## Embedded block',
       '',
       '![[Roadmap#^next-step]]'
+    ].join('\n')
+  },
+  {
+    key: 'external-embeds',
+    title: 'External Embeds',
+    description: 'Plain markdown image syntax upgraded into YouTube and X embeds in the preview pane.',
+    featureSummary: ['YouTube', 'X/Twitter', 'Rehype transform'],
+    markdown: [
+      '# External Embeds',
+      '',
+      'These start as normal markdown images, then `mdian` upgrades supported URLs during the rehype pass.',
+      '',
+      '## YouTube',
+      '',
+      '![Demo walkthrough](https://www.youtube.com/watch?v=dQw4w9WgXcQ)',
+      '',
+      '## X / Twitter',
+      '',
+      '![](https://x.com/jack/status/20)',
+      '',
+      'The editor source stays small because there is no custom shortcode to memorize.'
     ].join('\n')
   },
   {

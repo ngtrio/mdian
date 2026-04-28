@@ -7,6 +7,7 @@ import {
   findOfmAnchorTarget,
 } from 'mdian'
 import {createDemoMarkdownPreset} from '../features/markdown/markdown-pipeline.js'
+import {useDemoExternalEmbeds} from '../features/markdown/use-external-embed.js'
 import {getDemoWikiPage, normalizeWikiPath} from '../features/wiki/wiki.js'
 
 export function WikiPage() {
@@ -17,6 +18,9 @@ export function WikiPage() {
   const page = getDemoWikiPage(pagePath)
   const activeFragment = decodeOfmFragment(locationHash)
   const preset = useMemo(() => createDemoMarkdownPreset(), [])
+  const contentKey = `${pagePath}:${page?.markdown ?? ''}`
+
+  useDemoExternalEmbeds(articleRef, contentKey)
 
   useEffect(() => {
     const root = articleRef.current

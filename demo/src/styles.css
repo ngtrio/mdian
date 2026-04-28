@@ -490,6 +490,23 @@ textarea {
   background: var(--surface-muted);
 }
 
+.markdown-body .ofm-embed[data-ofm-variant='external'] {
+  margin-bottom: 1rem;
+  border-radius: 18px;
+  background: var(--surface-soft);
+}
+
+.markdown-body iframe.ofm-embed[data-ofm-provider='youtube'] {
+  width: 100%;
+  border: 0;
+}
+
+.markdown-body blockquote.ofm-embed[data-ofm-provider='twitter'] {
+  padding: 0;
+  border-left: 0;
+  color: inherit;
+}
+
 .markdown-body .contains-task-list {
   padding-left: 0;
   list-style: none;
