@@ -3,7 +3,6 @@ import type {OfmRehypeFeature} from '../feature.js'
 import {
   anchorHast,
   findOfmAnchorTarget,
-  getOfmAnchorKeyFromHash,
   normalizeOfmAnchorKey
 } from './hast.js'
 
@@ -14,6 +13,5 @@ export const anchorRehypeFeature: OfmRehypeFeature = {
 export {
   anchorHast,
   findOfmAnchorTarget,
-  getOfmAnchorKeyFromHash,
   normalizeOfmAnchorKey
 } from './hast.js'

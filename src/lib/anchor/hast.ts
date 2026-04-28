@@ -7,22 +7,18 @@ import type {OfmRehypeOptions} from '../types.js'
 
 const blockIdPattern = /^(.*?)(?:\s+)\^([A-Za-z0-9][A-Za-z0-9_-]*)\s*$/s
 
-export interface OfmAnchorTargetLike {
+interface OfmAnchorTargetLike {
   dataset?: {
     anchorKey?: string
   }
 }
 
-export interface OfmAnchorRootLike<T extends OfmAnchorTargetLike = OfmAnchorTargetLike> {
+interface OfmAnchorRootLike<T extends OfmAnchorTargetLike = OfmAnchorTargetLike> {
   querySelectorAll(selector: string): Iterable<T>
 }
 
 export function normalizeOfmAnchorKey(value: string | null | undefined): string {
   return decodeOfmFragment(value ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
-}
-
-export function getOfmAnchorKeyFromHash(value: string | null | undefined): string {
-  return normalizeOfmAnchorKey(value)
 }
 
 export function findOfmAnchorTarget<T extends OfmAnchorTargetLike>(

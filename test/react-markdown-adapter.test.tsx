@@ -2,7 +2,7 @@ import {render} from '@testing-library/react'
 import ReactMarkdown from 'react-markdown'
 import {describe, expect, test, vi} from 'vitest'
 
-import {createOfmComponents, createOfmReactMarkdown} from '../src/react-markdown/index.js'
+import {createOfmReactMarkdown} from '../src/react-markdown/index.js'
 
 describe('mdian React adapter', () => {
   test('passes wikilink metadata to a custom renderer', () => {
@@ -96,11 +96,10 @@ describe('mdian React adapter', () => {
 
   test('keeps non-OFM anchors and note embeds on the default HTML path', () => {
     const ofm = createOfmReactMarkdown({components: {}})
-    const components = createOfmComponents()
 
     const {container} = render(
       <>
-        <ReactMarkdown components={components}>{'[plain](https://example.com)'}</ReactMarkdown>
+        <ReactMarkdown components={ofm.components}>{'[plain](https://example.com)'}</ReactMarkdown>
         <ReactMarkdown components={ofm.components} rehypePlugins={[ofm.rehypePlugin]} remarkPlugins={[ofm.remarkPlugin]}>
           {'![[Project Notes]]'}
         </ReactMarkdown>

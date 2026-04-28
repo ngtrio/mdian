@@ -1,12 +1,11 @@
 # mdian
 
-`mdian` is a TypeScript parser toolkit for Obsidian Flavored Markdown (OFM) on top of the Unified ecosystem.
+`mdian` is a TypeScript integration layer for rendering Obsidian Flavored Markdown (OFM) with `react-markdown`.
 
 It provides:
 
-- `remarkOfm` for parsing OFM syntax into mdast
-- `rehypeOfm` for rendering OFM-specific output in hast
-- `createOfmReactMarkdown` for `react-markdown`
+- `createOfmReactMarkdown` to enable OFM syntax in a `react-markdown` pipeline
+- URL and anchor helpers for applications that need OFM-style wiki navigation
 - a small CSS entrypoint for sensible default styling
 
 ## Supported OFM Syntax
@@ -19,38 +18,9 @@ It provides:
 - Comments: `%%hidden note%%`
 - Callouts
 
-See the showcase from https://ngtrio.github.io/mdian
+See the showcase at https://ngtrio.github.io/mdian
 
 Regular Markdown still works as usual. GFM and math are not bundled by this package; add `remark-gfm`, `remark-math`, `rehype-katex`, or other plugins yourself when needed.
-
-## Unified Usage
-
-Use `remarkOfm` during Markdown parsing and `rehypeOfm` after the mdast to hast step:
-
-```ts
-import {unified} from 'unified'
-import remarkParse from 'remark-parse'
-import remarkRehype from 'remark-rehype'
-import rehypeStringify from 'rehype-stringify'
-import {remarkOfm, rehypeOfm} from 'mdian'
-
-const file = await unified()
-  .use(remarkParse)
-  .use(remarkOfm, {
-    callouts: true,
-    comments: true,
-    embeds: true,
-    highlights: true,
-    wikilinks: true
-  })
-  .use(remarkRehype)
-  .use(rehypeOfm, {
-    hrefPrefix: 'wiki',
-    renderBlockAnchorLabels: true
-  })
-  .use(rehypeStringify)
-  .process('Visit [[Project Notes]] and ![[Roadmap#^next-step]].')
-```
 
 ## `react-markdown` Usage
 
@@ -90,6 +60,47 @@ export function Markdown({source}: {source: string}) {
 ```
 
 If you also need GFM or math, add those plugins around the `mdian` adapter in the same pipeline.
+
+## Wiki Helpers
+
+The root `mdian` entrypoint exposes helpers for wiring OFM links and hashes into your own router or note viewer:
+
+```ts
+import {
+  buildOfmTargetUrl,
+  decodeOfmFragment,
+  findOfmAnchorTarget,
+  normalizeOfmPath
+} from 'mdian'
+```
+
+- `normalizeOfmPath` normalizes decoded wiki-style paths.
+- `decodeOfmFragment` decodes heading or block fragments without lowercasing them.
+- `buildOfmTargetUrl` builds application-facing hrefs from an OFM target plus an optional route prefix.
+- `findOfmAnchorTarget` finds the rendered heading or block target for a hash.
+
+Example:
+
+```ts
+import {
+  buildOfmTargetUrl,
+  decodeOfmFragment,
+  findOfmAnchorTarget,
+  normalizeOfmPath
+} from 'mdian'
+
+const pagePath = normalizeOfmPath(params.slug ?? '')
+const fragment = decodeOfmFragment(window.location.hash)
+const href = buildOfmTargetUrl(
+  {
+    path: 'Roadmap',
+    permalink: 'Roadmap#Next Steps'
+  },
+  'wiki'
+)
+
+const target = findOfmAnchorTarget(document.body, `#${fragment}`)
+```
 
 
 ## Development

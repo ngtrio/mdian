@@ -13,20 +13,18 @@ import {
   buildOfmTargetUrl,
   decodeOfmFragment,
   findOfmAnchorTarget,
-  getOfmAnchorKeyFromHash,
-  normalizeOfmPath,
-  ofmClassNames,
-  rehypeOfm,
-  remarkOfm,
-  type OfmRemarkOptions
+  normalizeOfmPath
 } from '../src/index.js'
-import {createOfmComponents, createOfmReactMarkdown} from '../src/react-markdown/index.js'
+import {createOfmReactMarkdown} from '../src/react-markdown/index.js'
 import { anchorHast, normalizeOfmAnchorKey } from '../src/lib/anchor/hast.js'
 import { calloutHast } from '../src/lib/callout/hast.js'
 import { embedHast } from '../src/lib/embed/hast.js'
 import { highlightHast } from '../src/lib/highlight/hast.js'
+import {rehypeOfm, remarkOfm} from '../src/lib/index.js'
+import {ofmClassNames} from '../src/lib/shared/class-name.js'
 import {getOfmNodeData, stripOfmDataProps} from '../src/lib/shared/ofm-node.js'
 import {readOfmPublicProps, setOfmPublicProps} from '../src/lib/shared/public-props.js'
+import type {OfmRemarkOptions} from '../src/lib/types.js'
 import { wikiLinkHast } from '../src/lib/wikilink/hast.js'
 
 interface FixtureConfig {
@@ -95,13 +93,6 @@ test('createOfmReactMarkdown preserves regular react-markdown components', () =>
   })
 
   assert.equal(adapter.components?.code, code)
-})
-
-test('createOfmComponents exposes the OFM element overrides used by react-markdown', () => {
-  const components = createOfmComponents()
-
-  assert.equal(typeof components.a, 'function')
-  assert.equal(typeof components.div, 'function')
 })
 
 test('readOfmPublicProps reads shared OFM public props from an element', () => {
@@ -858,9 +849,9 @@ test('rehypeOfm can keep external image URLs on the normal image path', () => {
 })
 
 
-test('getOfmAnchorKeyFromHash matches anchor normalization behavior', () => {
-  assert.equal(getOfmAnchorKeyFromHash('#Heading%20Here'), 'heading here')
-  assert.equal(getOfmAnchorKeyFromHash('#^Block-ID'), '^block-id')
+test('normalizeOfmAnchorKey matches anchor normalization behavior', () => {
+  assert.equal(normalizeOfmAnchorKey('#Heading%20Here'), 'heading here')
+  assert.equal(normalizeOfmAnchorKey('#^Block-ID'), '^block-id')
 })
 
 test('findOfmAnchorTarget locates the first matching data-anchor-key', () => {

@@ -18,15 +18,15 @@ interface OfmTargetRendererProps extends OfmRendererProps {
   fragment?: string
 }
 
-export interface OfmWikiLinkRendererProps extends OfmTargetRendererProps {
+interface OfmWikiLinkRendererProps extends OfmTargetRendererProps {
   alias?: string
 }
 
-export interface OfmNoteEmbedRendererProps extends OfmTargetRendererProps {
+interface OfmNoteEmbedRendererProps extends OfmTargetRendererProps {
   title?: string
 }
 
-export interface CreateOfmComponentsOptions {
+interface CreateOfmComponentsOptions {
   renderNoteEmbed?: (props: OfmNoteEmbedRendererProps) => ReactNode
   renderWikiLink?: (props: OfmWikiLinkRendererProps) => ReactNode
 }

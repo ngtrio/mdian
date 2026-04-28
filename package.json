@@ -17,10 +17,12 @@
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
       "default": "./dist/src/index.js"
     },
     "./react-markdown": {
       "types": "./dist/src/react-markdown/index.d.ts",
+      "import": "./dist/src/react-markdown/index.js",
       "default": "./dist/src/react-markdown/index.js"
     },
     "./styles.css": "./dist/styles.css"
