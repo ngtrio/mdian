@@ -1,5 +1,5 @@
 export interface OfmTargetUrlInput {
-  blockId?: string | null | undefined
+  blockId?: string | null
   path: string
   permalink: string
 }

@@ -1,19 +1,13 @@
-import type { Literal } from "mdast"
+import type {Literal} from 'mdast'
 
-export interface WikiLinkData {
-  alias?: string | null | undefined
-  blockId?: string | null | undefined
-  kind: 'wikilink'
+interface WikiLinkFields {
+  alias?: string | null
+  blockId?: string | null
   path: string
   permalink: string
   value: string
 }
 
-export interface WikiLink extends Literal {
+export interface WikiLink extends Literal, WikiLinkFields {
   type: 'wikiLink'
-  alias?: string | null | undefined
-  blockId?: string | null | undefined
-  path: string
-  permalink: string
-  value: string
 }

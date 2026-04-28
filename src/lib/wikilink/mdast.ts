@@ -46,8 +46,8 @@ function createWikiLinkData(
   value: string,
   path: string,
   permalink: string,
-  alias?: string | null | undefined,
-  blockId?: string | null | undefined
+  alias?: string | null,
+  blockId?: string | null
 ) {
   const label = alias ?? path ?? permalink ?? value ?? 'wiki link'
   const hProperties: Properties = {

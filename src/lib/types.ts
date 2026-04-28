@@ -7,6 +7,7 @@ export interface OfmRemarkOptions {
 }
 
 export interface OfmRehypeOptions {
+  externalEmbeds?: boolean
   hrefPrefix?: string
   renderBlockAnchorLabels?: boolean
   setTitle?: boolean

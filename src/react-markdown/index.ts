@@ -14,6 +14,7 @@ export type OfmMarkdownOptions = OfmRemarkOptions & OfmRehypeOptions
 
 export interface OfmReactMarkdownOptions {
   components?: CreateOfmComponentsOptions
+  reactComponents?: Components
   ofm?: OfmMarkdownOptions
 }
 
@@ -24,13 +25,14 @@ export interface OfmReactMarkdownAdapter {
 }
 
 export function createOfmReactMarkdown(options: OfmReactMarkdownOptions = {}): OfmReactMarkdownAdapter {
-  const {components, ofm = {}} = options
+  const {components, reactComponents, ofm = {}} = options
   const {
     callouts,
     comments,
     embeds,
     highlights,
     wikilinks,
+    externalEmbeds,
     hrefPrefix,
     renderBlockAnchorLabels,
     setTitle
@@ -44,21 +46,32 @@ export function createOfmReactMarkdown(options: OfmReactMarkdownOptions = {}): O
     ...(wikilinks === undefined ? {} : {wikilinks})
   })
   const rehypeOptions = compactDefined<OfmRehypeOptions>({
+    ...(externalEmbeds === undefined ? {} : {externalEmbeds}),
     ...(hrefPrefix === undefined ? {} : {hrefPrefix}),
     ...(renderBlockAnchorLabels === undefined ? {} : {renderBlockAnchorLabels}),
     ...(setTitle === undefined ? {} : {setTitle})
   })
   const componentMap = components ? createOfmComponents(components) : undefined
+  const mergedComponents: Components | undefined = componentMap === undefined
+    ? reactComponents
+    : {
+        ...(reactComponents ?? {}),
+        ...componentMap
+      }
 
   return {
     remarkPlugin: [remarkOfm, remarkOptions],
     rehypePlugin: [rehypeOfm, rehypeOptions],
-    ...(componentMap === undefined ? {} : {components: componentMap})
+    ...(mergedComponents === undefined ? {} : {components: mergedComponents})
   }
 }
 
 export {createOfmComponents}
-export type {CreateOfmComponentsOptions, OfmNoteEmbedRendererProps, OfmWikiLinkRendererProps}
+export type {
+  CreateOfmComponentsOptions,
+  OfmNoteEmbedRendererProps,
+  OfmWikiLinkRendererProps
+}
 
 function compactDefined<T extends object>(value: T): T {
   return Object.fromEntries(

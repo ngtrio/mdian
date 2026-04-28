@@ -1,26 +1,26 @@
 import type {Properties} from 'hast'
 
+interface OfmTargetNodeData {
+  alias?: string
+  blockId?: string
+  path: string
+  permalink: string
+  value: string
+}
+
+interface OfmEmbedSize {
+  height?: number
+  width?: number
+}
+
 export type OfmNodeData =
-  | {
+  | (OfmTargetNodeData & {
       kind: 'wikilink'
-      value: string
-      path: string
-      permalink: string
-      alias?: string
-      blockId?: string
-    }
-  | {
+    })
+  | (OfmTargetNodeData & {
       kind: 'embed'
-      value: string
-      path: string
-      permalink: string
-      alias?: string
-      blockId?: string
-      size?: {
-        width?: number
-        height?: number
-      }
-    }
+      size?: OfmEmbedSize
+    })
   | {
       kind: 'comment'
       value: string
@@ -51,7 +51,7 @@ const ofmDataPropNames = [
   'dataOfmWidth'
 ] as const
 
-export function getOfmNodeData(properties?: Properties | Record<string, unknown>): OfmNodeData | undefined {
+export function getOfmNodeData(properties?: Properties): OfmNodeData | undefined {
   const kind = readString(properties, 'dataOfmKind')
 
   switch (kind) {
@@ -110,7 +110,7 @@ export function getOfmNodeData(properties?: Properties | Record<string, unknown>
   }
 }
 
-export function stripOfmDataProps<T extends Properties | Record<string, unknown>>(properties: T): T {
+export function stripOfmDataProps<T extends Properties>(properties: T): T {
   for (const key of ofmDataPropNames) {
     delete properties[key]
   }
@@ -118,21 +118,21 @@ export function stripOfmDataProps<T extends Properties | Record<string, unknown>
   return properties
 }
 
-function readString(properties: Properties | Record<string, unknown> | undefined, key: string): string {
+function readString(properties: Properties | undefined, key: string): string {
   const value = properties?.[key]
   return typeof value === 'string' ? value : ''
 }
 
-function readOptionalString(properties: Properties | Record<string, unknown> | undefined, key: string): string | undefined {
+function readOptionalString(properties: Properties | undefined, key: string): string | undefined {
   const value = properties?.[key]
   return typeof value === 'string' && value.length > 0 ? value : undefined
 }
 
-function readOptionalNumber(properties: Properties | Record<string, unknown> | undefined, key: string): number | undefined {
+function readOptionalNumber(properties: Properties | undefined, key: string): number | undefined {
   const value = properties?.[key]
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
-function readBoolean(properties: Properties | Record<string, unknown> | undefined, key: string): boolean {
+function readBoolean(properties: Properties | undefined, key: string): boolean {
   return properties?.[key] === true
 }

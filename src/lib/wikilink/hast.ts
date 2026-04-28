@@ -3,7 +3,7 @@ import type {Root, RootContent} from 'hast'
 import type {OfmRehypeOptions} from '../types.js'
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
 import {getOfmNodeData, stripOfmDataProps} from '../shared/ofm-node.js'
-import {setOfmPublicProps, getOfmPublicFragment} from '../shared/public-props.js'
+import {getOfmPublicFragment, ofmPublicKind, setOfmPublicProps} from '../shared/public-props.js'
 import { buildOfmTargetUrl } from '../shared/ofm-url.js'
 
 export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | RootContent) => void {
@@ -16,7 +16,7 @@ export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | Root
 
     const ofmNode = getOfmNodeData(node.properties)
 
-    if (ofmNode?.kind !== 'wikilink') {
+    if (ofmNode?.kind !== ofmPublicKind.wikilink) {
       return
     }
 
@@ -24,7 +24,7 @@ export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | Root
 
     node.properties.href = buildOfmTargetUrl(ofmNode, options.hrefPrefix)
     setOfmPublicProps(node.properties, {
-      kind: 'wikilink',
+      kind: ofmPublicKind.wikilink,
       path: ofmNode.path,
       permalink: ofmNode.permalink,
       ...(ofmNode.alias === undefined ? {} : {alias: ofmNode.alias}),

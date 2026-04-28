@@ -54,6 +54,46 @@ describe('mdian React adapter', () => {
     expect(container.querySelector('aside')?.textContent).toContain('custom embed')
   })
 
+  test('preserves regular react-markdown components alongside OFM renderers', () => {
+    const ofm = createOfmReactMarkdown({
+      components: {
+        renderWikiLink({children, href}) {
+          return <span data-kind="wikilink" data-href={href}>{children}</span>
+        }
+      },
+      ofm: {wikilinks: true},
+      reactComponents: {
+        code({children}) {
+          return <code data-kind="code">{children}</code>
+        }
+      }
+    })
+
+    const {container} = render(
+      <ReactMarkdown components={ofm.components} rehypePlugins={[ofm.rehypePlugin]} remarkPlugins={[ofm.remarkPlugin]}>
+        {'[[Page]] and `inline code`'}
+      </ReactMarkdown>
+    )
+
+    expect(container.querySelector('[data-kind="wikilink"]')?.textContent).toBe('Page')
+    expect(container.querySelector('code[data-kind="code"]')?.textContent).toBe('inline code')
+  })
+
+  test('keeps external embeds on the default HTML path', () => {
+    const ofm = createOfmReactMarkdown({components: {}})
+    const {container} = render(
+      <ReactMarkdown components={ofm.components} rehypePlugins={[ofm.rehypePlugin]} remarkPlugins={[ofm.remarkPlugin]}>
+        {'![](https://www.youtube.com/watch?v=dQw4w9WgXcQ)\n\n![](https://x.com/jack/status/20)'}
+      </ReactMarkdown>
+    )
+
+    const iframe = container.querySelector('iframe[data-ofm-provider="youtube"]')
+    const blockquote = container.querySelector('blockquote[data-ofm-provider="twitter"]')
+
+    expect(iframe?.getAttribute('src')).toBe('https://www.youtube.com/embed/dQw4w9WgXcQ')
+    expect(blockquote?.querySelector('a')?.getAttribute('href')).toBe('https://twitter.com/jack/status/20')
+  })
+
   test('keeps non-OFM anchors and note embeds on the default HTML path', () => {
     const ofm = createOfmReactMarkdown({components: {}})
     const components = createOfmComponents()

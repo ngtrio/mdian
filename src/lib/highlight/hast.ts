@@ -2,7 +2,7 @@ import type {Root, RootContent} from 'hast'
 
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
 import {stripOfmDataProps} from '../shared/ofm-node.js'
-import {setOfmPublicProps} from '../shared/public-props.js'
+import {ofmPublicKind, setOfmPublicProps} from '../shared/public-props.js'
 
 export function highlightHast(): (node: Root | RootContent) => void {
   return function transform(node) {
@@ -14,7 +14,7 @@ export function highlightHast(): (node: Root | RootContent) => void {
       return
     }
 
-    setOfmPublicProps(node.properties, {kind: 'highlight'})
+    setOfmPublicProps(node.properties, {kind: ofmPublicKind.highlight})
     addClassName(node.properties, ofmClassNames.highlight)
     stripOfmDataProps(node.properties)
   }

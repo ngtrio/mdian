@@ -1,7 +1,7 @@
 import type {Element, Root, RootContent, Text} from 'hast'
 
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
-import {setOfmPublicProps} from '../shared/public-props.js'
+import {ofmPublicKind, ofmPublicVariant, setOfmPublicProps} from '../shared/public-props.js'
 import {decodeOfmFragment} from '../shared/ofm-url.js'
 import type {OfmRehypeOptions} from '../types.js'
 
@@ -9,7 +9,7 @@ const blockIdPattern = /^(.*?)(?:\s+)\^([A-Za-z0-9][A-Za-z0-9_-]*)\s*$/s
 
 export interface OfmAnchorTargetLike {
   dataset?: {
-    anchorKey?: string | undefined
+    anchorKey?: string
   }
 }
 
@@ -57,7 +57,7 @@ export function anchorHast(options: Partial<Pick<OfmRehypeOptions, 'renderBlockA
 
       if (anchorKey) {
         node.properties['data-anchor-key'] = anchorKey
-        setOfmPublicProps(node.properties, {kind: 'anchor-target', variant: 'heading'})
+        setOfmPublicProps(node.properties, {kind: ofmPublicKind.anchorTarget, variant: ofmPublicVariant.heading})
         addClassName(node.properties, ofmClassNames.anchorTarget, ofmClassNames.headingTarget)
       }
     }
@@ -67,7 +67,7 @@ export function anchorHast(options: Partial<Pick<OfmRehypeOptions, 'renderBlockA
 
       if (blockId) {
         node.properties['data-anchor-key'] = normalizeOfmAnchorKey(`^${blockId}`)
-        setOfmPublicProps(node.properties, {kind: 'anchor-target', variant: 'block', blockId})
+        setOfmPublicProps(node.properties, {kind: ofmPublicKind.anchorTarget, variant: ofmPublicVariant.block, blockId})
         addClassName(node.properties, ofmClassNames.anchorTarget, ofmClassNames.blockTarget)
 
         if (renderBlockAnchorLabels) {

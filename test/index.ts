@@ -26,6 +26,7 @@ import { calloutHast } from '../src/lib/callout/hast.js'
 import { embedHast } from '../src/lib/embed/hast.js'
 import { highlightHast } from '../src/lib/highlight/hast.js'
 import {getOfmNodeData, stripOfmDataProps} from '../src/lib/shared/ofm-node.js'
+import {readOfmPublicProps, setOfmPublicProps} from '../src/lib/shared/public-props.js'
 import { wikiLinkHast } from '../src/lib/wikilink/hast.js'
 
 interface FixtureConfig {
@@ -62,6 +63,7 @@ test('createOfmReactMarkdown returns react-markdown adapter plugins', () => {
     ofm: {
       callouts: false,
       comments: true,
+      externalEmbeds: false,
       hrefPrefix: 'wiki',
       renderBlockAnchorLabels: true,
       setTitle: true
@@ -70,6 +72,7 @@ test('createOfmReactMarkdown returns react-markdown adapter plugins', () => {
 
   assert.deepEqual(adapter.remarkPlugin, [remarkOfm, {callouts: false, comments: true}])
   assert.deepEqual(adapter.rehypePlugin, [rehypeOfm, {
+    externalEmbeds: false,
     hrefPrefix: 'wiki',
     renderBlockAnchorLabels: true,
     setTitle: true
@@ -84,11 +87,68 @@ test('createOfmReactMarkdown can include the default OFM-aware components map', 
   assert.equal(typeof adapter.components?.div, 'function')
 })
 
+test('createOfmReactMarkdown preserves regular react-markdown components', () => {
+  const code = () => null
+  const adapter = createOfmReactMarkdown({
+    components: {},
+    reactComponents: {code}
+  })
+
+  assert.equal(adapter.components?.code, code)
+})
+
 test('createOfmComponents exposes the OFM element overrides used by react-markdown', () => {
   const components = createOfmComponents()
 
   assert.equal(typeof components.a, 'function')
   assert.equal(typeof components.div, 'function')
+})
+
+test('readOfmPublicProps reads shared OFM public props from an element', () => {
+  const node: Element = {
+    type: 'element',
+    tagName: 'a',
+    properties: {},
+    children: []
+  }
+
+  setOfmPublicProps(node.properties, {
+    kind: 'wikilink',
+    path: 'Page',
+    permalink: 'Page#Heading',
+    alias: 'Alias',
+    blockId: 'block-id',
+    fragment: 'Heading'
+  })
+
+  assert.deepEqual(readOfmPublicProps(node), {
+    kind: 'wikilink',
+    path: 'Page',
+    permalink: 'Page#Heading',
+    alias: 'Alias',
+    blockId: 'block-id',
+    fragment: 'Heading'
+  })
+})
+
+test('readOfmPublicProps ignores invalid public-prop values on an element', () => {
+  const node: Element = {
+    type: 'element',
+    tagName: 'div',
+    properties: {
+      'data-ofm-kind': 'embed',
+      'data-ofm-variant': 'not-supported',
+      'data-ofm-provider': 'not-supported'
+    },
+    children: []
+  }
+
+  assert.deepEqual(readOfmPublicProps(node), {
+    kind: 'embed'
+  })
+
+  node.properties['data-ofm-kind'] = 'not-ofm'
+  assert.equal(readOfmPublicProps(node), undefined)
 })
 
 test('build emits the public styles entrypoint', async () => {
@@ -718,6 +778,85 @@ test('rendering file embeds keeps link output semantics', () => {
   assert.deepEqual(node.children, [{type: 'text', value: 'manual.pdf'}])
 })
 
+test('rehypeOfm renders supported YouTube image URLs as external iframe embeds', () => {
+  const tree: Root = {
+    type: 'root',
+    children: [createParagraphElement([createMarkdownImageElement({
+      alt: 'Demo video',
+      src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    })])]
+  }
+
+  const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
+  transform(tree)
+
+  const paragraph = tree.children[0]
+  assert.equal(paragraph?.type, 'element')
+  const iframe = paragraph.children[0]
+  assert.equal(iframe?.type, 'element')
+  assert.equal(iframe.tagName, 'iframe')
+  assert.equal(iframe.properties.src, 'https://www.youtube.com/embed/dQw4w9WgXcQ')
+  assert.equal(iframe.properties.title, 'Demo video')
+  assert.equal(iframe.properties.allowFullScreen, true)
+  assert.equal(iframe.properties.loading, 'lazy')
+  assertClassNames(iframe, [ofmClassNames.embed])
+  assertOfmPublicProps(iframe, {
+    kind: 'embed',
+    variant: 'external',
+    provider: 'youtube'
+  })
+})
+
+test('rehypeOfm renders supported X status URLs as external tweet embeds', () => {
+  const tree: Root = {
+    type: 'root',
+    children: [createParagraphElement([createMarkdownImageElement({
+      src: 'https://x.com/jack/status/20'
+    })])]
+  }
+
+  const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
+  transform(tree)
+
+  const paragraph = tree.children[0]
+  assert.equal(paragraph?.type, 'element')
+  const blockquote = paragraph.children[0]
+  assert.equal(blockquote?.type, 'element')
+  assert.equal(blockquote.tagName, 'blockquote')
+  assert.equal(blockquote.properties.cite, 'https://twitter.com/jack/status/20')
+  assert.deepEqual(blockquote.properties.className, [ofmClassNames.embed, 'twitter-tweet'])
+  assertOfmPublicProps(blockquote, {
+    kind: 'embed',
+    variant: 'external',
+    provider: 'twitter'
+  })
+
+  const link = blockquote.children[0]
+  assert.equal(link?.type, 'element')
+  assert.equal(link.tagName, 'a')
+  assert.equal(link.properties.href, 'https://twitter.com/jack/status/20')
+})
+
+test('rehypeOfm can keep external image URLs on the normal image path', () => {
+  const tree: Root = {
+    type: 'root',
+    children: [createParagraphElement([createMarkdownImageElement({
+      src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    })])]
+  }
+
+  const transform = rehypeOfm.call(unified(), {externalEmbeds: false}) as (tree: Root) => void
+  transform(tree)
+
+  const paragraph = tree.children[0]
+  assert.equal(paragraph?.type, 'element')
+  const image = paragraph.children[0]
+  assert.equal(image?.type, 'element')
+  assert.equal(image.tagName, 'img')
+  assert.equal(image.properties.src, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+  assert.equal(image.properties['data-ofm-kind'], undefined)
+})
+
 
 test('getOfmAnchorKeyFromHash matches anchor normalization behavior', () => {
   assert.equal(getOfmAnchorKeyFromHash('#Heading%20Here'), 'heading here')
@@ -1092,6 +1231,33 @@ function createCommentElement(value: string): Element {
   }
 }
 
+function createMarkdownImageElement({
+  alt,
+  src
+}: {
+  alt?: string
+  src: string
+}): Element {
+  return {
+    type: 'element',
+    tagName: 'img',
+    properties: {
+      src,
+      ...(alt === undefined ? {} : {alt})
+    },
+    children: []
+  }
+}
+
+function createParagraphElement(children: Element['children']): Element {
+  return {
+    type: 'element',
+    tagName: 'p',
+    properties: {},
+    children
+  }
+}
+
 function createCalloutElement({
   calloutType,
   title,
@@ -1132,6 +1298,7 @@ function assertOfmPublicProps(
     kind: string
     path?: string
     permalink?: string
+    provider?: string
     variant?: string
   }
 ): void {
@@ -1142,6 +1309,7 @@ function assertOfmPublicProps(
   assert.equal(node.properties['data-ofm-alias'], expected.alias)
   assert.equal(node.properties['data-ofm-block-id'], expected.blockId)
   assert.equal(node.properties['data-ofm-fragment'], expected.fragment)
+  assert.equal(node.properties['data-ofm-provider'], expected.provider)
 }
 
 function createOfmElement(

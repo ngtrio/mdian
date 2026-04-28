@@ -33,6 +33,19 @@
   background: var(--ofm-surface);
 }
 
+.ofm-embed[data-ofm-variant='external'] {
+  overflow: hidden;
+  padding: 0;
+}
+
+.ofm-embed[data-ofm-variant='external'][data-ofm-provider='youtube'] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
 .ofm-embed img {
   display: block;
   max-width: 100%;

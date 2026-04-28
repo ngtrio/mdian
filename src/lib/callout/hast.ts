@@ -2,7 +2,7 @@ import type {Element, ElementContent, Properties, RootContent, Text} from 'hast'
 
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
 import {getOfmNodeData, stripOfmDataProps} from '../shared/ofm-node.js'
-import {setOfmPublicProps} from '../shared/public-props.js'
+import {ofmPublicKind, setOfmPublicProps} from '../shared/public-props.js'
 
 export function calloutHast() {
   return function transform(node: RootContent | {type: 'root', children: RootContent[]}): void {
@@ -12,7 +12,7 @@ export function calloutHast() {
 
     const ofmNode = getOfmNodeData(node.properties)
 
-    if (node.tagName !== 'div' || ofmNode?.kind !== 'callout') {
+    if (node.tagName !== 'div' || ofmNode?.kind !== ofmPublicKind.callout) {
       return
     }
 
@@ -25,7 +25,7 @@ export function calloutHast() {
       ...(ofmNode.collapsed ? {'data-ofm-collapsed': ''} : {})
     }
 
-    setOfmPublicProps(properties, {kind: 'callout'})
+    setOfmPublicProps(properties, {kind: ofmPublicKind.callout})
     stripOfmDataProps(properties)
     addClassName(properties, ofmClassNames.callout)
 

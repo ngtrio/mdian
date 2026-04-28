@@ -3,7 +3,7 @@ import type { Element, Root, RootContent, Text } from 'hast'
 import type { OfmRehypeOptions } from '../types.js'
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
 import {getOfmNodeData, stripOfmDataProps} from '../shared/ofm-node.js'
-import {setOfmPublicProps, getOfmPublicFragment} from '../shared/public-props.js'
+import {getOfmPublicFragment, ofmPublicKind, ofmPublicVariant, setOfmPublicProps} from '../shared/public-props.js'
 import { buildOfmTargetUrl } from '../shared/ofm-url.js'
 
 const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'])
@@ -18,7 +18,7 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
 
     const embed = getOfmNodeData(node.properties)
 
-    if (embed?.kind !== 'embed') {
+    if (embed?.kind !== ofmPublicKind.embed) {
       return
     }
 
@@ -26,7 +26,7 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
     const title = embed.permalink || embed.path
     const fragment = getOfmPublicFragment(embed.permalink)
     const publicProps = {
-      kind: 'embed' as const,
+      kind: ofmPublicKind.embed,
       path: embed.path,
       permalink: embed.permalink,
       ...(embed.alias === undefined ? {} : {alias: embed.alias}),
@@ -45,7 +45,7 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
         node.properties.height = embed.size.height
       }
       node.children = []
-      setOfmPublicProps(node.properties, {...publicProps, variant: 'image'})
+      setOfmPublicProps(node.properties, {...publicProps, variant: ofmPublicVariant.image})
       addClassName(node.properties, ofmClassNames.embed)
       applyTitle(node.properties, title, setTitle)
       stripOfmDataProps(node.properties)
@@ -55,7 +55,7 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
     if (isMarkdownEmbed(embed.path)) {
       node.tagName = 'div'
       node.children = [createFallbackLink(href, getFallbackLabel(embed))]
-      setOfmPublicProps(node.properties, {...publicProps, variant: 'note'})
+      setOfmPublicProps(node.properties, {...publicProps, variant: ofmPublicVariant.note})
       addClassName(node.properties, ofmClassNames.embed)
       applyTitle(node.properties, title, setTitle)
       stripOfmDataProps(node.properties)
@@ -65,7 +65,7 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
     node.tagName = 'a'
     node.properties.href = href
     node.children = [{type: 'text', value: getFallbackLabel(embed)} satisfies Text]
-    setOfmPublicProps(node.properties, {...publicProps, variant: 'file'})
+    setOfmPublicProps(node.properties, {...publicProps, variant: ofmPublicVariant.file})
     addClassName(node.properties, ofmClassNames.embed)
     applyTitle(node.properties, title, setTitle)
     stripOfmDataProps(node.properties)
@@ -109,6 +109,6 @@ function applyTitle(properties: Record<string, unknown>, title: string, setTitle
   }
 }
 
-function getFallbackLabel(node: {alias?: string | null | undefined, path: string, permalink: string}): string {
+function getFallbackLabel(node: {alias?: string | null, path: string, permalink: string}): string {
   return node.alias || node.permalink || node.path
 }

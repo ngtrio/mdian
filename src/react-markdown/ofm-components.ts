@@ -2,27 +2,27 @@ import type {Element} from 'hast'
 import {createElement, type ReactNode} from 'react'
 import type {Components} from 'react-markdown'
 
+import {ofmPublicKind, ofmPublicVariant} from '../lib/shared/public-props.js'
 import {readOfmPublicData} from './public-props.js'
 
-export interface OfmWikiLinkRendererProps {
-  alias?: string
-  blockId?: string
+interface OfmRendererProps {
   children?: ReactNode
   className?: string
-  fragment?: string
   href?: string
   path: string
   permalink: string
 }
 
-export interface OfmNoteEmbedRendererProps {
+interface OfmTargetRendererProps extends OfmRendererProps {
   blockId?: string
-  children?: ReactNode
-  className?: string
   fragment?: string
-  href?: string
-  path: string
-  permalink: string
+}
+
+export interface OfmWikiLinkRendererProps extends OfmTargetRendererProps {
+  alias?: string
+}
+
+export interface OfmNoteEmbedRendererProps extends OfmTargetRendererProps {
   title?: string
 }
 
@@ -38,7 +38,7 @@ export function createOfmComponents(options: CreateOfmComponentsOptions = {}): C
     a({children, className, href, node, ...props}) {
       const data = readOfmPublicData(node as Element | undefined)
 
-      if (data?.kind !== 'wikilink' || !renderWikiLink) {
+      if (data?.kind !== ofmPublicKind.wikilink || !renderWikiLink) {
         return createElement('a', {...props, className, href}, children)
       }
 
@@ -57,11 +57,11 @@ export function createOfmComponents(options: CreateOfmComponentsOptions = {}): C
       const element = node as Element | undefined
       const data = readOfmPublicData(element)
 
-      if (data?.kind === 'embed' && data.variant === 'note' && !renderNoteEmbed) {
+      if (data?.kind === ofmPublicKind.embed && data.variant === ofmPublicVariant.note && !renderNoteEmbed) {
         return createElement('span', {...props, className}, children)
       }
 
-      if (data?.kind !== 'embed' || data.variant !== 'note') {
+      if (data?.kind !== ofmPublicKind.embed || data.variant !== ofmPublicVariant.note) {
         return createElement('div', {...props, className}, children)
       }
 

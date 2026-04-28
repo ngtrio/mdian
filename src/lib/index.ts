@@ -12,6 +12,7 @@ import { anchorRehypeFeature } from './anchor/index.js'
 import { calloutRehypeFeature, calloutRemarkFeature } from './callout/index.js'
 import { commentRehypeFeature, commentRemarkFeature } from './comment/index.js'
 import { embedRehypeFeature, embedRemarkFeature } from './embed/index.js'
+import { externalEmbedRehypeFeature } from './external-embed/index.js'
 import { highlightRehypeFeature, highlightRemarkFeature } from './highlight/index.js'
 import type { OfmRemarkOptions, OfmRehypeOptions } from './types.js'
 import { wikiLinkRehypeFeature, wikiLinkRemarkFeature } from './wikilink/index.js'
@@ -32,6 +33,7 @@ const rehypeFeatures: OfmRehypeFeature[] = [
   calloutRehypeFeature,
   wikiLinkRehypeFeature,
   embedRehypeFeature,
+  externalEmbedRehypeFeature,
   highlightRehypeFeature,
   commentRehypeFeature
 ]

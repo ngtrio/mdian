@@ -2,7 +2,7 @@ import type { ElementContent, Properties, Text } from 'hast'
 import type { CompileContext, Extension, Handle } from 'mdast-util-from-markdown'
 import type { Token } from 'micromark-util-types'
 
-import type {  OfmRemarkOptions } from '../types.js'
+import type {OfmRemarkOptions} from '../types.js'
 import { parseWikiValue } from '../wikilink/mdast.js'
 import type { Embed, EmbedSize } from './types.js'
 
@@ -35,7 +35,7 @@ function createEmbedNode(context: CompileContext, token: Token): Embed {
     value,
     path: fields.path,
     permalink: fields.permalink,
-    ...(size === undefined && fields.alias === undefined ? {} : { alias: size === undefined ? fields.alias : undefined }),
+    ...(size === undefined && fields.alias !== undefined ? {alias: fields.alias} : {}),
     ...(fields.blockId === undefined ? {} : { blockId: fields.blockId }),
     ...(size === undefined ? {} : { size }),
     data: createEmbedData(value, fields.path, fields.permalink, size === undefined ? fields.alias : undefined, fields.blockId, size)
@@ -46,9 +46,9 @@ function createEmbedData(
   value: string,
   path: string,
   permalink: string,
-  alias?: string | null | undefined,
-  blockId?: string | null | undefined,
-  size?: EmbedSize | undefined
+  alias?: string | null,
+  blockId?: string | null,
+  size?: EmbedSize
 ) {
   const hProperties: Properties = {
     dataOfmKind: 'embed',
@@ -69,7 +69,7 @@ function createEmbedData(
   }
 }
 
-function parseEmbedSize(alias?: string | null | undefined): EmbedSize | undefined {
+function parseEmbedSize(alias?: string | null): EmbedSize | undefined {
   if (!alias) {
     return undefined
   }

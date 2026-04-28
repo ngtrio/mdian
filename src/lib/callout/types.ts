@@ -1,14 +1,6 @@
 import type {Parent, RootContent} from 'mdast'
 import type {Properties} from 'hast'
 
-export interface CalloutData {
-  calloutType: string
-  collapsed: boolean
-  foldable: boolean
-  kind: 'callout'
-  title: string
-}
-
 export interface Callout extends Parent {
   type: 'callout'
   calloutType: string
