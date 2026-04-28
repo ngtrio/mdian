@@ -1,6 +1,13 @@
 import type {Element, Properties} from 'hast'
 import {Link} from '@tanstack/react-router'
-import {createElement, type FunctionComponent, useEffect, useRef, type RefObject, type ReactNode} from 'react'
+import {
+  createElement,
+  type FunctionComponent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState
+} from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
@@ -25,7 +32,6 @@ interface DemoMarkdownPreset {
 
 interface DemoMarkdownProps {
   className?: string
-  contentKey?: string
   markdown: string
 }
 
@@ -68,30 +74,37 @@ interface OfmNoteEmbedData {
   variant: 'note'
 }
 
-type OfmMarkdownOptions = OfmRemarkOptions & OfmRehypeOptions
+interface OfmExternalTweetData {
+  href: string
+  provider: 'twitter'
+  tweetId: string
+}
 
-const twitterScriptId = 'demo-twitter-widgets'
-const twitterScriptSrc = 'https://platform.twitter.com/widgets.js'
+type OfmMarkdownOptions = OfmRemarkOptions & OfmRehypeOptions
+type TwitterWidgetsApi = NonNullable<NonNullable<Window['twttr']>['widgets']>
 
 export const demoMarkdownPreset = createDemoMarkdownPreset()
 
 declare global {
   interface Window {
     twttr?: {
+      ready?: (callback: (api: NonNullable<Window['twttr']>) => void) => void
       widgets?: {
-        load?: (element?: HTMLElement) => void
+        createTweet?: (
+          tweetId: string,
+          element: HTMLElement,
+          options?: Record<string, unknown>
+        ) => Promise<HTMLElement>
       }
     }
   }
 }
 
-export function DemoMarkdown({className, contentKey, markdown}: DemoMarkdownProps) {
-  const rootRef = useRef<HTMLElement>(null)
+let twitterWidgetsPromise: Promise<TwitterWidgetsApi> | undefined
 
-  useDemoExternalEmbeds(rootRef, contentKey ?? markdown)
-
+export function DemoMarkdown({className, markdown}: DemoMarkdownProps) {
   return (
-    <article className={className} ref={rootRef}>
+    <article className={className}>
       <ReactMarkdown
         components={demoMarkdownPreset.components}
         rehypePlugins={demoMarkdownPreset.rehypePlugins}
@@ -155,55 +168,6 @@ function createDemoMarkdownPreset(ofm: OfmMarkdownOptions = {}): DemoMarkdownPre
     remarkPlugins: [remarkGfm, remarkMath, remarkPlugin],
     rehypePlugins: [rehypeKatex, rehypePlugin]
   }
-}
-
-function useDemoExternalEmbeds(
-  containerRef: RefObject<HTMLElement | null>,
-  contentKey: string
-) {
-  useEffect(() => {
-    const root = containerRef.current
-
-    if (!root || !root.querySelector('blockquote.twitter-tweet')) {
-      return
-    }
-
-    let disposed = false
-    const loadWidgets = () => {
-      if (!disposed) {
-        window.twttr?.widgets?.load?.(root)
-      }
-    }
-
-    if (window.twttr?.widgets?.load) {
-      loadWidgets()
-      return
-    }
-
-    const existingScript = document.getElementById(twitterScriptId)
-
-    if (existingScript instanceof HTMLScriptElement) {
-      existingScript.addEventListener('load', loadWidgets)
-
-      return () => {
-        disposed = true
-        existingScript.removeEventListener('load', loadWidgets)
-      }
-    }
-
-    const script = document.createElement('script')
-    script.id = twitterScriptId
-    script.src = twitterScriptSrc
-    script.async = true
-    script.charset = 'utf-8'
-    script.addEventListener('load', loadWidgets)
-    document.body.append(script)
-
-    return () => {
-      disposed = true
-      script.removeEventListener('load', loadWidgets)
-    }
-  }, [containerRef, contentKey])
 }
 
 interface CreateNoteEmbedRendererOptions {
@@ -274,6 +238,20 @@ function createOfmComponents(options: CreateOfmComponentsOptions = {}): Componen
         href
       })
     },
+    blockquote({children, className, node, ...props}) {
+      const data = readOfmExternalTweetData(node)
+
+      if (!data) {
+        return createElement('blockquote', {...props, className}, children)
+      }
+
+      return createElement(TwitterEmbedCard, {
+        className,
+        href: data.href,
+        title: readTitle(node),
+        tweetId: data.tweetId
+      })
+    },
     div({children, className, node, ...props}) {
       const data = readOfmNoteEmbedData(node)
 
@@ -300,6 +278,72 @@ function createOfmComponents(options: CreateOfmComponentsOptions = {}): Componen
       })
     }
   }
+}
+
+function TwitterEmbedCard({
+  className,
+  href,
+  title,
+  tweetId
+}: {
+  className?: string
+  href: string
+  title?: string
+  tweetId: string
+}) {
+  const hostRef = useRef<HTMLDivElement>(null)
+  const [isEnhanced, setIsEnhanced] = useState(false)
+
+  useEffect(() => {
+    const host = hostRef.current
+
+    if (!host) {
+      return
+    }
+
+    let cancelled = false
+    setIsEnhanced(false)
+    host.replaceChildren()
+
+    void loadTwitterWidgets()
+      .then((widgets) => widgets.createTweet?.(tweetId, host, {align: 'center', dnt: true}))
+      .then((tweet) => {
+        if (!cancelled && tweet) {
+          setIsEnhanced(true)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          host.replaceChildren()
+          setIsEnhanced(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+      host.replaceChildren()
+    }
+  }, [tweetId])
+
+  return createElement(
+    'blockquote',
+    {
+      cite: href,
+      className,
+      'data-ofm-kind': 'embed',
+      'data-ofm-provider': 'twitter',
+      'data-ofm-variant': 'external',
+      ...(title === undefined ? {} : {title})
+    },
+    createElement('div', {ref: hostRef}),
+    isEnhanced
+      ? null
+      : createElement(
+          'p',
+          {className: 'tweet-embed__fallback'},
+          createElement('a', {href, rel: 'noreferrer', target: '_blank'}, 'View post on X')
+        )
+  )
 }
 
 function readOfmWikiLinkData(node: Element | undefined): OfmWikiLinkData | undefined {
@@ -354,6 +398,40 @@ function readOfmNoteEmbedData(node: Element | undefined): OfmNoteEmbedData | und
   }
 }
 
+function readOfmExternalTweetData(node: Element | undefined): OfmExternalTweetData | undefined {
+  const properties = node?.properties
+
+  if (readOptionalString(properties, 'data-ofm-kind') !== 'embed') {
+    return undefined
+  }
+
+  if (readOptionalString(properties, 'data-ofm-variant') !== 'external') {
+    return undefined
+  }
+
+  if (readOptionalString(properties, 'data-ofm-provider') !== 'twitter') {
+    return undefined
+  }
+
+  const href = readOptionalString(properties, 'cite') ?? readFallbackHref(node)
+
+  if (!href) {
+    return undefined
+  }
+
+  const tweetId = readTweetIdFromHref(href)
+
+  if (!tweetId) {
+    return undefined
+  }
+
+  return {
+    href,
+    provider: 'twitter',
+    tweetId
+  }
+}
+
 function readFallbackHref(node: Element | undefined): string | undefined {
   const firstChild = node?.children[0]
 
@@ -368,9 +446,113 @@ function readTitle(node: Element | undefined): string | undefined {
   return readOptionalString(node?.properties, 'title')
 }
 
+function readTweetIdFromHref(href: string): string | undefined {
+  let url: URL
+
+  try {
+    url = new URL(href)
+  } catch {
+    return undefined
+  }
+
+  const host = url.hostname.toLowerCase()
+
+  if (
+    host !== 'twitter.com'
+    && host !== 'www.twitter.com'
+    && host !== 'mobile.twitter.com'
+    && host !== 'x.com'
+    && host !== 'www.x.com'
+  ) {
+    return undefined
+  }
+
+  const segments = url.pathname.split('/').filter((segment) => segment.length > 0)
+  const statusIndex = segments.findIndex((segment) => segment === 'status' || segment === 'statuses')
+  const tweetId = statusIndex >= 0 ? segments[statusIndex + 1] : undefined
+
+  return tweetId && /^\d+$/.test(tweetId) ? tweetId : undefined
+}
+
 function readOptionalString(properties: Properties | undefined, key: string): string | undefined {
   const value = properties?.[key]
   return typeof value === 'string' ? value : undefined
+}
+
+function loadTwitterWidgets(): Promise<TwitterWidgetsApi> {
+  const existingWidgets = window.twttr?.widgets
+
+  if (existingWidgets?.createTweet) {
+    return Promise.resolve(existingWidgets)
+  }
+
+  if (twitterWidgetsPromise) {
+    return twitterWidgetsPromise
+  }
+
+  const promise = new Promise<TwitterWidgetsApi>((resolve, reject) => {
+    const resolveWidgets = () => {
+      const widgets = window.twttr?.widgets
+
+      if (widgets?.createTweet) {
+        resolve(widgets)
+        return
+      }
+
+      reject(new Error('Twitter widgets API did not become available.'))
+    }
+
+    const handleLoad = () => {
+      const api = window.twttr
+
+      if (api?.widgets?.createTweet) {
+        resolve(api.widgets)
+        return
+      }
+
+      if (api?.ready) {
+        api.ready(() => resolveWidgets())
+        return
+      }
+
+      resolveWidgets()
+    }
+
+    const handleError = () => {
+      reject(new Error('Twitter widgets script failed to load.'))
+    }
+
+    const existingScript = document.getElementById('demo-twitter-widgets')
+
+    if (existingScript instanceof HTMLScriptElement) {
+      existingScript.addEventListener('load', handleLoad, {once: true})
+      existingScript.addEventListener('error', handleError, {once: true})
+
+      if (existingScript.dataset.loaded === 'true') {
+        handleLoad()
+      }
+
+      return
+    }
+
+    const script = document.createElement('script')
+    script.id = 'demo-twitter-widgets'
+    script.src = 'https://platform.twitter.com/widgets.js'
+    script.async = true
+    script.charset = 'utf-8'
+    script.addEventListener('load', () => {
+      script.dataset.loaded = 'true'
+      handleLoad()
+    }, {once: true})
+    script.addEventListener('error', handleError, {once: true})
+    document.body.append(script)
+  }).catch((error) => {
+    twitterWidgetsPromise = undefined
+    throw error
+  })
+
+  twitterWidgetsPromise = promise
+  return promise
 }
 
 function compactDefined<T extends object>(value: T): T {

@@ -85,4 +85,15 @@ describe('demo note embed integration', () => {
     expect(missing.querySelectorAll('.note-embed')).toHaveLength(0)
     expect(missing.querySelector('a[href="/wiki/Missing%20Page"]')?.textContent).toBe('Missing Page')
   })
+
+  test('renders external tweet embeds through the dedicated tweet container path', () => {
+    const container = renderDemoMarkdown('![](https://x.com/jack/status/20)')
+    const tweet = container.querySelector('blockquote[data-ofm-provider="twitter"]')
+
+    expect(tweet).not.toBeNull()
+    expect(tweet?.getAttribute('data-ofm-kind')).toBe('embed')
+    expect(tweet?.getAttribute('data-ofm-variant')).toBe('external')
+    expect(tweet?.getAttribute('cite')).toBe('https://twitter.com/jack/status/20')
+    expect(tweet?.querySelector('.tweet-embed__fallback a[href="https://twitter.com/jack/status/20"]')?.textContent).toBe('View post on X')
+  })
 })

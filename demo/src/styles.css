@@ -507,6 +507,11 @@ textarea {
   color: inherit;
 }
 
+.markdown-body .tweet-embed__fallback {
+  margin: 0;
+  padding: 1rem 1.25rem;
+}
+
 .markdown-body .contains-task-list {
   padding-left: 0;
   list-style: none;

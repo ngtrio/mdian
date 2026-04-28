@@ -15,7 +15,6 @@ export function WikiPage() {
   const pagePath = normalizeDemoWikiPath(typeof params._splat === 'string' ? params._splat : '')
   const page = getDemoWikiPage(pagePath)
   const activeFragment = decodeOfmFragment(locationHash)
-  const contentKey = `${pagePath}:${page?.markdown ?? ''}`
 
   useEffect(() => {
     const root = articleRef.current
@@ -73,7 +72,6 @@ export function WikiPage() {
           <div ref={articleRef}>
             <DemoMarkdown
               className="preview preview--hero markdown-body wiki-markdown"
-              contentKey={contentKey}
               markdown={page.markdown}
             />
           </div>
