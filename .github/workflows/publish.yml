@@ -2,24 +2,54 @@ name: Publish
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  verify:
+  verify_release:
     runs-on: ubuntu-latest
+    outputs:
+      is_release: ${{ steps.detect.outputs.is_release }}
+      version: ${{ steps.detect.outputs.version }}
+      tag: ${{ steps.detect.outputs.tag }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect package version release
+        id: detect
+        shell: bash
+        run: |
+          version=$(python3 -c "import json; print(json.load(open('package.json', encoding='utf8'))['version'])")
+          previous_version=$(git show HEAD^:package.json 2>/dev/null | python3 -c "import json, sys; raw = sys.stdin.read().strip(); print(json.loads(raw)['version'] if raw else '')")
+
+          is_release=false
+          if [ -n "$previous_version" ] && [ "$previous_version" != "$version" ]; then
+            is_release=true
+          fi
+
+          {
+            echo "is_release=$is_release"
+            echo "version=$version"
+            echo "tag=v$version"
+            echo "previous_version=$previous_version"
+          } >> "$GITHUB_OUTPUT"
+
+          printf 'is_release=%s\nversion=%s\ntag=v%s\nprevious_version=%s\n' "$is_release" "$version" "$version" "$previous_version"
 
       - name: Setup pnpm
+        if: steps.detect.outputs.is_release == 'true'
         uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
+        if: steps.detect.outputs.is_release == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -27,13 +57,41 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
+        if: steps.detect.outputs.is_release == 'true'
         run: pnpm install --frozen-lockfile
 
+      - name: Ensure release tag does not already exist
+        if: steps.detect.outputs.is_release == 'true'
+        env:
+          TAG: ${{ steps.detect.outputs.tag }}
+        run: |
+          git fetch --tags origin
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+            exit 1
+          fi
+
+      - name: Ensure npm version is not already published
+        if: steps.detect.outputs.is_release == 'true'
+        env:
+          VERSION: ${{ steps.detect.outputs.version }}
+        run: |
+          if npm view mdian@"$VERSION" version >/dev/null 2>&1; then
+            echo "Version $VERSION is already published"
+            exit 1
+          fi
+
       - name: Verify package
+        if: steps.detect.outputs.is_release == 'true'
         run: pnpm check
 
+      - name: Build demo under Pages base path
+        if: steps.detect.outputs.is_release == 'true'
+        run: PAGES_BASE_PATH=/mdian pnpm demo:build
+
   publish_npm:
-    needs: verify
+    needs: verify_release
+    if: needs.verify_release.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -63,13 +121,36 @@ jobs:
         run: npm publish --access public
 
   github_release:
-    needs: publish_npm
+    needs:
+      - verify_release
+      - publish_npm
+    if: needs.verify_release.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create release tag
+        env:
+          TAG: ${{ needs.verify_release.outputs.tag }}
+        run: |
+          git fetch --tags origin
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+          else
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.verify_release.outputs.tag }}
           generate_release_notes: true

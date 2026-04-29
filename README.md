@@ -146,6 +146,13 @@ pnpm test
 pnpm demo:dev
 ```
 
+## Releasing
+
+- Regular feature and fix PRs do not change `package.json.version`.
+- To cut a release, merge a commit on `main` that bumps `package.json.version`.
+- Publishing runs automatically from `main` when the merged commit changes `package.json.version` relative to its parent.
+- The publish workflow verifies the package, checks that the version and tag are unused, publishes to npm, then creates the matching git tag and GitHub Release.
+
 ## License
 
 Apache-2.0.
