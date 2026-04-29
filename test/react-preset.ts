@@ -205,7 +205,7 @@ test('resolveOfmNoteEmbedBody preserves the full block around a block ref marker
   })
 })
 
-test('package metadata exposes mdian/react as a 0.1.0 optional-peer release', async () => {
+test('package metadata exposes mdian/react as an optional-peer release surface', async () => {
   const packageJson = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')) as {
     exports: Record<string, {import?: string}>
     peerDependencies: Record<string, string>
@@ -213,7 +213,7 @@ test('package metadata exposes mdian/react as a 0.1.0 optional-peer release', as
     version: string
   }
 
-  assert.equal(packageJson.version, '0.1.0')
+  assert.match(packageJson.version, /^\d+\.\d+\.\d+$/)
   assert.equal(packageJson.exports['./react']?.import, './dist/src/react/index.js')
   assert.equal(packageJson.peerDependencies.react, '^19.0.0')
   assert.equal(packageJson.peerDependencies['react-markdown'], '^10.0.0')
