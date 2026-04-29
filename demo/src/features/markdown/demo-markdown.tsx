@@ -107,5 +107,15 @@ function buildDemoTitle(target: OfmReactTarget, fallbackTitle?: string): string 
 }
 
 function resolveDemoAssetHref(src: string): string {
-  return src.startsWith('assets/') ? `/${src}` : src
+  if (!src.startsWith('assets/')) {
+    return src
+  }
+
+  const baseUrl = import.meta.env.BASE_URL
+
+  if (!baseUrl || baseUrl === '/') {
+    return `/${src}`
+  }
+
+  return `${baseUrl.replace(/\/$/, '')}/${src}`
 }

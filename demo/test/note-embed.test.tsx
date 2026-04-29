@@ -1,7 +1,7 @@
 import {createMemoryHistory, createRootRoute, createRoute, createRouter, RouterContextProvider} from '@tanstack/react-router'
 import ReactMarkdown from 'react-markdown'
 import {renderToStaticMarkup} from 'react-dom/server'
-import {describe, expect, test} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {demoMarkdownPreset} from '../src/features/markdown/demo-markdown.js'
 
@@ -33,6 +33,16 @@ function renderDemoMarkdown(markdown: string): HTMLDivElement {
   return container
 }
 
+const originalBaseUrl = import.meta.env.BASE_URL
+
+beforeEach(() => {
+  vi.stubEnv('BASE_URL', originalBaseUrl)
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
+
 describe('demo note embed integration', () => {
   test('renders routed wikilinks and callouts through the mdian react preset', () => {
     const container = renderDemoMarkdown([
@@ -50,6 +60,14 @@ describe('demo note embed integration', () => {
   test('rewrites ordinary markdown image sources through the preset image.transformSrc hook', () => {
     const container = renderDemoMarkdown('![hero](assets/image.svg)')
     expect(container.querySelector('img')?.getAttribute('src')).toBe('/assets/image.svg')
+  })
+
+  test('keeps demo asset image sources under the active base path', () => {
+    vi.stubEnv('BASE_URL', '/mdian/')
+
+    const container = renderDemoMarkdown('![hero](assets/image.svg)')
+
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/mdian/assets/image.svg')
   })
 
   test('expands whole-page, heading, and block note embeds', () => {
