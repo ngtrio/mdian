@@ -126,7 +126,7 @@ Generated elements use stable `data-ofm-*` attributes:
 
 Additional metadata may include `data-ofm-path`, `data-ofm-permalink`, `data-ofm-alias`, `data-ofm-fragment`, and `data-ofm-block-id`.
 
-Generated elements also use stable `ofm-*` class names defined in `src/lib/shared/class-name.ts`, including `ofm-wikilink`, `ofm-embed`, `ofm-highlight`, `ofm-callout`, `ofm-callout-title`, `ofm-callout-content`, `ofm-anchor-target`, `ofm-heading-target`, `ofm-block-target`, and `ofm-block-anchor-label`.
+Generated elements also use stable `ofm-*` class names defined in `src/lib/shared/class-name.ts`, including `ofm-wikilink`, `ofm-embed`, `ofm-external-embed`, `ofm-highlight`, `ofm-callout`, `ofm-callout-title`, `ofm-callout-content`, `ofm-anchor-target`, `ofm-heading-target`, `ofm-block-target`, and `ofm-block-anchor-label`.
 
 ### Root entrypoint exports
 

@@ -33,17 +33,26 @@
   background: var(--ofm-surface);
 }
 
-.ofm-embed[data-ofm-variant='external'] {
+.ofm-external-embed {
   overflow: hidden;
   padding: 0;
 }
 
-.ofm-embed[data-ofm-variant='external'][data-ofm-provider='youtube'] {
+.ofm-external-embed[data-ofm-provider='youtube'] {
   display: block;
   width: 100%;
   max-width: 100%;
   height: auto;
   aspect-ratio: 16 / 9;
+}
+
+.ofm-external-embed[data-ofm-provider='twitter'] {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
 }
 
 .ofm-embed img {

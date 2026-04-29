@@ -8,6 +8,7 @@ export const ofmClassNames = {
   calloutContent: 'ofm-callout-content',
   calloutTitle: 'ofm-callout-title',
   embed: 'ofm-embed',
+  externalEmbed: 'ofm-external-embed',
   headingTarget: 'ofm-heading-target',
   highlight: 'ofm-highlight',
   wikilink: 'ofm-wikilink'

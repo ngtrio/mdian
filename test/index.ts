@@ -1,3 +1,5 @@
+import './react-preset.js'
+
 import assert from 'node:assert/strict'
 import { access, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -109,6 +111,20 @@ test('readOfmPublicProps ignores invalid public-prop values on an element', () =
 
 test('build emits the public styles entrypoint', async () => {
   await access(path.join(repoRoot, 'dist', 'styles.css'))
+})
+
+test('library styles keep twitter embeds on the dedicated external-embed style path', async () => {
+  const styles = await readUtf8(path.join(repoRoot, 'src', 'styles.css'))
+
+  assert.match(styles, /\.ofm-external-embed\[data-ofm-provider='twitter'\]/)
+  assert.doesNotMatch(styles, /\.ofm-embed\[data-ofm-provider='twitter'\]/)
+})
+
+test('demo styles scope youtube wrapper styling to the external embed class', async () => {
+  const styles = await readUtf8(path.join(repoRoot, 'demo', 'src', 'styles.css'))
+
+  assert.match(styles, /\.markdown-body \.ofm-external-embed\[data-ofm-provider='youtube'\]/)
+  assert.doesNotMatch(styles, /\.markdown-body \.ofm-embed\[data-ofm-variant='external'\]/)
 })
 
 test('wikiLinkHast uses root-path default when hrefPrefix is omitted', () => {
@@ -755,7 +771,7 @@ test('rehypeOfm renders supported YouTube image URLs as external iframe embeds',
   assert.equal(iframe.properties.title, 'Demo video')
   assert.equal(iframe.properties.allowFullScreen, true)
   assert.equal(iframe.properties.loading, 'lazy')
-  assertClassNames(iframe, [ofmClassNames.embed])
+  assertClassNames(iframe, [ofmClassNames.externalEmbed])
   assertOfmPublicProps(iframe, {
     kind: 'embed',
     variant: 'external',
@@ -776,21 +792,29 @@ test('rehypeOfm renders supported X status URLs as external tweet embeds', () =>
 
   const paragraph = tree.children[0]
   assert.equal(paragraph?.type, 'element')
-  const blockquote = paragraph.children[0]
-  assert.equal(blockquote?.type, 'element')
-  assert.equal(blockquote.tagName, 'blockquote')
-  assert.equal(blockquote.properties.cite, 'https://twitter.com/jack/status/20')
-  assert.deepEqual(blockquote.properties.className, [ofmClassNames.embed, 'twitter-tweet'])
-  assertOfmPublicProps(blockquote, {
+  const tweet = paragraph.children[0]
+  assert.equal(tweet?.type, 'element')
+  assert.equal(tweet.tagName, 'div')
+  assert.deepEqual(tweet.properties.className, [ofmClassNames.externalEmbed, 'twitter-tweet'])
+  assertOfmPublicProps(tweet, {
     kind: 'embed',
     variant: 'external',
     provider: 'twitter'
   })
 
-  const link = blockquote.children[0]
-  assert.equal(link?.type, 'element')
-  assert.equal(link.tagName, 'a')
-  assert.equal(link.properties.href, 'https://twitter.com/jack/status/20')
+  const fallbackParagraph = tweet.children[0]
+  assert.equal(fallbackParagraph?.type, 'element')
+  assert.equal(fallbackParagraph.tagName, 'p')
+
+  const fallbackLink = fallbackParagraph.children[0]
+  assert.equal(fallbackLink?.type, 'element')
+  assert.equal(fallbackLink.tagName, 'a')
+  assert.equal(fallbackLink.properties.href, 'https://twitter.com/jack/status/20')
+  assert.deepEqual(fallbackLink.children[0], {
+    type: 'text',
+    value: 'View post on X'
+  })
+  assert.equal(tweet.children[1], undefined)
 })
 
 test('rehypeOfm can keep external image URLs on the normal image path', () => {

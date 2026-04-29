@@ -66,7 +66,7 @@ export function externalEmbedHast(options: OfmRehypeOptions = {}): (node: Root |
       node.properties.referrerPolicy = 'strict-origin-when-cross-origin'
       node.properties.width = 560
       node.children = []
-      addClassName(node.properties, ofmClassNames.embed)
+      addClassName(node.properties, ofmClassNames.externalEmbed)
       setOfmPublicProps(node.properties, {
         kind: ofmPublicKind.embed,
         variant: ofmPublicVariant.external,
@@ -76,13 +76,13 @@ export function externalEmbedHast(options: OfmRehypeOptions = {}): (node: Root |
       return
     }
 
-    node.tagName = 'blockquote'
+    node.tagName = 'div'
     delete node.properties.alt
     delete node.properties.loading
     delete node.properties.src
-    node.properties.cite = match.href
-    node.children = [createTwitterLink(match.href)]
-    addClassName(node.properties, ofmClassNames.embed, twitterClassName)
+    delete node.properties.cite
+    node.children = [createTwitterFallback(match.href)]
+    addClassName(node.properties, ofmClassNames.externalEmbed, twitterClassName)
     setOfmPublicProps(node.properties, {
       kind: ofmPublicKind.embed,
       variant: ofmPublicVariant.external,
@@ -169,12 +169,23 @@ function resolveTwitterEmbed(url: URL): TwitterEmbedMatch | undefined {
   }
 }
 
-function createTwitterLink(href: string): Element {
+function createTwitterFallback(href: string): Element {
   return {
     type: 'element',
-    tagName: 'a',
-    properties: { href },
-    children: [{ type: 'text', value: href } satisfies Text]
+    tagName: 'p',
+    properties: {className: ['tweet-embed__fallback']},
+    children: [
+      {
+        type: 'element',
+        tagName: 'a',
+        properties: {
+          href,
+          rel: ['noreferrer'],
+          target: '_blank'
+        },
+        children: [{type: 'text', value: 'View post on X'} satisfies Text]
+      }
+    ]
   }
 }
 

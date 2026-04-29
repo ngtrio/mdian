@@ -490,22 +490,17 @@ textarea {
   background: var(--surface-muted);
 }
 
-.markdown-body .ofm-embed[data-ofm-variant='external'] {
+.markdown-body .ofm-external-embed[data-ofm-provider='youtube'] {
   margin-bottom: 1rem;
   border-radius: 18px;
   background: var(--surface-soft);
 }
 
-.markdown-body iframe.ofm-embed[data-ofm-provider='youtube'] {
+.markdown-body iframe.ofm-external-embed[data-ofm-provider='youtube'] {
   width: 100%;
   border: 0;
 }
 
-.markdown-body blockquote.ofm-embed[data-ofm-provider='twitter'] {
-  padding: 0;
-  border-left: 0;
-  color: inherit;
-}
 
 .markdown-body .tweet-embed__fallback {
   margin: 0;
