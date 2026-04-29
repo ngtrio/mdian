@@ -70,6 +70,14 @@ describe('demo note embed integration', () => {
     expect(container.querySelector('img')?.getAttribute('src')).toBe('/mdian/assets/image.svg')
   })
 
+  test('keeps OFM image embed sources under the active base path', () => {
+    vi.stubEnv('BASE_URL', '/mdian/')
+
+    const container = renderDemoMarkdown('![[assets/image.svg|320x180]]')
+
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/mdian/assets/image.svg')
+  })
+
   test('expands whole-page, heading, and block note embeds', () => {
     const container = renderDemoMarkdown([
       '![[Project Notes]]',
