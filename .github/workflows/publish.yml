@@ -10,46 +10,50 @@ permissions:
   contents: read
 
 jobs:
-  verify_release:
+  resolve_release:
     runs-on: ubuntu-latest
     outputs:
-      is_release: ${{ steps.detect.outputs.is_release }}
-      version: ${{ steps.detect.outputs.version }}
-      tag: ${{ steps.detect.outputs.tag }}
+      should_release: ${{ steps.resolve.outputs.should_release }}
+      version: ${{ steps.resolve.outputs.version }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      release_source: ${{ steps.resolve.outputs.release_source }}
+      npm_published: ${{ steps.resolve.outputs.npm_published }}
+      tag_exists: ${{ steps.resolve.outputs.tag_exists }}
+      tag_matches_target: ${{ steps.resolve.outputs.tag_matches_target }}
+      tag_target: ${{ steps.resolve.outputs.tag_target }}
+      github_release_exists: ${{ steps.resolve.outputs.github_release_exists }}
+      should_publish_npm: ${{ steps.resolve.outputs.should_publish_npm }}
+      should_create_tag: ${{ steps.resolve.outputs.should_create_tag }}
+      should_create_github_release: ${{ steps.resolve.outputs.should_create_github_release }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          fetch-depth: 2
+          node-version: 24
 
-      - name: Detect package version release
-        id: detect
-        shell: bash
-        run: |
-          version=$(python3 -c "import json; print(json.load(open('package.json', encoding='utf8'))['version'])")
-          previous_version=$(git show HEAD^:package.json 2>/dev/null | python3 -c "import json, sys; raw = sys.stdin.read().strip(); print(json.loads(raw)['version'] if raw else '')")
+      - name: Resolve release state
+        id: resolve
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/release/resolve-release.mjs
 
-          is_release=false
-          if [ -n "$previous_version" ] && [ "$previous_version" != "$version" ]; then
-            is_release=true
-          fi
+  verify_release:
+    needs: resolve_release
+    if: needs.resolve_release.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
 
-          {
-            echo "is_release=$is_release"
-            echo "version=$version"
-            echo "tag=v$version"
-            echo "previous_version=$previous_version"
-          } >> "$GITHUB_OUTPUT"
-
-          printf 'is_release=%s\nversion=%s\ntag=v%s\nprevious_version=%s\n' "$is_release" "$version" "$version" "$previous_version"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup pnpm
-        if: steps.detect.outputs.is_release == 'true'
         uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
-        if: steps.detect.outputs.is_release == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -57,41 +61,19 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        if: steps.detect.outputs.is_release == 'true'
         run: pnpm install --frozen-lockfile
 
-      - name: Ensure release tag does not already exist
-        if: steps.detect.outputs.is_release == 'true'
-        env:
-          TAG: ${{ steps.detect.outputs.tag }}
-        run: |
-          git fetch --tags origin
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists"
-            exit 1
-          fi
-
-      - name: Ensure npm version is not already published
-        if: steps.detect.outputs.is_release == 'true'
-        env:
-          VERSION: ${{ steps.detect.outputs.version }}
-        run: |
-          if npm view mdian@"$VERSION" version >/dev/null 2>&1; then
-            echo "Version $VERSION is already published"
-            exit 1
-          fi
-
       - name: Verify package
-        if: steps.detect.outputs.is_release == 'true'
         run: pnpm check
 
       - name: Build demo under Pages base path
-        if: steps.detect.outputs.is_release == 'true'
         run: PAGES_BASE_PATH=/mdian pnpm demo:build
 
   publish_npm:
-    needs: verify_release
-    if: needs.verify_release.outputs.is_release == 'true'
+    needs:
+      - resolve_release
+      - verify_release
+    if: needs.resolve_release.outputs.should_publish_npm == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -117,14 +99,30 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Confirm npm version is still unpublished
+        id: npm_guard
+        env:
+          VERSION: ${{ needs.resolve_release.outputs.version }}
+        run: |
+          if npm view mdian@"$VERSION" version >/dev/null 2>&1; then
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm
+        if: steps.npm_guard.outputs.already_published != 'true'
         run: npm publish --access public
 
   github_release:
     needs:
+      - resolve_release
       - verify_release
       - publish_npm
-    if: needs.verify_release.outputs.is_release == 'true'
+    if: >-
+      needs.resolve_release.outputs.should_release == 'true' &&
+      (needs.resolve_release.outputs.should_create_tag == 'true' || needs.resolve_release.outputs.should_create_github_release == 'true') &&
+      (needs.publish_npm.result == 'success' || needs.publish_npm.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -135,22 +133,38 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create release tag
+      - name: Inspect current tag target
+        id: tag_guard
+        if: needs.resolve_release.outputs.should_create_tag == 'true'
         env:
-          TAG: ${{ needs.verify_release.outputs.tag }}
+          TAG: ${{ needs.resolve_release.outputs.tag }}
+          SHA: ${{ github.sha }}
         run: |
           git fetch --tags origin
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists"
+          target=$(git rev-list -n 1 "$TAG" 2>/dev/null || true)
+          if [ -n "$target" ] && [ "$target" != "$SHA" ]; then
+            echo "Tag $TAG already exists at $target instead of $SHA"
+            exit 1
+          fi
+          if [ -n "$target" ]; then
+            echo "already_exists=true" >> "$GITHUB_OUTPUT"
           else
-            git config user.name github-actions[bot]
-            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            git tag "$TAG"
-            git push origin "$TAG"
+            echo "already_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Create release tag
+        if: needs.resolve_release.outputs.should_create_tag == 'true' && steps.tag_guard.outputs.already_exists != 'true'
+        env:
+          TAG: ${{ needs.resolve_release.outputs.tag }}
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag "$TAG"
+          git push origin "$TAG"
+
       - name: Create GitHub Release
+        if: needs.resolve_release.outputs.should_create_github_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.verify_release.outputs.tag }}
+          tag_name: ${{ needs.resolve_release.outputs.tag }}
           generate_release_notes: true
