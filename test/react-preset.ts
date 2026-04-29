@@ -304,8 +304,26 @@ test('createOfmReactPreset keeps twitter embeds on a static fallback path by def
   assert.match(html, /class="[^"]*ofm-external-embed[^"]*"/)
   assert.doesNotMatch(html, /class="[^"]*ofm-embed[^"]*"/)
   assert.match(html, /View post on X/)
+  assert.match(html, /href="https:\/\/twitter\.com\/jack\/status\/20"/)
   assert.doesNotMatch(html, /data-twitter-enhanced="true"/)
-  assert.doesNotMatch(html, />https:\/\/twitter\.com\/jack\/status\/20</)
+})
+
+test('TwitterEmbedCard renders a visible fallback link during SSR when enhancement is enabled', () => {
+  const html = renderToStaticMarkup(
+    createElement(TwitterEmbedCard, {
+      data: {
+        href: 'https://twitter.com/jack/status/20',
+        tweetId: '20'
+      },
+      options: {
+        enhance: true
+      }
+    })
+  )
+
+  assert.match(html, /View post on X/)
+  assert.match(html, /href="https:\/\/twitter\.com\/jack\/status\/20"/)
+  assert.doesNotMatch(html, /data-twitter-enhanced="true"/)
 })
 
 test('createOfmReactPreset keeps youtube embeds on the rehype iframe path', () => {

@@ -30,10 +30,7 @@ export function readTwitterEmbedRenderData(node: Element | undefined): TwitterEm
     return undefined
   }
 
-  const firstChild = node.children[0]
-  const href = firstChild && firstChild.type === 'text' && typeof firstChild.value === 'string'
-    ? firstChild.value
-    : undefined
+  const href = readTwitterFallbackHref(node.children[0])
   if (!href) {
     return undefined
   }
@@ -51,6 +48,25 @@ export function readTwitterEmbedRenderData(node: Element | undefined): TwitterEm
     tweetId,
     ...(title === undefined ? {} : {title})
   }
+}
+
+function readTwitterFallbackHref(node: Element['children'][number] | undefined): string | undefined {
+  if (!node) {
+    return undefined
+  }
+
+  if (node.type === 'text' && typeof node.value === 'string') {
+    return node.value
+  }
+
+  if (node.type !== 'element' || node.tagName !== 'p') {
+    return undefined
+  }
+
+  const link = node.children[0]
+  return link?.type === 'element' && link.tagName === 'a' && typeof link.properties.href === 'string'
+    ? link.properties.href
+    : undefined
 }
 
 export function TwitterEmbedCard({
@@ -97,12 +113,12 @@ export function TwitterEmbedCard({
           return
         }
 
-        host.replaceChildren()
+        host.replaceChildren(createTwitterFallbackNode(data.href))
         setStatus('failed')
       })
       .catch(() => {
         if (!cancelled) {
-          host.replaceChildren()
+          host.replaceChildren(createTwitterFallbackNode(data.href))
           setStatus('failed')
         }
       })
@@ -113,43 +129,69 @@ export function TwitterEmbedCard({
   }, [data.href, data.tweetId, options?.enhance, options?.loadScript])
 
   if (!options?.enhance) {
-    return createElement(
-      'div',
-      {
-        className,
-        'data-ofm-kind': 'embed',
-        'data-ofm-provider': 'twitter',
-        'data-ofm-variant': 'external',
-        ...(data.title === undefined ? {} : {title: data.title})
-      },
-      createElement(
-        'p',
-        {className: 'tweet-embed__fallback'},
-        createElement('a', {href: data.href, rel: 'noreferrer', target: '_blank'}, 'View post on X')
-      )
-    )
+    return createElement('div', buildTwitterEmbedProps({
+      data,
+      ...(className === undefined ? {} : {className})
+    }), createTwitterFallbackLink(data.href))
   }
+
+  const serverFallback = isServerRender() ? createTwitterFallbackLink(data.href) : undefined
 
   return createElement(
     'div',
     {
+      ...buildTwitterEmbedProps({
+        data,
+        ...(className === undefined ? {} : {className})
+      }),
       ref: hostRef,
-      className,
-      'data-ofm-kind': 'embed',
-      'data-ofm-provider': 'twitter',
-      'data-ofm-variant': 'external',
-      ...(data.title === undefined ? {} : {title: data.title}),
       ...(status === 'enhanced' ? {'data-twitter-enhanced': 'true'} : {}),
       ...(status === 'enhanced' ? {} : {'aria-busy': 'true'})
     },
-    status === 'failed'
-      ? createElement(
-          'p',
-          {className: 'tweet-embed__fallback'},
-          createElement('a', {href: data.href, rel: 'noreferrer', target: '_blank'}, 'View post on X')
-        )
-      : undefined
+    status === 'failed' ? createTwitterFallbackLink(data.href) : serverFallback
   )
+}
+
+function buildTwitterEmbedProps({
+  className,
+  data
+}: {
+  className?: string
+  data: TwitterEmbedRenderData
+}) {
+  return {
+    ...(className === undefined ? {} : {className}),
+    'data-ofm-kind': 'embed',
+    'data-ofm-provider': 'twitter',
+    'data-ofm-variant': 'external',
+    ...(data.title === undefined ? {} : {title: data.title})
+  }
+}
+
+function createTwitterFallbackLink(href: string) {
+  return createElement(
+    'p',
+    {className: 'tweet-embed__fallback'},
+    createElement('a', {href, rel: 'noreferrer', target: '_blank'}, 'View post on X')
+  )
+}
+
+function createTwitterFallbackNode(href: string): HTMLParagraphElement {
+  const paragraph = document.createElement('p')
+  paragraph.className = 'tweet-embed__fallback'
+
+  const link = document.createElement('a')
+  link.href = href
+  link.rel = 'noreferrer'
+  link.target = '_blank'
+  link.textContent = 'View post on X'
+
+  paragraph.appendChild(link)
+  return paragraph
+}
+
+function isServerRender(): boolean {
+  return typeof document === 'undefined'
 }
 
 function createTwitterEmbedLoadingNode(): HTMLParagraphElement {

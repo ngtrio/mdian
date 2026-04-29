@@ -802,10 +802,17 @@ test('rehypeOfm renders supported X status URLs as external tweet embeds', () =>
     provider: 'twitter'
   })
 
-  const textNode = tweet.children[0]
-  assert.deepEqual(textNode, {
+  const fallbackParagraph = tweet.children[0]
+  assert.equal(fallbackParagraph?.type, 'element')
+  assert.equal(fallbackParagraph.tagName, 'p')
+
+  const fallbackLink = fallbackParagraph.children[0]
+  assert.equal(fallbackLink?.type, 'element')
+  assert.equal(fallbackLink.tagName, 'a')
+  assert.equal(fallbackLink.properties.href, 'https://twitter.com/jack/status/20')
+  assert.deepEqual(fallbackLink.children[0], {
     type: 'text',
-    value: 'https://twitter.com/jack/status/20'
+    value: 'View post on X'
   })
   assert.equal(tweet.children[1], undefined)
 })

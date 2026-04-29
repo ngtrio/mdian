@@ -81,7 +81,7 @@ export function externalEmbedHast(options: OfmRehypeOptions = {}): (node: Root |
     delete node.properties.loading
     delete node.properties.src
     delete node.properties.cite
-    node.children = [{type: 'text', value: match.href} satisfies Text]
+    node.children = [createTwitterFallback(match.href)]
     addClassName(node.properties, ofmClassNames.externalEmbed, twitterClassName)
     setOfmPublicProps(node.properties, {
       kind: ofmPublicKind.embed,
@@ -166,6 +166,26 @@ function resolveTwitterEmbed(url: URL): TwitterEmbedMatch | undefined {
     src: url.toString(),
     href: buildTwitterStatusUrl(segments[0] ?? 'i', tweetId),
     tweetId
+  }
+}
+
+function createTwitterFallback(href: string): Element {
+  return {
+    type: 'element',
+    tagName: 'p',
+    properties: {className: ['tweet-embed__fallback']},
+    children: [
+      {
+        type: 'element',
+        tagName: 'a',
+        properties: {
+          href,
+          rel: ['noreferrer'],
+          target: '_blank'
+        },
+        children: [{type: 'text', value: 'View post on X'} satisfies Text]
+      }
+    ]
   }
 }
 
