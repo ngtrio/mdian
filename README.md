@@ -25,7 +25,15 @@ Regular Markdown still works as usual. GFM and math are not bundled by this pack
 
 ## Usage
 
+### Core unified usage
+
 `mdian` ships the core OFM plugins for unified-compatible pipelines.
+
+Install the package and styles entrypoint:
+
+```bash
+pnpm add mdian
+```
 
 Use `remarkOfm` and `rehypeOfm` in any unified-compatible pipeline:
 
@@ -50,15 +58,82 @@ const html = String(
 
 If you also need GFM or math, add those plugins around `remarkOfm` and `rehypeOfm` in the same pipeline.
 
+## ReactMarkdown Usage
+
+If you are using `react-markdown`, prefer the high-level React preset from `mdian/react`.
+Install the React dependencies in your app before using this subpath:
+
+```bash
+pnpm add mdian react react-markdown
+```
+
+```ts
+import ReactMarkdown from 'react-markdown'
+import {createOfmReactPreset} from 'mdian/react'
+
+const notes = new Map([
+  ['Project Notes', {markdown: '# Project Notes\n\nHello world.', title: 'Project Notes'}]
+])
+
+const ofm = createOfmReactPreset({
+  ofm: {
+    remark: {wikilinks: true, embeds: true},
+    rehype: {externalEmbeds: true}
+  },
+  wikiLink: {
+    resolve(target) {
+      return {
+        href: `/wiki/${encodeURIComponent(target.path)}`,
+        title: target.blockId
+          ? `${target.path}#^${target.blockId}`
+          : target.fragment
+            ? `${target.path}#${target.fragment}`
+            : target.path
+      }
+    }
+  },
+  noteEmbed: {
+    resolve(target) {
+      const note = notes.get(target.path)
+      return note ? {markdown: note.markdown, title: note.title} : undefined
+    }
+  },
+  image: {
+    transformSrc(src) {
+      return src.startsWith('assets/') ? `/${src}` : src
+    }
+  },
+  externalEmbeds: {
+    twitter: {
+      enhance: true
+    }
+  }
+})
+
+export function Markdown({markdown}: {markdown: string}) {
+  return (
+    <ReactMarkdown
+      components={ofm.components}
+      rehypePlugins={ofm.rehypePlugins}
+      remarkPlugins={ofm.remarkPlugins}
+    >
+      {markdown}
+    </ReactMarkdown>
+  )
+}
+```
+
+This path keeps OFM parsing in `mdian` while letting your app inject link resolution, note resolution, image URL rewriting, and optional router rendering. Set `externalEmbeds.twitter.enhance` to `true` only when you want the built-in X/Twitter widget enhancement path; otherwise the preset keeps the static fallback container while the core OFM output remains a single Twitter container `div` with canonical URL text content. You can also override the script loader with `loadTwitterWidgets({loadScript})`.
+
 ## External Embeds
 
 `rehypeOfm` also upgrades plain Markdown image URLs from supported providers into embeds:
 
-- `![](https://www.youtube.com/watch?v=...)`, `![](https://youtu.be/...)`, and `![](https://www.youtube.com/shorts/...)` render as YouTube `<iframe>` embeds.
-- `![](https://x.com/.../status/...)` and `![](https://twitter.com/.../status/...)` render as tweet embed blockquotes with `data-ofm-provider="twitter"`.
+- `![](https://www.youtube.com/watch?v=...)`, `![](https://youtu.be/...)`, and `![](https://www.youtube.com/shorts/...)` render as YouTube `<iframe>` embeds with the `ofm-external-embed` class.
+- `![](https://x.com/.../status/...)` and `![](https://twitter.com/.../status/...)` render as tweet embed containers with `data-ofm-provider="twitter"` and the `ofm-external-embed` class; the static core output is a single `div` whose text content is the canonical Twitter status URL.
 
 Set `externalEmbeds: false` to keep those URLs on the normal Markdown image path.
-If you want interactive X/Twitter widgets instead of a plain blockquote fallback, load the provider script in your app after render.
+If you want interactive X/Twitter widgets instead of the static container output, load the provider script in your app after render.
 
 ## Development
 

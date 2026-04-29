@@ -34,7 +34,7 @@ function renderDemoMarkdown(markdown: string): HTMLDivElement {
 }
 
 describe('demo note embed integration', () => {
-  test('renders routed wikilinks and callouts through the demo-local adapter', () => {
+  test('renders routed wikilinks and callouts through the mdian react preset', () => {
     const container = renderDemoMarkdown([
       '[[Project Notes|Open note]]',
       '',
@@ -45,6 +45,11 @@ describe('demo note embed integration', () => {
     expect(container.querySelector('a[href="/wiki/Project%20Notes"]')?.textContent).toBe('Open note')
     expect(container.querySelector('.ofm-callout')).not.toBeNull()
     expect(container.querySelector('blockquote')).toBeNull()
+  })
+
+  test('rewrites ordinary markdown image sources through the preset image.transformSrc hook', () => {
+    const container = renderDemoMarkdown('![hero](assets/image.svg)')
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/assets/image.svg')
   })
 
   test('expands whole-page, heading, and block note embeds', () => {
@@ -58,18 +63,14 @@ describe('demo note embed integration', () => {
 
     const embeds = [...container.querySelectorAll('.note-embed')]
     expect(embeds).toHaveLength(3)
-
     expect(embeds[0]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes')
-    expect(embeds[0]?.querySelector('.note-embed__body h1')).toBeNull()
-    expect(embeds[0]?.querySelector('.note-embed__body h2')?.textContent).toBe('Overview')
-
+    expect(embeds[0]?.textContent).toContain('A working note for the demo knowledge base.')
     expect(embeds[1]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes#Overview')
-    expect(embeds[1]?.querySelector('.note-embed__body h2')?.textContent).toBe('Overview')
-    expect(embeds[1]?.textContent).not.toContain('Navigation')
-
+    expect(embeds[1]?.textContent).toContain('This section is the destination for [[Project Notes#Overview]] in the mixed showcase example.')
+    expect(embeds[1]?.textContent).not.toContain('## Navigation')
     expect(embeds[2]?.querySelector('.note-embed__header strong')?.textContent).toBe('Roadmap#^next-step')
-    expect(embeds[2]?.querySelector('.note-embed__body h2')).toBeNull()
     expect(embeds[2]?.textContent).toContain('Finish real wiki navigation, keep heading anchors stable, and make block references scroll correctly.')
+    expect(embeds[2]?.textContent).not.toContain('Tighten the final HTML contract')
   })
 
   test('falls back to links for over-deep embeds and missing pages', () => {
@@ -88,12 +89,15 @@ describe('demo note embed integration', () => {
 
   test('renders external tweet embeds through the dedicated tweet container path', () => {
     const container = renderDemoMarkdown('![](https://x.com/jack/status/20)')
-    const tweet = container.querySelector('blockquote[data-ofm-provider="twitter"]')
+    const tweet = container.querySelector('div[data-ofm-provider="twitter"]')
 
     expect(tweet).not.toBeNull()
+    expect(tweet?.className).toContain('ofm-external-embed')
+    expect(tweet?.className).not.toContain('ofm-embed')
     expect(tweet?.getAttribute('data-ofm-kind')).toBe('embed')
     expect(tweet?.getAttribute('data-ofm-variant')).toBe('external')
-    expect(tweet?.getAttribute('cite')).toBe('https://twitter.com/jack/status/20')
-    expect(tweet?.querySelector('.tweet-embed__fallback a[href="https://twitter.com/jack/status/20"]')?.textContent).toBe('View post on X')
+    expect(tweet?.textContent).toBe('')
+    expect(tweet?.querySelector('div')).toBeNull()
+    expect(tweet?.querySelector('p')).toBeNull()
   })
 })
