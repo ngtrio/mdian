@@ -82,19 +82,6 @@ export function createOfmReactComponents(options: OfmReactPresetOptions = {}): C
         ...(resolved.title === undefined ? {} : {title: resolved.title})
       }, children)
     },
-    blockquote({children, className, node, ...props}) {
-      const data = readTwitterEmbedRenderData(readNode(node))
-
-      if (!data) {
-        return createElement('blockquote', {...props, className}, children)
-      }
-
-      return createElement(TwitterEmbedCard, {
-        data,
-        ...(className === undefined ? {} : {className}),
-        ...(options.externalEmbeds?.twitter === undefined ? {} : {options: options.externalEmbeds.twitter})
-      })
-    },
     p({children, className, node, ...props}) {
       return createElement('p', {...props, className}, children)
     },
