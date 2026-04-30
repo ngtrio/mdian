@@ -13,15 +13,40 @@ function readNode(node: unknown): Element | undefined {
   return typeof node === 'object' && node !== null && 'type' in node ? node as Element : undefined
 }
 
-function readSoleChildElement(node: Element | undefined): Element | undefined {
-  const children = node?.children ?? []
+type NoteEmbedRenderData = NonNullable<ReturnType<typeof readNoteEmbedRenderData>>
 
-  if (children.length !== 1) {
-    return undefined
+function renderResolvedNoteEmbed(
+  data: NoteEmbedRenderData,
+  options: OfmReactPresetOptions,
+  className: string | undefined
+) {
+  const fallbackHref = options.wikiLink?.resolve?.(data.target)?.href ?? data.fallbackHref
+  const resolved = options.noteEmbed?.resolve?.(data.target)
+
+  if (!resolved) {
+    return createElement('a', {...(fallbackHref === undefined ? {} : {href: fallbackHref})}, data.fallbackLabel)
   }
 
-  const [child] = children
-  return child?.type === 'element' ? child : undefined
+  return renderOfmNoteEmbed({
+    fallbackLabel: data.fallbackLabel,
+    renderBody(markdown) {
+      const preset = createOfmReactPreset(options)
+      return createElement(
+        ReactMarkdown,
+        {
+          components: preset.components,
+          rehypePlugins: preset.rehypePlugins,
+          remarkPlugins: preset.remarkPlugins
+        },
+        markdown
+      )
+    },
+    resolved,
+    target: data.target,
+    ...(className === undefined ? {} : {className}),
+    ...(fallbackHref === undefined ? {} : {fallbackHref}),
+    ...(options.noteEmbed?.maxDepth === undefined ? {} : {maxDepth: options.noteEmbed.maxDepth})
+  })
 }
 
 export function createOfmReactComponents(options: OfmReactPresetOptions = {}): Components {
@@ -71,42 +96,16 @@ export function createOfmReactComponents(options: OfmReactPresetOptions = {}): C
       })
     },
     p({children, className, node, ...props}) {
-      const data = readNoteEmbedRenderData(readSoleChildElement(readNode(node)))
-
-      if (!data || !options.noteEmbed?.resolve) {
-        return createElement('p', {...props, className}, children)
-      }
-
-      const fallbackHref = options.wikiLink?.resolve?.(data.target)?.href ?? data.fallbackHref
-      const resolved = options.noteEmbed.resolve(data.target)
-
-      if (!resolved) {
-        return createElement('a', {...(fallbackHref === undefined ? {} : {href: fallbackHref})}, data.fallbackLabel)
-      }
-
-      return renderOfmNoteEmbed({
-        fallbackLabel: data.fallbackLabel,
-        renderBody(markdown) {
-          const preset = createOfmReactPreset(options)
-          return createElement(
-            ReactMarkdown,
-            {
-              components: preset.components,
-              rehypePlugins: preset.rehypePlugins,
-              remarkPlugins: preset.remarkPlugins
-            },
-            markdown
-          )
-        },
-        resolved,
-        target: data.target,
-        ...(className === undefined ? {} : {className}),
-        ...(fallbackHref === undefined ? {} : {fallbackHref}),
-        ...(options.noteEmbed.maxDepth === undefined ? {} : {maxDepth: options.noteEmbed.maxDepth})
-      })
+      return createElement('p', {...props, className}, children)
     },
     div({children, className, node, ...props}) {
       const element = readNode(node)
+      const noteEmbed = readNoteEmbedRenderData(element)
+
+      if (noteEmbed) {
+        return renderResolvedNoteEmbed(noteEmbed, options, className)
+      }
+
       const twitterEmbed = readTwitterEmbedRenderData(element)
 
       if (twitterEmbed) {

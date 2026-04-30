@@ -110,7 +110,7 @@ If you change parser or rehype behavior that affects rendered markup, verify bot
 |--------|---------|--------|
 | `externalEmbeds` | `true` | Upgrade supported external media URLs written as Markdown images into embeds |
 | `hrefPrefix` | `undefined` | Prefix prepended to all wiki/embed `href` values |
-| `renderBlockAnchorLabels` | `false` | Render visible `^blockId` labels inside block-anchor elements |
+| `renderBlockAnchorLabels` | `true` | Render visible `^blockId` labels inside block-anchor elements |
 | `setTitle` | `true` | Populate `title` on wikilinks and embeds |
 
 ### Rendered HTML contract
@@ -124,7 +124,8 @@ Generated elements use stable `data-ofm-*` attributes:
 - `data-ofm-kind="highlight"`
 - `data-ofm-kind="anchor-target"` with `data-ofm-variant="heading" | "block"`
 
-Additional metadata may include `data-ofm-path`, `data-ofm-permalink`, `data-ofm-alias`, `data-ofm-fragment`, and `data-ofm-block-id`.
+Additional metadata may include `data-ofm-path`, `data-ofm-alias`, `data-ofm-fragment`, and `data-ofm-block-id`.
+For wikilinks and embeds, the target contract is `data-ofm-path` plus optional `data-ofm-fragment`. `data-ofm-block-id` remains specific to rendered block anchor targets.
 
 Generated elements also use stable `ofm-*` class names defined in `src/lib/shared/class-name.ts`, including `ofm-wikilink`, `ofm-embed`, `ofm-external-embed`, `ofm-highlight`, `ofm-callout`, `ofm-callout-title`, `ofm-callout-content`, `ofm-anchor-target`, `ofm-heading-target`, `ofm-block-target`, and `ofm-block-anchor-label`.
 
@@ -137,6 +138,10 @@ Generated elements also use stable `ofm-*` class names defined in `src/lib/share
 | `findOfmAnchorTarget` | `<T>(root: OfmAnchorRootLike<T>, hash: string \| null \| undefined) => T \| undefined` | Query the DOM for the element matching a hash |
 | `normalizeOfmPath` | `(path: string) => string` | Decode, trim, and normalize wiki-style paths |
 
-`OfmTargetUrlInput` requires `path` and `permalink`; optional `blockId` overrides the fragment.
+`OfmTargetUrlInput` requires `path`; optional `fragment` adds a `#fragment`.
+`fragment` never includes the leading `#`.
+Block refs use `fragment: '^block-id'`.
+Nested headings use `fragment: 'Heading#Subheading'`.
+`[[Page#Heading#^block-id]]` is intentionally unsupported.
 
 Types `OfmAnchorRootLike` and `OfmAnchorTargetLike` define the minimal interface consumers must implement for `findOfmAnchorTarget()` to work with their DOM layer.

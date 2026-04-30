@@ -47,12 +47,16 @@ describe('demo note embed integration', () => {
   test('renders routed wikilinks and callouts through the mdian react preset', () => {
     const container = renderDemoMarkdown([
       '[[Project Notes|Open note]]',
+      '[[Project Notes#Overview#Detail|Nested target]]',
+      '[[Roadmap#^next-step|Block target]]',
       '',
       '> [!note] Note title',
       '> Basic callout body.'
     ].join('\n'))
 
     expect(container.querySelector('a[href="/wiki/Project%20Notes"]')?.textContent).toBe('Open note')
+    expect(container.querySelector('a[href="/wiki/Project%20Notes#Overview#Detail"]')?.textContent).toBe('Nested target')
+    expect(container.querySelector('a[href="/wiki/Roadmap#^next-step"]')?.textContent).toBe('Block target')
     expect(container.querySelector('.ofm-callout')).not.toBeNull()
     expect(container.querySelector('blockquote')).toBeNull()
   })
@@ -78,25 +82,38 @@ describe('demo note embed integration', () => {
     expect(container.querySelector('img')?.getAttribute('src')).toBe('/mdian/assets/image.svg')
   })
 
-  test('expands whole-page, heading, and block note embeds', () => {
+  test('expands note embeds when followed by paragraph content', () => {
+    const container = renderDemoMarkdown('![[Project Notes]]\nfollowing text')
+
+    expect(container.querySelectorAll('.note-embed')).toHaveLength(1)
+    expect(container.querySelector('.note-embed')?.parentElement).toBe(container)
+    expect(container.querySelector('p:last-child')?.textContent).toBe('\nfollowing text')
+  })
+
+  test('expands whole-page, heading, nested-heading, and block note embeds', () => {
     const container = renderDemoMarkdown([
       '![[Project Notes]]',
       '',
       '![[Project Notes#Overview]]',
       '',
+      '![[Project Notes#Overview#Detail]]',
+      '',
       '![[Roadmap#^next-step]]'
     ].join('\n'))
 
     const embeds = [...container.querySelectorAll('.note-embed')]
-    expect(embeds).toHaveLength(3)
+    expect(embeds).toHaveLength(4)
     expect(embeds[0]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes')
     expect(embeds[0]?.textContent).toContain('A working note for the demo knowledge base.')
     expect(embeds[1]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes#Overview')
-    expect(embeds[1]?.textContent).toContain('This section is the destination for [[Project Notes#Overview]] in the mixed showcase example.')
+    expect(embeds[1]?.textContent).toContain('This section is the destination for Project Notes in the mixed showcase example.')
     expect(embeds[1]?.textContent).not.toContain('## Navigation')
-    expect(embeds[2]?.querySelector('.note-embed__header strong')?.textContent).toBe('Roadmap#^next-step')
-    expect(embeds[2]?.textContent).toContain('Finish real wiki navigation, keep heading anchors stable, and make block references scroll correctly.')
-    expect(embeds[2]?.textContent).not.toContain('Tighten the final HTML contract')
+    expect(embeds[2]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes#Overview#Detail')
+    expect(embeds[2]?.textContent).toContain('This nested heading is the destination for Project Notes and ![[Project Notes#Overview#Detail]].')
+    expect(embeds[2]?.textContent).not.toContain('## Navigation')
+    expect(embeds[3]?.querySelector('.note-embed__header strong')?.textContent).toBe('Roadmap#^next-step')
+    expect(embeds[3]?.textContent).toContain('Finish real wiki navigation, keep heading anchors stable, and make block references scroll correctly.')
+    expect(embeds[3]?.textContent).not.toContain('Tighten the final HTML contract')
   })
 
   test('falls back to links for over-deep embeds and missing pages', () => {

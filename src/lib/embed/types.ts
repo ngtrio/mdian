@@ -7,9 +7,8 @@ export interface EmbedSize {
 
 interface EmbedFields {
   alias?: string | null
-  blockId?: string | null
+  fragment?: string | null
   path: string
-  permalink: string
   size?: EmbedSize
   value: string
 }

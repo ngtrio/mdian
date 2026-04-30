@@ -28,6 +28,7 @@ import {ofmClassNames} from '../src/lib/shared/class-name.js'
 import {getOfmNodeData, stripOfmDataProps} from '../src/lib/shared/ofm-node.js'
 import {readOfmPublicProps, setOfmPublicProps} from '../src/lib/shared/public-props.js'
 import type {OfmRemarkOptions} from '../src/lib/types.js'
+import {parseWikiValue} from '../src/lib/wikilink/mdast.js'
 import { wikiLinkHast } from '../src/lib/wikilink/hast.js'
 
 interface FixtureConfig {
@@ -75,18 +76,14 @@ test('readOfmPublicProps reads shared OFM public props from an element', () => {
   setOfmPublicProps(node.properties, {
     kind: 'wikilink',
     path: 'Page',
-    permalink: 'Page#Heading',
     alias: 'Alias',
-    blockId: 'block-id',
     fragment: 'Heading'
   })
 
   assert.deepEqual(readOfmPublicProps(node), {
     kind: 'wikilink',
     path: 'Page',
-    permalink: 'Page#Heading',
     alias: 'Alias',
-    blockId: 'block-id',
     fragment: 'Heading'
   })
 })
@@ -130,8 +127,7 @@ test('demo styles scope youtube wrapper styling to the external embed class', as
 test('wikiLinkHast uses root-path default when hrefPrefix is omitted', () => {
   const node = createWikiLinkElement({
     value: 'Project Notes',
-    path: 'Project Notes',
-    permalink: 'Project Notes'
+    path: 'Project Notes'
   })
 
   wikiLinkHast()(node)
@@ -141,8 +137,7 @@ test('wikiLinkHast uses root-path default when hrefPrefix is omitted', () => {
   assertClassNames(node, [ofmClassNames.wikilink])
   assertOfmPublicProps(node, {
     kind: 'wikilink',
-    path: 'Project Notes',
-    permalink: 'Project Notes'
+    path: 'Project Notes'
   })
   assert.equal(node.properties.dataOfmKind, undefined)
 })
@@ -151,7 +146,7 @@ test('wikiLinkHast uses hrefPrefix path plus fragment when provided', () => {
   const node = createWikiLinkElement({
     value: 'Page#Heading',
     path: 'Page',
-    permalink: 'Page#Heading'
+    fragment: 'Heading'
   })
 
   wikiLinkHast({ hrefPrefix: 'notes' })(node)
@@ -161,16 +156,14 @@ test('wikiLinkHast uses hrefPrefix path plus fragment when provided', () => {
   assertOfmPublicProps(node, {
     kind: 'wikilink',
     path: 'Page',
-    permalink: 'Page#Heading',
     fragment: 'Heading'
   })
 })
 
-test('wikiLinkHast resolves aliases using permalink rather than alias text', () => {
+test('wikiLinkHast resolves aliases using the target path rather than alias text', () => {
   const node = createWikiLinkElement({
     value: 'Page|Alias',
     path: 'Page',
-    permalink: 'Page',
     alias: 'Alias'
   })
 
@@ -181,7 +174,6 @@ test('wikiLinkHast resolves aliases using permalink rather than alias text', () 
   assertOfmPublicProps(node, {
     kind: 'wikilink',
     path: 'Page',
-    permalink: 'Page',
     alias: 'Alias'
   })
 })
@@ -190,8 +182,7 @@ test('wikiLinkHast preserves block fragments with hrefPrefix', () => {
   const node = createWikiLinkElement({
     value: 'Page#^block-id',
     path: 'Page',
-    permalink: 'Page#^block-id',
-    blockId: 'block-id'
+    fragment: '^block-id'
   })
 
   wikiLinkHast({ hrefPrefix: 'notes' })(node)
@@ -201,8 +192,6 @@ test('wikiLinkHast preserves block fragments with hrefPrefix', () => {
   assertOfmPublicProps(node, {
     kind: 'wikilink',
     path: 'Page',
-    permalink: 'Page#^block-id',
-    blockId: 'block-id',
     fragment: '^block-id'
   })
 })
@@ -211,7 +200,7 @@ test('wikiLinkHast encodes path segments but preserves fragments with hrefPrefix
   const node = createWikiLinkElement({
     value: 'Folder Name/Page Name#Heading Here',
     path: 'Folder Name/Page Name',
-    permalink: 'Folder Name/Page Name#Heading Here'
+    fragment: 'Heading Here'
   })
 
   wikiLinkHast({ hrefPrefix: 'notes' })(node)
@@ -221,16 +210,32 @@ test('wikiLinkHast encodes path segments but preserves fragments with hrefPrefix
   assertOfmPublicProps(node, {
     kind: 'wikilink',
     path: 'Folder Name/Page Name',
-    permalink: 'Folder Name/Page Name#Heading Here',
     fragment: 'Heading Here'
+  })
+})
+
+test('wikiLinkHast preserves # inside a heading fragment', () => {
+  const node = createWikiLinkElement({
+    value: 'Page#A#B',
+    path: 'Page',
+    fragment: 'A#B'
+  })
+
+  wikiLinkHast({ hrefPrefix: 'notes' })(node)
+
+  assert.equal(node.properties.href, '/notes/Page#A#B')
+  assert.equal(node.properties.title, 'Page#A#B')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'Page',
+    fragment: 'A#B'
   })
 })
 
 test('wikiLinkHast can skip title assignment', () => {
   const node = createWikiLinkElement({
     value: 'Page',
-    path: 'Page',
-    permalink: 'Page'
+    path: 'Page'
   })
 
   wikiLinkHast({ hrefPrefix: 'notes', setTitle: false })(node)
@@ -355,10 +360,10 @@ test('remarkOfm converts callouts when the first body paragraph contains wiki li
   assert.deepEqual(
     (body?.children ?? [])
       .filter((child) => child.type === 'wikiLink')
-      .map((child) => ({path: child.path, permalink: child.permalink})),
+      .map((child) => ({path: child.path, fragment: child.fragment})),
     [
-      {path: 'Alpha', permalink: 'Alpha'},
-      {path: 'Beta', permalink: 'Beta'}
+      {path: 'Alpha', fragment: undefined},
+      {path: 'Beta', fragment: undefined}
     ]
   )
 })
@@ -449,8 +454,7 @@ test('getOfmNodeData reads callout metadata before hast cleanup', () => {
 test('embedHast renders extensionless note embeds as semantic containers', () => {
   const node = createEmbedElement({
     value: 'Project Notes',
-    path: 'Project Notes',
-    permalink: 'Project Notes'
+    path: 'Project Notes'
   })
 
   embedHast()(node)
@@ -461,8 +465,7 @@ test('embedHast renders extensionless note embeds as semantic containers', () =>
   assertOfmPublicProps(node, {
     kind: 'embed',
     variant: 'note',
-    path: 'Project Notes',
-    permalink: 'Project Notes'
+    path: 'Project Notes'
   })
   assert.equal(node.properties.dataOfmKind, undefined)
   assert.deepEqual(node.children, [{
@@ -477,7 +480,7 @@ test('embedHast renders markdown file embeds as semantic containers with fragmen
   const node = createEmbedElement({
     value: 'Page.md#Heading',
     path: 'Page.md',
-    permalink: 'Page.md#Heading'
+    fragment: 'Heading'
   })
 
   embedHast({ hrefPrefix: 'notes' })(node)
@@ -488,7 +491,6 @@ test('embedHast renders markdown file embeds as semantic containers with fragmen
     kind: 'embed',
     variant: 'note',
     path: 'Page.md',
-    permalink: 'Page.md#Heading',
     fragment: 'Heading'
   })
   assert.deepEqual(node.children, [{
@@ -502,8 +504,7 @@ test('embedHast renders markdown file embeds as semantic containers with fragmen
 test('embedHast renders image embeds as images', () => {
   const node = createEmbedElement({
     value: 'assets/cover.png',
-    path: 'assets/cover.png',
-    permalink: 'assets/cover.png'
+    path: 'assets/cover.png'
   })
 
   embedHast({ hrefPrefix: 'notes' })(node)
@@ -515,8 +516,7 @@ test('embedHast renders image embeds as images', () => {
   assertOfmPublicProps(node, {
     kind: 'embed',
     variant: 'image',
-    path: 'assets/cover.png',
-    permalink: 'assets/cover.png'
+    path: 'assets/cover.png'
   })
 })
 
@@ -524,7 +524,6 @@ test('embedHast applies image width and height from embed size syntax', () => {
   const node = createEmbedElement({
     value: 'assets/cover.png|100x145',
     path: 'assets/cover.png',
-    permalink: 'assets/cover.png',
     size: { width: 100, height: 145 }
   })
 
@@ -541,7 +540,6 @@ test('embedHast applies image width when embed size syntax omits height', () => 
   const node = createEmbedElement({
     value: 'assets/cover.png|100',
     path: 'assets/cover.png',
-    permalink: 'assets/cover.png',
     size: { width: 100 }
   })
 
@@ -555,8 +553,7 @@ test('embedHast applies image width when embed size syntax omits height', () => 
 test('embedHast renders non-image files as links', () => {
   const node = createEmbedElement({
     value: 'manual.pdf',
-    path: 'manual.pdf',
-    permalink: 'manual.pdf'
+    path: 'manual.pdf'
   })
 
   embedHast({ hrefPrefix: 'notes' })(node)
@@ -567,17 +564,15 @@ test('embedHast renders non-image files as links', () => {
   assertOfmPublicProps(node, {
     kind: 'embed',
     variant: 'file',
-    path: 'manual.pdf',
-    permalink: 'manual.pdf'
+    path: 'manual.pdf'
   })
   assert.deepEqual(node.children, [{type: 'text', value: 'manual.pdf'}])
 })
 
-test('embedHast uses permalink rather than alias text for note embed title', () => {
+test('embedHast uses the target path rather than alias text for note embed title', () => {
   const node = createEmbedElement({
     value: 'Page|Alias',
     path: 'Page',
-    permalink: 'Page',
     alias: 'Alias'
   })
 
@@ -589,7 +584,6 @@ test('embedHast uses permalink rather than alias text for note embed title', () 
     kind: 'embed',
     variant: 'note',
     path: 'Page',
-    permalink: 'Page',
     alias: 'Alias'
   })
   assert.deepEqual(node.children, [{
@@ -604,8 +598,7 @@ test('embedHast preserves block fragments with hrefPrefix for note embeds', () =
   const node = createEmbedElement({
     value: 'Page#^block-id',
     path: 'Page',
-    permalink: 'Page#^block-id',
-    blockId: 'block-id'
+    fragment: '^block-id'
   })
 
   embedHast({ hrefPrefix: 'notes' })(node)
@@ -615,8 +608,6 @@ test('embedHast preserves block fragments with hrefPrefix for note embeds', () =
     kind: 'embed',
     variant: 'note',
     path: 'Page',
-    permalink: 'Page#^block-id',
-    blockId: 'block-id',
     fragment: '^block-id'
   })
   assert.deepEqual(node.children, [{
@@ -632,7 +623,7 @@ test('embedHast encodes path segments but preserves fragments with hrefPrefix', 
   const node = createEmbedElement({
     value: 'Folder Name/Page Name#Heading Here',
     path: 'Folder Name/Page Name',
-    permalink: 'Folder Name/Page Name#Heading Here'
+    fragment: 'Heading Here'
   })
 
   embedHast({ hrefPrefix: 'notes' })(node)
@@ -642,7 +633,6 @@ test('embedHast encodes path segments but preserves fragments with hrefPrefix', 
     kind: 'embed',
     variant: 'note',
     path: 'Folder Name/Page Name',
-    permalink: 'Folder Name/Page Name#Heading Here',
     fragment: 'Heading Here'
   })
   assert.equal(node.properties.title, 'Folder Name/Page Name#Heading Here')
@@ -654,11 +644,35 @@ test('embedHast encodes path segments but preserves fragments with hrefPrefix', 
   }])
 })
 
+test('embedHast preserves # inside a heading fragment', () => {
+  const node = createEmbedElement({
+    value: 'Page#A#B',
+    path: 'Page',
+    fragment: 'A#B'
+  })
+
+  embedHast({ hrefPrefix: 'notes' })(node)
+
+  assert.equal(node.tagName, 'div')
+  assert.equal(node.properties.title, 'Page#A#B')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Page',
+    fragment: 'A#B'
+  })
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/notes/Page#A#B'},
+    children: [{type: 'text', value: 'Page#A#B'}]
+  }])
+})
+
 test('embedHast can skip title assignment', () => {
   const node = createEmbedElement({
     value: 'Page',
-    path: 'Page',
-    permalink: 'Page'
+    path: 'Page'
   })
 
   embedHast({ hrefPrefix: 'notes', setTitle: false })(node)
@@ -671,16 +685,15 @@ test('rendering note embeds preserves fragment metadata and href output', () => 
   const node = createEmbedElement({
     value: 'Project Notes#Overview',
     path: 'Project Notes',
-    permalink: 'Project Notes#Overview'
+    fragment: 'Overview'
   })
 
-  embedHast({ hrefPrefix: 'wiki', renderBlockAnchorLabels: true })(node)
+  embedHast({ hrefPrefix: 'wiki' })(node)
 
   assertOfmPublicProps(node, {
     kind: 'embed',
     variant: 'note',
     path: 'Project Notes',
-    permalink: 'Project Notes#Overview',
     fragment: 'Overview'
   })
   assert.equal(node.properties.title, 'Project Notes#Overview')
@@ -696,18 +709,15 @@ test('rendering block embeds preserves fragment and block metadata', () => {
   const node = createEmbedElement({
     value: 'Roadmap#^next-step',
     path: 'Roadmap',
-    permalink: 'Roadmap#^next-step',
-    blockId: 'next-step'
+    fragment: '^next-step'
   })
 
-  embedHast({ hrefPrefix: 'wiki', renderBlockAnchorLabels: true })(node)
+  embedHast({ hrefPrefix: 'wiki' })(node)
 
   assertOfmPublicProps(node, {
     kind: 'embed',
     variant: 'note',
     path: 'Roadmap',
-    permalink: 'Roadmap#^next-step',
-    blockId: 'next-step',
     fragment: '^next-step'
   })
   assert.deepEqual(node.children, [{
@@ -721,8 +731,7 @@ test('rendering block embeds preserves fragment and block metadata', () => {
 test('rendering image embeds keeps image output semantics', () => {
   const node = createEmbedElement({
     value: 'assets/cover.png',
-    path: 'assets/cover.png',
-    permalink: 'assets/cover.png'
+    path: 'assets/cover.png'
   })
 
   embedHast({ hrefPrefix: 'wiki' })(node)
@@ -737,8 +746,7 @@ test('rendering image embeds keeps image output semantics', () => {
 test('rendering file embeds keeps link output semantics', () => {
   const node = createEmbedElement({
     value: 'manual.pdf',
-    path: 'manual.pdf',
-    permalink: 'manual.pdf'
+    path: 'manual.pdf'
   })
 
   embedHast({ hrefPrefix: 'wiki' })(node)
@@ -748,6 +756,90 @@ test('rendering file embeds keeps link output semantics', () => {
   assert.equal(node.properties.title, 'manual.pdf')
   assert.equal(node.properties['data-ofm-variant'], 'file')
   assert.deepEqual(node.children, [{type: 'text', value: 'manual.pdf'}])
+})
+
+
+test('rehypeOfm lifts standalone note embeds out of paragraphs', () => {
+  const tree: Root = {
+    type: 'root',
+    children: [createParagraphElement([createEmbedElement({
+      value: 'Project Notes',
+      path: 'Project Notes'
+    })])]
+  }
+
+  const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
+  transform(tree)
+
+  const embed = tree.children[0]
+  assert.equal(embed?.type, 'element')
+  assert.equal(embed.tagName, 'div')
+  assertOfmPublicProps(embed, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Project Notes'
+  })
+})
+
+test('rehypeOfm splits paragraphs around note embeds', () => {
+  const tree: Root = {
+    type: 'root',
+    children: [createParagraphElement([
+      {type: 'text', value: 'Before '},
+      createEmbedElement({value: 'Project Notes', path: 'Project Notes'}),
+      {type: 'text', value: ' after'}
+    ])]
+  }
+
+  const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
+  transform(tree)
+
+  assert.equal(tree.children.length, 3)
+  assert.deepEqual(tree.children[0], createParagraphElement([{type: 'text', value: 'Before '}]))
+
+  const embed = tree.children[1]
+  assert.equal(embed?.type, 'element')
+  assert.equal(embed.tagName, 'div')
+  assertOfmPublicProps(embed, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Project Notes'
+  })
+
+  assert.deepEqual(tree.children[2], createParagraphElement([{type: 'text', value: ' after'}]))
+})
+
+test('rehypeOfm keeps block anchor props on the last paragraph after note embed splitting', () => {
+  const tree: Root = {
+    type: 'root',
+    children: [createParagraphElement([
+      {type: 'text', value: 'Before '},
+      createEmbedElement({value: 'Project Notes', path: 'Project Notes'}),
+      {type: 'text', value: 'after'}
+    ])]
+  }
+
+  anchorHast()(tree.children[0] as Element)
+
+  const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
+  ;(tree.children[0] as Element).children.push({type: 'text', value: ' ^block-id'})
+  anchorHast()(tree.children[0] as Element)
+  transform(tree)
+
+  const trailing = tree.children[2]
+  assert.equal(trailing?.type, 'element')
+  assert.equal(trailing.tagName, 'p')
+  assert.equal(trailing.properties['data-anchor-key'], '^block-id')
+  assert.equal(trailing.properties['data-ofm-block-id'], 'block-id')
+  assert.deepEqual(trailing.children, [
+    {type: 'text', value: 'after'},
+    {
+      type: 'element',
+      tagName: 'span',
+      properties: {className: [ofmClassNames.blockAnchorLabel]},
+      children: [{type: 'text', value: '^block-id'}]
+    }
+  ])
 })
 
 test('rehypeOfm renders supported YouTube image URLs as external iframe embeds', () => {
@@ -762,9 +854,7 @@ test('rehypeOfm renders supported YouTube image URLs as external iframe embeds',
   const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
   transform(tree)
 
-  const paragraph = tree.children[0]
-  assert.equal(paragraph?.type, 'element')
-  const iframe = paragraph.children[0]
+  const iframe = tree.children[0]
   assert.equal(iframe?.type, 'element')
   assert.equal(iframe.tagName, 'iframe')
   assert.equal(iframe.properties.src, 'https://www.youtube.com/embed/dQw4w9WgXcQ')
@@ -779,6 +869,27 @@ test('rehypeOfm renders supported YouTube image URLs as external iframe embeds',
   })
 })
 
+test('rehypeOfm splits paragraphs around YouTube embeds', () => {
+  const tree: Root = {
+    type: 'root',
+    children: [createParagraphElement([
+      {type: 'text', value: 'Before '},
+      createMarkdownImageElement({src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'}),
+      {type: 'text', value: ' after'}
+    ])]
+  }
+
+  const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
+  transform(tree)
+
+  assert.equal(tree.children.length, 3)
+  assert.deepEqual(tree.children[0], createParagraphElement([{type: 'text', value: 'Before '}]))
+  const iframe = tree.children[1]
+  assert.equal(iframe?.type, 'element')
+  assert.equal(iframe.tagName, 'iframe')
+  assert.deepEqual(tree.children[2], createParagraphElement([{type: 'text', value: ' after'}]))
+})
+
 test('rehypeOfm renders supported X status URLs as external tweet embeds', () => {
   const tree: Root = {
     type: 'root',
@@ -790,9 +901,7 @@ test('rehypeOfm renders supported X status URLs as external tweet embeds', () =>
   const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
   transform(tree)
 
-  const paragraph = tree.children[0]
-  assert.equal(paragraph?.type, 'element')
-  const tweet = paragraph.children[0]
+  const tweet = tree.children[0]
   assert.equal(tweet?.type, 'element')
   assert.equal(tweet.tagName, 'div')
   assert.deepEqual(tweet.properties.className, [ofmClassNames.externalEmbed, 'twitter-tweet'])
@@ -815,6 +924,27 @@ test('rehypeOfm renders supported X status URLs as external tweet embeds', () =>
     value: 'View post on X'
   })
   assert.equal(tweet.children[1], undefined)
+})
+
+test('rehypeOfm splits paragraphs around tweet embeds', () => {
+  const tree: Root = {
+    type: 'root',
+    children: [createParagraphElement([
+      {type: 'text', value: 'Before '},
+      createMarkdownImageElement({src: 'https://x.com/jack/status/20'}),
+      {type: 'text', value: ' after'}
+    ])]
+  }
+
+  const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
+  transform(tree)
+
+  assert.equal(tree.children.length, 3)
+  assert.deepEqual(tree.children[0], createParagraphElement([{type: 'text', value: 'Before '}]))
+  const tweet = tree.children[1]
+  assert.equal(tweet?.type, 'element')
+  assert.equal(tweet.tagName, 'div')
+  assert.deepEqual(tree.children[2], createParagraphElement([{type: 'text', value: ' after'}]))
 })
 
 test('rehypeOfm can keep external image URLs on the normal image path', () => {
@@ -840,19 +970,24 @@ test('rehypeOfm can keep external image URLs on the normal image path', () => {
 
 test('normalizeOfmAnchorKey matches anchor normalization behavior', () => {
   assert.equal(normalizeOfmAnchorKey('#Heading%20Here'), 'heading here')
+  assert.equal(normalizeOfmAnchorKey('#Heading#Subheading'), 'heading#subheading')
   assert.equal(normalizeOfmAnchorKey('#^Block-ID'), '^block-id')
 })
 
 test('findOfmAnchorTarget locates the first matching data-anchor-key', () => {
   const alpha = {dataset: {anchorKey: 'alpha'}}
   const headingHere = {dataset: {anchorKey: 'heading here'}}
+  const nestedHeading = {dataset: {anchorKey: 'overview#detail'}}
+  const headingWithHash = {dataset: {anchorKey: 'a#b'}}
   const root = {
     querySelectorAll() {
-      return [alpha, headingHere]
+      return [alpha, headingHere, nestedHeading, headingWithHash]
     }
   }
 
   assert.equal(findOfmAnchorTarget(root, '#Heading%20Here'), headingHere)
+  assert.equal(findOfmAnchorTarget(root, '#Overview#Detail'), nestedHeading)
+  assert.equal(findOfmAnchorTarget(root, '#A#B'), headingWithHash)
   assert.equal(findOfmAnchorTarget(root, '#missing'), undefined)
 })
 
@@ -879,7 +1014,29 @@ test('anchorHast adds data-anchor-key to headings', () => {
   assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.headingTarget])
 })
 
-test('anchorHast extracts trailing block refs into element properties', () => {
+test('anchorHast derives nested heading keys from the heading path fragment', () => {
+  const transform = anchorHast()
+  const section: Element = {
+    type: 'element',
+    tagName: 'h2',
+    properties: {},
+    children: [{type: 'text', value: 'Overview'}]
+  }
+  const subheading: Element = {
+    type: 'element',
+    tagName: 'h3',
+    properties: {},
+    children: [{type: 'text', value: 'Detail'}]
+  }
+
+  transform(section)
+  transform(subheading)
+
+  assert.equal(section.properties['data-anchor-key'], 'overview')
+  assert.equal(subheading.properties['data-anchor-key'], 'overview#detail')
+})
+
+test('anchorHast extracts trailing block refs and renders labels by default', () => {
   const node: Element = {
     type: 'element',
     tagName: 'p',
@@ -888,22 +1045,6 @@ test('anchorHast extracts trailing block refs into element properties', () => {
   }
 
   anchorHast()(node)
-
-  assert.equal(node.properties['data-anchor-key'], '^block-id')
-  assertOfmPublicProps(node, {kind: 'anchor-target', variant: 'block', blockId: 'block-id'})
-  assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
-  assert.deepEqual(node.children, [{type: 'text', value: 'Paragraph target.'}])
-})
-
-test('anchorHast can append a styled block anchor label when enabled', () => {
-  const node: Element = {
-    type: 'element',
-    tagName: 'p',
-    properties: {},
-    children: [{type: 'text', value: 'Paragraph target. ^block-id'}]
-  }
-
-  anchorHast({renderBlockAnchorLabels: true})(node)
 
   assert.equal(node.properties['data-anchor-key'], '^block-id')
   assertOfmPublicProps(node, {kind: 'anchor-target', variant: 'block', blockId: 'block-id'})
@@ -919,6 +1060,22 @@ test('anchorHast can append a styled block anchor label when enabled', () => {
       children: [{type: 'text', value: '^block-id'}]
     }
   ])
+})
+
+test('anchorHast can skip block anchor labels when disabled', () => {
+  const node: Element = {
+    type: 'element',
+    tagName: 'p',
+    properties: {},
+    children: [{type: 'text', value: 'Paragraph target. ^block-id'}]
+  }
+
+  anchorHast({renderBlockAnchorLabels: false})(node)
+
+  assert.equal(node.properties['data-anchor-key'], '^block-id')
+  assertOfmPublicProps(node, {kind: 'anchor-target', variant: 'block', blockId: 'block-id'})
+  assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
+  assert.deepEqual(node.children, [{type: 'text', value: 'Paragraph target.'}])
 })
 
 test('highlightHast removes OFM metadata after rendering intent is consumed', () => {
@@ -967,8 +1124,7 @@ test('rehypeOfm removes OFM comment placeholders from rendered trees', () => {
 test('wikilink and anchor transforms preserve existing class names', () => {
   const node = createWikiLinkElement({
     value: 'Page',
-    path: 'Page',
-    permalink: 'Page'
+    path: 'Page'
   })
 
   node.properties.className = ['existing-link']
@@ -1014,33 +1170,31 @@ test('getOfmNodeData reads wikilink metadata from hast properties', () => {
   const node = createWikiLinkElement({
     value: 'Folder Name/Page Name#Heading Here|Alias',
     path: 'Folder Name/Page Name',
-    permalink: 'Folder Name/Page Name#Heading Here',
-    alias: 'Alias'
+    alias: 'Alias',
+    fragment: 'Heading Here'
   })
 
   assert.deepEqual(getOfmNodeData(node.properties), {
     kind: 'wikilink',
     value: 'Folder Name/Page Name#Heading Here|Alias',
     path: 'Folder Name/Page Name',
-    permalink: 'Folder Name/Page Name#Heading Here',
+    fragment: 'Heading Here',
     alias: 'Alias'
   })
 })
 
-test('getOfmNodeData reads embed metadata including block refs', () => {
+test('getOfmNodeData reads embed metadata using fragment-only targets', () => {
   const node = createEmbedElement({
     value: 'Page#^block-id',
     path: 'Page',
-    permalink: 'Page#^block-id',
-    blockId: 'block-id'
+    fragment: '^block-id'
   })
 
   assert.deepEqual(getOfmNodeData(node.properties), {
     kind: 'embed',
     value: 'Page#^block-id',
     path: 'Page',
-    permalink: 'Page#^block-id',
-    blockId: 'block-id'
+    fragment: '^block-id'
   })
 })
 
@@ -1057,10 +1211,9 @@ test('stripOfmDataProps removes internal ofm markers but preserves normal props'
   assert.deepEqual(
     stripOfmDataProps({
       dataOfmAlias: 'Alias',
-      dataOfmBlockId: 'block-id',
+      dataOfmFragment: 'Heading',
       dataOfmKind: 'embed',
       dataOfmPath: 'Page',
-      dataOfmPermalink: 'Page#Heading',
       dataOfmValue: 'Page#Heading',
       'data-anchor-key': 'heading',
       alt: 'example',
@@ -1090,8 +1243,19 @@ test('buildOfmTargetUrl normalizes paths and preserves heading or block fragment
   assert.equal(
     buildOfmTargetUrl(
       {
+        path: 'Page',
+        fragment: 'A#B'
+      },
+      'wiki'
+    ),
+    '/wiki/Page#A#B'
+  )
+
+  assert.equal(
+    buildOfmTargetUrl(
+      {
         path: ' Folder%20Name / Page%20Name ',
-        permalink: 'Folder Name/Page Name#Heading Here'
+        fragment: 'Heading Here'
       },
       'wiki'
     ),
@@ -1102,13 +1266,20 @@ test('buildOfmTargetUrl normalizes paths and preserves heading or block fragment
     buildOfmTargetUrl(
       {
         path: 'Page',
-        permalink: 'Page#^block-id',
-        blockId: 'block-id'
+        fragment: '^block-id'
       },
       'wiki'
     ),
     '/wiki/Page#^block-id'
   )
+})
+
+test('parseWikiValue keeps unsupported heading-plus-block syntax as a plain fragment string', () => {
+  const parsed = parseWikiValue('Page#Heading#^block-id')
+
+  assert.equal(parsed.path, 'Page')
+  assert.equal(parsed.fragment, 'Heading#^block-id')
+  assert.equal(parsed.alias, undefined)
 })
 
 function fixtureDirBase(fixtureName: string): string {
@@ -1155,46 +1326,40 @@ function stripPositions(value: unknown): unknown {
 function createWikiLinkElement({
   value,
   path,
-  permalink,
-  alias,
-  blockId
+  fragment,
+  alias
 }: {
   value: string
   path: string
-  permalink: string
+  fragment?: string
   alias?: string
-  blockId?: string
 }): Element {
   return createOfmElement('wikilink', 'a', {
     value,
     path,
-    permalink,
-    ...(alias === undefined ? {} : { alias }),
-    ...(blockId === undefined ? {} : { blockId })
+    ...(fragment === undefined ? {} : { fragment }),
+    ...(alias === undefined ? {} : { alias })
   })
 }
 
 function createEmbedElement({
   value,
   path,
-  permalink,
+  fragment,
   alias,
-  blockId,
   size
 }: {
   value: string
   path: string
-  permalink: string
+  fragment?: string
   alias?: string
-  blockId?: string
   size?: {width?: number, height?: number}
 }): Element {
   return createOfmElement('embed', 'span', {
     value,
     path,
-    permalink,
+    ...(fragment === undefined ? {} : { fragment }),
     ...(alias === undefined ? {} : { alias }),
-    ...(blockId === undefined ? {} : { blockId }),
     ...(size === undefined ? {} : { size })
   })
 }
@@ -1277,7 +1442,6 @@ function assertOfmPublicProps(
     fragment?: string
     kind: string
     path?: string
-    permalink?: string
     provider?: string
     variant?: string
   }
@@ -1285,7 +1449,6 @@ function assertOfmPublicProps(
   assert.equal(node.properties['data-ofm-kind'], expected.kind)
   assert.equal(node.properties['data-ofm-variant'], expected.variant)
   assert.equal(node.properties['data-ofm-path'], expected.path)
-  assert.equal(node.properties['data-ofm-permalink'], expected.permalink)
   assert.equal(node.properties['data-ofm-alias'], expected.alias)
   assert.equal(node.properties['data-ofm-block-id'], expected.blockId)
   assert.equal(node.properties['data-ofm-fragment'], expected.fragment)
@@ -1298,16 +1461,14 @@ function createOfmElement(
   {
     value,
     path,
-    permalink,
+    fragment,
     alias,
-    blockId,
     size
   }: {
     value: string
     path: string
-    permalink: string
+    fragment?: string
     alias?: string
-    blockId?: string
     size?: {width?: number, height?: number}
   }
 ): Element {
@@ -1318,9 +1479,8 @@ function createOfmElement(
       dataOfmKind: kind,
       dataOfmValue: value,
       dataOfmPath: path,
-      dataOfmPermalink: permalink,
+      dataOfmFragment: fragment ?? '',
       dataOfmAlias: alias ?? '',
-      dataOfmBlockId: blockId ?? '',
       ...(size?.width === undefined ? {} : { dataOfmWidth: size.width }),
       ...(size?.height === undefined ? {} : { dataOfmHeight: size.height })
     },

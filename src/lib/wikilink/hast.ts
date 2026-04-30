@@ -3,8 +3,8 @@ import type {Root, RootContent} from 'hast'
 import type {OfmRehypeOptions} from '../types.js'
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
 import {getOfmNodeData, stripOfmDataProps} from '../shared/ofm-node.js'
-import {getOfmPublicFragment, ofmPublicKind, setOfmPublicProps} from '../shared/public-props.js'
-import { buildOfmTargetUrl } from '../shared/ofm-url.js'
+import {ofmPublicKind, setOfmPublicProps} from '../shared/public-props.js'
+import {buildOfmTargetUrl, formatOfmTargetLabel} from '../shared/ofm-url.js'
 
 export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | RootContent) => void {
   const setTitle = options.setTitle !== false
@@ -20,21 +20,17 @@ export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | Root
       return
     }
 
-    const fragment = getOfmPublicFragment(ofmNode.permalink)
-
     node.properties.href = buildOfmTargetUrl(ofmNode, options.hrefPrefix)
     setOfmPublicProps(node.properties, {
       kind: ofmPublicKind.wikilink,
       path: ofmNode.path,
-      permalink: ofmNode.permalink,
       ...(ofmNode.alias === undefined ? {} : {alias: ofmNode.alias}),
-      ...(ofmNode.blockId === undefined ? {} : {blockId: ofmNode.blockId}),
-      ...(fragment === undefined ? {} : {fragment})
+      ...(ofmNode.fragment === undefined ? {} : {fragment: ofmNode.fragment})
     })
     addClassName(node.properties, ofmClassNames.wikilink)
 
     if (setTitle) {
-      node.properties.title = ofmNode.permalink || ofmNode.path
+      node.properties.title = formatOfmTargetLabel(ofmNode)
     } else {
       delete node.properties.title
     }

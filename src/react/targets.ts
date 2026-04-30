@@ -1,11 +1,11 @@
 import type {Element, ElementContent, Text} from 'hast'
 
 import {
-  getOfmPublicFragment,
   ofmPublicKind,
   ofmPublicVariant,
   readOfmPublicProps
 } from '../lib/shared/public-props.js'
+import {formatOfmTargetLabel} from '../lib/shared/ofm-url.js'
 import type {OfmReactTarget} from './types.js'
 
 export interface WikiLinkRenderData {
@@ -32,13 +32,10 @@ export function readWikiLinkRenderData(
     return undefined
   }
 
-  const fragment = getOfmPublicFragment(props.permalink)
-
   return {
     target: {
       path: props.path,
-      ...(props.blockId === undefined ? {} : {blockId: props.blockId}),
-      ...(fragment === undefined ? {} : {fragment})
+      ...(props.fragment === undefined ? {} : {fragment: props.fragment})
     },
     ...(href === undefined ? {} : {fallbackHref: href}),
     ...(title === undefined ? {} : {fallbackTitle: title})
@@ -57,16 +54,14 @@ export function readNoteEmbedRenderData(node: Element | undefined): NoteEmbedRen
     ? fallbackAnchor.properties.href
     : undefined
   const fallbackText = readFirstTextChild(fallbackAnchor)
-  const fallbackLabel = fallbackText ?? props.alias ?? props.permalink ?? props.path
-  const fragment = getOfmPublicFragment(props.permalink)
+  const fallbackLabel = fallbackText ?? props.alias ?? formatOfmTargetLabel(props)
   const title = typeof node?.properties.title === 'string' ? node.properties.title : undefined
 
   return {
     fallbackLabel,
     target: {
       path: props.path,
-      ...(props.blockId === undefined ? {} : {blockId: props.blockId}),
-      ...(fragment === undefined ? {} : {fragment})
+      ...(props.fragment === undefined ? {} : {fragment: props.fragment})
     },
     ...(fallbackHref === undefined ? {} : {fallbackHref}),
     ...(title === undefined ? {} : {title})

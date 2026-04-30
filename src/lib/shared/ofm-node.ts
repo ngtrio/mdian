@@ -2,9 +2,8 @@ import type {Properties} from 'hast'
 
 interface OfmTargetNodeData {
   alias?: string
-  blockId?: string
+  fragment?: string
   path: string
-  permalink: string
   value: string
 }
 
@@ -38,14 +37,13 @@ export type OfmNodeData =
 
 const ofmDataPropNames = [
   'dataOfmAlias',
-  'dataOfmBlockId',
   'dataOfmCalloutType',
   'dataOfmCollapsed',
   'dataOfmFoldable',
   'dataOfmHeight',
   'dataOfmKind',
   'dataOfmPath',
-  'dataOfmPermalink',
+  'dataOfmFragment',
   'dataOfmTitle',
   'dataOfmValue',
   'dataOfmWidth'
@@ -57,19 +55,18 @@ export function getOfmNodeData(properties?: Properties): OfmNodeData | undefined
   switch (kind) {
     case 'wikilink': {
       const alias = readOptionalString(properties, 'dataOfmAlias')
-      const blockId = readOptionalString(properties, 'dataOfmBlockId')
       return {
         kind,
         value: readString(properties, 'dataOfmValue'),
         path: readString(properties, 'dataOfmPath'),
-        permalink: readString(properties, 'dataOfmPermalink'),
-        ...(alias === undefined ? {} : {alias}),
-        ...(blockId === undefined ? {} : {blockId})
+        ...(readOptionalString(properties, 'dataOfmFragment') === undefined
+          ? {}
+          : {fragment: readString(properties, 'dataOfmFragment')}),
+        ...(alias === undefined ? {} : {alias})
       }
     }
     case 'embed': {
       const alias = readOptionalString(properties, 'dataOfmAlias')
-      const blockId = readOptionalString(properties, 'dataOfmBlockId')
       const width = readOptionalNumber(properties, 'dataOfmWidth')
       const height = readOptionalNumber(properties, 'dataOfmHeight')
 
@@ -77,9 +74,10 @@ export function getOfmNodeData(properties?: Properties): OfmNodeData | undefined
         kind,
         value: readString(properties, 'dataOfmValue'),
         path: readString(properties, 'dataOfmPath'),
-        permalink: readString(properties, 'dataOfmPermalink'),
+        ...(readOptionalString(properties, 'dataOfmFragment') === undefined
+          ? {}
+          : {fragment: readString(properties, 'dataOfmFragment')}),
         ...(alias === undefined ? {} : {alias}),
-        ...(blockId === undefined ? {} : {blockId}),
         ...(width === undefined && height === undefined
           ? {}
           : {

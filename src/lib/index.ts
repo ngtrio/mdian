@@ -138,6 +138,8 @@ function visit(node: HastRoot | RootContent, visitor: (node: HastRoot | RootCont
 
       index++
     }
+
+    visitor(node)
   }
 
   return false

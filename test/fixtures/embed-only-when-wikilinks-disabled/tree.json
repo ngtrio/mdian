@@ -8,16 +8,14 @@
           "type": "embed",
           "value": "Page",
           "path": "Page",
-          "permalink": "Page",
           "data": {
             "hName": "span",
             "hProperties": {
               "dataOfmKind": "embed",
               "dataOfmValue": "Page",
               "dataOfmPath": "Page",
-              "dataOfmPermalink": "Page",
-              "dataOfmAlias": "",
-              "dataOfmBlockId": ""
+              "dataOfmFragment": "",
+              "dataOfmAlias": ""
             },
             "hChildren": [
               {

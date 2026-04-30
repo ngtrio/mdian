@@ -8,7 +8,6 @@
           "type": "wikiLink",
           "value": "Page|Alias",
           "path": "Page",
-          "permalink": "Page",
           "alias": "Alias",
           "data": {
             "hName": "a",
@@ -16,9 +15,8 @@
               "dataOfmKind": "wikilink",
               "dataOfmValue": "Page|Alias",
               "dataOfmPath": "Page",
-              "dataOfmPermalink": "Page",
-              "dataOfmAlias": "Alias",
-              "dataOfmBlockId": ""
+              "dataOfmFragment": "",
+              "dataOfmAlias": "Alias"
             },
             "hChildren": [
               {

@@ -34,29 +34,26 @@ function createEmbedNode(context: CompileContext, token: Token): Embed {
     type: 'embed',
     value,
     path: fields.path,
-    permalink: fields.permalink,
+    ...(fields.fragment === undefined ? {} : {fragment: fields.fragment}),
     ...(size === undefined && fields.alias !== undefined ? {alias: fields.alias} : {}),
-    ...(fields.blockId === undefined ? {} : { blockId: fields.blockId }),
     ...(size === undefined ? {} : { size }),
-    data: createEmbedData(value, fields.path, fields.permalink, size === undefined ? fields.alias : undefined, fields.blockId, size)
+    data: createEmbedData(value, fields.path, fields.fragment, size === undefined ? fields.alias : undefined, size)
   }
 }
 
 function createEmbedData(
   value: string,
   path: string,
-  permalink: string,
+  fragment?: string | null,
   alias?: string | null,
-  blockId?: string | null,
   size?: EmbedSize
 ) {
   const hProperties: Properties = {
     dataOfmKind: 'embed',
     dataOfmValue: value,
     dataOfmPath: path,
-    dataOfmPermalink: permalink,
+    dataOfmFragment: fragment ?? '',
     dataOfmAlias: alias ?? '',
-    dataOfmBlockId: blockId ?? '',
     ...(size?.width === undefined ? {} : { dataOfmWidth: size.width }),
     ...(size?.height === undefined ? {} : { dataOfmHeight: size.height })
   }

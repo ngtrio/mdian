@@ -3,8 +3,9 @@ import type { Element, Root, RootContent, Text } from 'hast'
 import type { OfmRehypeOptions } from '../types.js'
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
 import {getOfmNodeData, stripOfmDataProps} from '../shared/ofm-node.js'
-import {getOfmPublicFragment, ofmPublicKind, ofmPublicVariant, setOfmPublicProps} from '../shared/public-props.js'
-import { buildOfmTargetUrl } from '../shared/ofm-url.js'
+import {splitParagraphChildren} from '../shared/paragraph-split.js'
+import {ofmPublicKind, ofmPublicVariant, readOfmPublicProps, setOfmPublicProps} from '../shared/public-props.js'
+import {buildOfmTargetUrl, formatOfmTargetLabel} from '../shared/ofm-url.js'
 
 const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'])
 
@@ -12,6 +13,10 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
   const setTitle = options.setTitle !== false
 
   return function transform(node) {
+    if ('children' in node && Array.isArray(node.children)) {
+      splitParagraphChildren(node, isNoteEmbedBlock)
+    }
+
     if (node.type !== 'element') {
       return
     }
@@ -23,15 +28,12 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
     }
 
     const href = buildOfmTargetUrl(embed, options.hrefPrefix)
-    const title = embed.permalink || embed.path
-    const fragment = getOfmPublicFragment(embed.permalink)
+    const title = formatOfmTargetLabel(embed)
     const publicProps = {
       kind: ofmPublicKind.embed,
       path: embed.path,
-      permalink: embed.permalink,
       ...(embed.alias === undefined ? {} : {alias: embed.alias}),
-      ...(embed.blockId === undefined ? {} : {blockId: embed.blockId}),
-      ...(fragment === undefined ? {} : {fragment})
+      ...(embed.fragment === undefined ? {} : {fragment: embed.fragment})
     }
 
     if (isImageEmbed(embed.path)) {
@@ -72,6 +74,15 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
   }
 }
 
+function isNoteEmbedBlock(node: Element['children'][number]): boolean {
+  if (node.type !== 'element' || node.tagName !== 'div') {
+    return false
+  }
+
+  const props = readOfmPublicProps(node)
+  return props?.kind === ofmPublicKind.embed && props.variant === ofmPublicVariant.note
+}
+
 function isImageEmbed(path: string): boolean {
   const extension = getPathExtension(path)
   return extension !== undefined && imageExtensions.has(extension)
@@ -109,6 +120,6 @@ function applyTitle(properties: Record<string, unknown>, title: string, setTitle
   }
 }
 
-function getFallbackLabel(node: {alias?: string | null, path: string, permalink: string}): string {
-  return node.alias || node.permalink || node.path
+function getFallbackLabel(node: {alias?: string | null, fragment?: string | null, path: string}): string {
+  return node.alias || formatOfmTargetLabel(node)
 }

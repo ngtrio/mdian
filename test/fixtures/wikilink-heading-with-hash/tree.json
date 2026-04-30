@@ -6,16 +6,16 @@
       "children": [
         {
           "type": "wikiLink",
-          "value": "Page#Heading",
+          "value": "Page#A#B",
           "path": "Page",
-          "fragment": "Heading",
+          "fragment": "A#B",
           "data": {
             "hName": "a",
             "hProperties": {
               "dataOfmKind": "wikilink",
-              "dataOfmValue": "Page#Heading",
+              "dataOfmValue": "Page#A#B",
               "dataOfmPath": "Page",
-              "dataOfmFragment": "Heading",
+              "dataOfmFragment": "A#B",
               "dataOfmAlias": ""
             },
             "hChildren": [

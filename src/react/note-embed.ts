@@ -1,6 +1,7 @@
 import {createContext, createElement, useContext} from 'react'
 import type {ReactNode} from 'react'
 
+import {formatOfmTargetLabel, isOfmBlockFragment, normalizeOfmFragmentAnchorKey} from '../lib/shared/ofm-url.js'
 import type {OfmReactTarget, ResolveOfmNoteEmbedResult} from './types.js'
 
 export interface OfmNoteEmbedState {
@@ -54,8 +55,10 @@ export function guardOfmNoteEmbed(input: GuardOfmNoteEmbedInput): GuardOfmNoteEm
 }
 
 export function resolveOfmNoteEmbedBody(input: ResolveOfmNoteEmbedBodyInput): ResolveOfmNoteEmbedBodyResult {
-  if (input.target.blockId) {
-    const blockMarkdown = extractBlockMarkdown(input.markdown, input.target.blockId)
+  const blockId = getBlockIdFromFragment(input.target.fragment)
+
+  if (blockId) {
+    const blockMarkdown = extractBlockMarkdown(input.markdown, blockId)
     if (blockMarkdown) {
       return {kind: 'block', markdown: blockMarkdown}
     }
@@ -75,6 +78,10 @@ export function resolveOfmNoteEmbedBody(input: ResolveOfmNoteEmbedBodyInput): Re
 }
 
 export function renderOfmNoteEmbed(input: RenderOfmNoteEmbedInput) {
+  return createElement(OfmNoteEmbed, input)
+}
+
+function OfmNoteEmbed(input: RenderOfmNoteEmbedInput) {
   const inheritedState = useContext(noteEmbedStateContext)
   const guard = guardOfmNoteEmbed({
     state: inheritedState,
@@ -92,9 +99,10 @@ export function renderOfmNoteEmbed(input: RenderOfmNoteEmbedInput) {
   const titleBase = input.resolved.title ?? input.target.path
   const embedTitle = body.kind === 'document'
     ? titleBase
-    : body.kind === 'block'
-      ? `${titleBase}#^${input.target.blockId}`
-      : `${titleBase}#${input.target.fragment}`
+    : formatOfmTargetLabel({
+        path: titleBase,
+        ...(input.target.fragment === undefined ? {} : {fragment: input.target.fragment})
+      })
 
   return createElement(
     noteEmbedStateContext.Provider,
@@ -133,43 +141,25 @@ function stripRootHeadingFromMarkdown(markdown: string): string {
 
 function extractHeadingSection(markdown: string, heading: string): string | undefined {
   const lines = markdown.split('\n')
-  const normalizedHeading = heading.trim().toLowerCase()
-  let start = -1
-  let level = 0
+  const headings = collectMarkdownHeadings(lines)
+  const normalizedHeading = normalizeOfmFragmentAnchorKey(heading)
+  const targetHeading = headings.find((entry) => entry.pathKey === normalizedHeading)
+    ?? headings.find((entry) => entry.titleKey === normalizedHeading)
 
-  for (let index = 0; index < lines.length; index += 1) {
-    const match = /^(#{1,6})\s+(.*)$/.exec(lines[index] ?? '')
-    if (!match) {
-      continue
-    }
-
-    const hashes = match[1]
-    const title = match[2]
-    if (hashes === undefined || title === undefined) {
-      continue
-    }
-
-    if (title.trim().toLowerCase() === normalizedHeading) {
-      start = index
-      level = hashes.length
-      break
-    }
-  }
-
-  if (start === -1) {
+  if (!targetHeading) {
     return undefined
   }
 
   let end = lines.length
-  for (let index = start + 1; index < lines.length; index += 1) {
+  for (let index = targetHeading.index + 1; index < lines.length; index += 1) {
     const match = /^(#{1,6})\s+/.exec(lines[index] ?? '')
-    if (match && match[1] !== undefined && match[1].length <= level) {
+    if (match && match[1] !== undefined && match[1].length <= targetHeading.level) {
       end = index
       break
     }
   }
 
-  return lines.slice(start, end).join('\n').trim()
+  return lines.slice(targetHeading.index, end).join('\n').trim()
 }
 
 function extractBlockMarkdown(markdown: string, blockId: string): string | undefined {
@@ -203,4 +193,57 @@ function extractBlockMarkdown(markdown: string, blockId: string): string | undef
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function getBlockIdFromFragment(fragment: string | undefined): string | undefined {
+  if (!isOfmBlockFragment(fragment)) {
+    return undefined
+  }
+
+  const normalizedFragment = fragment?.trim()
+  return normalizedFragment ? normalizedFragment.slice(1) : undefined
+}
+
+function collectMarkdownHeadings(lines: string[]) {
+  const pathKeys: string[] = []
+  const headings: Array<{
+    index: number
+    level: number
+    pathKey: string
+    titleKey: string
+  }> = []
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = /^(#{1,6})\s+(.*)$/.exec(lines[index] ?? '')
+
+    if (!match || match[1] === undefined || match[2] === undefined) {
+      continue
+    }
+
+    const level = match[1].length
+    const titleKey = normalizeOfmFragmentAnchorKey(match[2])
+
+    if (!titleKey) {
+      continue
+    }
+
+    const pathKey = buildHeadingPathKey(level, titleKey, pathKeys)
+    headings.push({index, level, pathKey, titleKey})
+  }
+
+  return headings
+}
+
+function buildHeadingPathKey(level: number, titleKey: string, pathKeys: string[]): string {
+  if (level <= 1) {
+    pathKeys.length = 0
+    return titleKey
+  }
+
+  const hierarchyIndex = level - 2
+  pathKeys.length = hierarchyIndex
+  const parentKey = pathKeys[hierarchyIndex - 1]
+  const pathKey = parentKey ? `${parentKey}#${titleKey}` : titleKey
+  pathKeys[hierarchyIndex] = pathKey
+  return pathKey
 }

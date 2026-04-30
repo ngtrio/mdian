@@ -5,7 +5,6 @@ import type {PluggableList} from 'unified'
 import type {OfmRehypeOptions, OfmRemarkOptions} from '../lib/types.js'
 
 export interface OfmReactTarget {
-  blockId?: string
   fragment?: string
   path: string
 }

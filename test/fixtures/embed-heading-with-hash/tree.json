@@ -5,23 +5,23 @@
       "type": "paragraph",
       "children": [
         {
-          "type": "wikiLink",
-          "value": "Page#Heading",
+          "type": "embed",
+          "value": "Page#A#B",
           "path": "Page",
-          "fragment": "Heading",
+          "fragment": "A#B",
           "data": {
-            "hName": "a",
+            "hName": "span",
             "hProperties": {
-              "dataOfmKind": "wikilink",
-              "dataOfmValue": "Page#Heading",
+              "dataOfmKind": "embed",
+              "dataOfmValue": "Page#A#B",
               "dataOfmPath": "Page",
-              "dataOfmFragment": "Heading",
+              "dataOfmFragment": "A#B",
               "dataOfmAlias": ""
             },
             "hChildren": [
               {
                 "type": "text",
-                "value": "Page"
+                "value": "Embed: Page#A#B"
               }
             ]
           }

@@ -8,16 +8,15 @@
           "type": "embed",
           "value": "Page#Heading",
           "path": "Page",
-          "permalink": "Page#Heading",
+          "fragment": "Heading",
           "data": {
             "hName": "span",
             "hProperties": {
               "dataOfmKind": "embed",
               "dataOfmValue": "Page#Heading",
               "dataOfmPath": "Page",
-              "dataOfmPermalink": "Page#Heading",
-              "dataOfmAlias": "",
-              "dataOfmBlockId": ""
+              "dataOfmFragment": "Heading",
+              "dataOfmAlias": ""
             },
             "hChildren": [
               {

@@ -1,7 +1,5 @@
 import type {Element, Properties} from 'hast'
 
-import {decodeOfmFragment} from './ofm-url.js'
-
 type ValueOf<T> = T[keyof T]
 
 export const ofmPublicPropKeys = {
@@ -10,7 +8,6 @@ export const ofmPublicPropKeys = {
   fragment: 'data-ofm-fragment',
   kind: 'data-ofm-kind',
   path: 'data-ofm-path',
-  permalink: 'data-ofm-permalink',
   provider: 'data-ofm-provider',
   variant: 'data-ofm-variant'
 } as const
@@ -47,10 +44,8 @@ export type OfmPublicVariant = ValueOf<typeof ofmPublicVariant>
 
 interface OfmTargetPublicFields {
   alias?: string
-  blockId?: string
   fragment?: string
   path: string
-  permalink: string
 }
 
 export interface OfmWikiLinkPublicProps extends OfmTargetPublicFields {
@@ -100,7 +95,6 @@ export function setOfmPublicProps(properties: Properties, value: OfmPublicProps)
   properties[ofmPublicPropKeys.kind] = value.kind
   delete properties[ofmPublicPropKeys.variant]
   delete properties[ofmPublicPropKeys.path]
-  delete properties[ofmPublicPropKeys.permalink]
   delete properties[ofmPublicPropKeys.alias]
   delete properties[ofmPublicPropKeys.blockId]
   delete properties[ofmPublicPropKeys.fragment]
@@ -109,9 +103,7 @@ export function setOfmPublicProps(properties: Properties, value: OfmPublicProps)
   switch (value.kind) {
     case ofmPublicKind.wikilink:
       setOptionalString(properties, ofmPublicPropKeys.path, value.path)
-      setOptionalString(properties, ofmPublicPropKeys.permalink, value.permalink)
       setOptionalString(properties, ofmPublicPropKeys.alias, value.alias)
-      setOptionalString(properties, ofmPublicPropKeys.blockId, value.blockId)
       setOptionalString(properties, ofmPublicPropKeys.fragment, value.fragment)
       return
     case ofmPublicKind.embed:
@@ -123,9 +115,7 @@ export function setOfmPublicProps(properties: Properties, value: OfmPublicProps)
       }
 
       setOptionalString(properties, ofmPublicPropKeys.path, value.path)
-      setOptionalString(properties, ofmPublicPropKeys.permalink, value.permalink)
       setOptionalString(properties, ofmPublicPropKeys.alias, value.alias)
-      setOptionalString(properties, ofmPublicPropKeys.blockId, value.blockId)
       setOptionalString(properties, ofmPublicPropKeys.fragment, value.fragment)
       return
     case ofmPublicKind.anchorTarget:
@@ -149,22 +139,18 @@ export function readOfmPublicProps(node: Element | undefined): OfmPublicProps | 
   switch (kind) {
     case ofmPublicKind.wikilink: {
       const path = readRequiredString(properties, ofmPublicPropKeys.path)
-      const permalink = readRequiredString(properties, ofmPublicPropKeys.permalink)
 
-      if (path === undefined || permalink === undefined) {
+      if (path === undefined) {
         return undefined
       }
 
       const alias = readOptionalString(properties, ofmPublicPropKeys.alias)
-      const blockId = readOptionalString(properties, ofmPublicPropKeys.blockId)
       const fragment = readOptionalString(properties, ofmPublicPropKeys.fragment)
 
       return {
         kind,
         path,
-        permalink,
         ...(alias === undefined ? {} : {alias}),
-        ...(blockId === undefined ? {} : {blockId}),
         ...(fragment === undefined ? {} : {fragment})
       }
     }
@@ -194,23 +180,19 @@ export function readOfmPublicProps(node: Element | undefined): OfmPublicProps | 
       }
 
       const path = readRequiredString(properties, ofmPublicPropKeys.path)
-      const permalink = readRequiredString(properties, ofmPublicPropKeys.permalink)
 
-      if (path === undefined || permalink === undefined) {
+      if (path === undefined) {
         return undefined
       }
 
       const alias = readOptionalString(properties, ofmPublicPropKeys.alias)
-      const blockId = readOptionalString(properties, ofmPublicPropKeys.blockId)
       const fragment = readOptionalString(properties, ofmPublicPropKeys.fragment)
 
       return {
         kind,
         variant,
         path,
-        permalink,
         ...(alias === undefined ? {} : {alias}),
-        ...(blockId === undefined ? {} : {blockId}),
         ...(fragment === undefined ? {} : {fragment})
       }
     }
@@ -244,17 +226,6 @@ export function readOfmPublicProps(node: Element | undefined): OfmPublicProps | 
     case ofmPublicKind.highlight:
       return {kind}
   }
-}
-
-export function getOfmPublicFragment(permalink: string): string | undefined {
-  const hashIndex = permalink.indexOf('#')
-
-  if (hashIndex === -1) {
-    return undefined
-  }
-
-  const fragment = decodeOfmFragment(permalink.slice(hashIndex))
-  return fragment.length > 0 ? fragment : undefined
 }
 
 function setOptionalString(properties: Properties, key: string, value: string | undefined): void {

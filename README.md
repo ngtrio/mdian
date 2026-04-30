@@ -50,7 +50,7 @@ const html = String(
     .use(remarkParse)
     .use(remarkOfm, {wikilinks: true, embeds: true})
     .use(remarkRehype)
-    .use(rehypeOfm, {hrefPrefix: 'wiki', renderBlockAnchorLabels: true})
+    .use(rehypeOfm, {hrefPrefix: 'wiki'})
     .use(rehypeStringify)
     .process(source)
 )
@@ -84,11 +84,9 @@ const ofm = createOfmReactPreset({
     resolve(target) {
       return {
         href: `/wiki/${encodeURIComponent(target.path)}`,
-        title: target.blockId
-          ? `${target.path}#^${target.blockId}`
-          : target.fragment
-            ? `${target.path}#${target.fragment}`
-            : target.path
+        title: target.fragment
+          ? `${target.path}#${target.fragment}`
+          : target.path
       }
     }
   },
@@ -124,6 +122,20 @@ export function Markdown({markdown}: {markdown: string}) {
 ```
 
 This path keeps OFM parsing in `mdian` while letting your app inject link resolution, note resolution, image URL rewriting, and optional router rendering. Set `externalEmbeds.twitter.enhance` to `true` only when you want the built-in X/Twitter widget enhancement path; otherwise the preset keeps the static fallback container while the core OFM output remains a single Twitter container `div` with canonical URL text content. You can also override the script loader with `loadTwitterWidgets({loadScript})`.
+
+## Breaking Target Model
+
+`mdian` models OFM targets as `path + fragment`:
+
+- `path: string`
+- `fragment?: string`
+
+`fragment` never includes the leading `#`.
+Block refs are represented as `fragment: '^block-id'`.
+Nested headings are represented as `fragment: 'Heading#Subheading'`.
+`[[Page#Heading#^block-id]]` is intentionally unsupported and is not assigned special semantics.
+
+`buildOfmTargetUrl()` accepts that shape directly. Rendered OFM metadata exposes `data-ofm-fragment`, while wikilinks and embeds no longer emit `data-ofm-block-id`.
 
 ## External Embeds
 

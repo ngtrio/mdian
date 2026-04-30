@@ -27,7 +27,13 @@ export const demoSamples: DemoSample[] = [
       '',
       '- [[Roadmap]]',
       '- [[Project Notes#Overview]]',
+      '- [[Project Notes#Overview#Detail|Nested heading target]]',
       '- [[Roadmap#^next-step|Next milestone block]]',
+      '',
+      '## Fragment notes',
+      '',
+      '- Repeated `#` stays inside one fragment, so [[Project Notes#Overview#Detail]] targets a nested heading path.',
+      '- Block refs stay fragment-only, so [[Roadmap#^next-step]] targets the block anchor.',
       '',
       'This sample is meant to read like a real note, not a syntax checklist.'
     ].join('\n')
@@ -49,9 +55,15 @@ export const demoSamples: DemoSample[] = [
       '',
       '![[Project Notes#Overview]]',
       '',
+      '## Embedded nested section',
+      '',
+      '![[Project Notes#Overview#Detail]]',
+      '',
       '## Embedded block',
       '',
-      '![[Roadmap#^next-step]]'
+      '![[Roadmap#^next-step]]',
+      '',
+      'The demo also shows block embeds separately so heading paths and block refs stay easy to compare.'
     ].join('\n')
   },
   {
@@ -150,9 +162,9 @@ export const demoWikiPages: DemoWikiPage[] = [
       '',
       '## Heading',
       '',
-      'This heading is the destination for `[[Page#Heading]]`.',
+      'This heading is the destination for [[Page#Heading]].',
       '',
-      'This paragraph is the destination for `[[Page#^block-id]]`. ^block-id',
+      'This paragraph is the destination for [[Page#^block-id]]. ^block-id',
       '',
       '## Related notes',
       '',
@@ -162,7 +174,7 @@ export const demoWikiPages: DemoWikiPage[] = [
   {
     path: 'Project Notes',
     title: 'Project Notes',
-    summary: 'A richer note for the mixed showcase example, including heading targets and cross-note links.',
+    summary: 'A richer note for the mixed showcase example, including nested heading targets and cross-note links.',
     markdown: [
       '# Project Notes',
       '',
@@ -170,15 +182,22 @@ export const demoWikiPages: DemoWikiPage[] = [
       '',
       '## Overview',
       '',
-      'This section is the destination for `[[Project Notes#Overview]]` in the mixed showcase example.',
+      'This section is the destination for [[Project Notes#Overview]] in the mixed showcase example.',
       '',
       'The demo keeps OFM parsing inside `react-markdown`, then routes wikilinks into the in-app wiki.',
+      '',
+      '### Detail',
+      '',
+      'This nested heading is the destination for [[Project Notes#Overview#Detail]] and `![[Project Notes#Overview#Detail]]`.',
+      '',
+      'Repeated `#` stays part of the fragment string instead of creating a second target field.',
       '',
       '## Navigation',
       '',
       '- Review the main reference page: [[Page#Heading]]',
       '- See the current implementation sequence: [[Roadmap#^next-step]]',
-      '- Open a nested path example: [[Folder Name/Page Name#Heading Here]]'
+      '- Open a nested path example: [[Folder Name/Page Name#Heading Here]]',
+      '- Compare heading navigation with the block target on the roadmap note.'
     ].join('\n')
   },
   {
@@ -290,8 +309,7 @@ export function buildDemoWikiHref(path: string, fragment?: string): string {
   return buildOfmTargetUrl(
     {
       path: normalizedPath,
-      permalink: normalizedFragment ? `${normalizedPath}#${normalizedFragment}` : normalizedPath,
-      ...(normalizedFragment.startsWith('^') ? {blockId: normalizedFragment.slice(1)} : {})
+      ...(normalizedFragment.length === 0 ? {} : {fragment: normalizedFragment})
     },
     'wiki'
   )

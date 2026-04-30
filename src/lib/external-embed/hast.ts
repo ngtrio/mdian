@@ -6,9 +6,11 @@ import {
   ofmPublicKind,
   ofmPublicProvider,
   ofmPublicVariant,
+  readOfmPublicProps,
   setOfmPublicProps,
   type OfmPublicProvider
 } from '../shared/public-props.js'
+import {splitParagraphChildren} from '../shared/paragraph-split.js'
 
 const twitterClassName = 'twitter-tweet'
 const youtubeAllowValue = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
@@ -36,7 +38,15 @@ export function externalEmbedHast(options: OfmRehypeOptions = {}): (node: Root |
   const setTitle = options.setTitle !== false
 
   return function transform(node) {
-    if (!externalEmbedsEnabled || node.type !== 'element' || node.tagName !== 'img') {
+    if ('children' in node && Array.isArray(node.children)) {
+      splitParagraphChildren(node, isExternalEmbedBlock)
+    }
+
+    if (node.type !== 'element') {
+      return
+    }
+
+    if (!externalEmbedsEnabled || node.tagName !== 'img') {
       return
     }
 
@@ -90,6 +100,23 @@ export function externalEmbedHast(options: OfmRehypeOptions = {}): (node: Root |
     })
     applyTitle(node.properties, title, setTitle)
   }
+}
+
+function isExternalEmbedBlock(node: Element['children'][number]): boolean {
+  if (node.type !== 'element') {
+    return false
+  }
+
+  const props = readOfmPublicProps(node)
+
+  if (props?.kind !== ofmPublicKind.embed || props.variant !== ofmPublicVariant.external) {
+    return false
+  }
+
+  return (
+    (node.tagName === 'div' && props.provider === ofmPublicProvider.twitter)
+    || (node.tagName === 'iframe' && props.provider === ofmPublicProvider.youtube)
+  )
 }
 
 function resolveExternalEmbed(value: string): ExternalEmbedMatch | undefined {

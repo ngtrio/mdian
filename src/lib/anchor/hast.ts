@@ -2,7 +2,7 @@ import type {Element, Root, RootContent, Text} from 'hast'
 
 import {addClassName, ofmClassNames} from '../shared/class-name.js'
 import {ofmPublicKind, ofmPublicVariant, setOfmPublicProps} from '../shared/public-props.js'
-import {decodeOfmFragment} from '../shared/ofm-url.js'
+import {normalizeOfmFragmentAnchorKey} from '../shared/ofm-url.js'
 import type {OfmRehypeOptions} from '../types.js'
 
 const blockIdPattern = /^(.*?)(?:\s+)\^([A-Za-z0-9][A-Za-z0-9_-]*)\s*$/s
@@ -18,7 +18,7 @@ interface OfmAnchorRootLike<T extends OfmAnchorTargetLike = OfmAnchorTargetLike>
 }
 
 export function normalizeOfmAnchorKey(value: string | null | undefined): string {
-  return decodeOfmFragment(value ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+  return normalizeOfmFragmentAnchorKey(value)
 }
 
 export function findOfmAnchorTarget<T extends OfmAnchorTargetLike>(
@@ -41,7 +41,8 @@ export function findOfmAnchorTarget<T extends OfmAnchorTargetLike>(
 }
 
 export function anchorHast(options: Partial<Pick<OfmRehypeOptions, 'renderBlockAnchorLabels'>> = {}): (node: Root | RootContent) => void {
-  const renderBlockAnchorLabels = options.renderBlockAnchorLabels ?? false
+  const renderBlockAnchorLabels = options.renderBlockAnchorLabels ?? true
+  const headingPathKeys: string[] = []
 
   return function transform(node) {
     if (node.type !== 'element') {
@@ -49,7 +50,7 @@ export function anchorHast(options: Partial<Pick<OfmRehypeOptions, 'renderBlockA
     }
 
     if (isHeadingElement(node)) {
-      const anchorKey = normalizeOfmAnchorKey(extractTextContent(node))
+      const anchorKey = getHeadingAnchorKey(node, headingPathKeys)
 
       if (anchorKey) {
         node.properties['data-anchor-key'] = anchorKey
@@ -76,6 +77,28 @@ export function anchorHast(options: Partial<Pick<OfmRehypeOptions, 'renderBlockA
 
 function isHeadingElement(node: Element): boolean {
   return /^h[1-6]$/.test(node.tagName)
+}
+
+function getHeadingAnchorKey(node: Element, headingPathKeys: string[]): string {
+  const titleKey = normalizeOfmAnchorKey(extractTextContent(node))
+
+  if (!titleKey) {
+    return ''
+  }
+
+  const level = Number(node.tagName.slice(1))
+
+  if (!Number.isFinite(level) || level <= 1) {
+    headingPathKeys.length = 0
+    return titleKey
+  }
+
+  const hierarchyIndex = level - 2
+  headingPathKeys.length = hierarchyIndex
+  const parentKey = headingPathKeys[hierarchyIndex - 1]
+  const anchorKey = parentKey ? `${parentKey}#${titleKey}` : titleKey
+  headingPathKeys[hierarchyIndex] = anchorKey
+  return anchorKey
 }
 
 function extractTextContent(node: Root | RootContent): string {

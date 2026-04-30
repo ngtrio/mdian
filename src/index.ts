@@ -10,9 +10,8 @@ export {rehypeOfm, remarkOfm} from './lib/index.js'
 export type {OfmRehypeOptions, OfmRemarkOptions} from './lib/types.js'
 
 interface OfmTargetUrlInput {
-  blockId?: string
+  fragment?: string
   path: string
-  permalink: string
 }
 
 interface OfmAnchorTargetLike {

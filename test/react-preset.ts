@@ -79,6 +79,41 @@ test('createOfmReactPreset resolves wikilinks through wikiLink.resolve and wikiL
   assert.match(html, />Open note<\/a>/)
 })
 
+test('createOfmReactPreset passes heading fragments containing # through the React target model', () => {
+  let renderHref = ''
+  const html = renderWithPreset('[[Page#A#B]]', {
+    wikiLink: {
+      resolve(target) {
+        assert.deepEqual(target, {
+          path: 'Page',
+          fragment: 'A#B'
+        })
+
+        return {
+          href: '/wiki/Page#A#B',
+          title: 'Page#A#B'
+        }
+      },
+      render({href, target, title, children, className}) {
+        renderHref = href
+        assert.deepEqual(target, {
+          path: 'Page',
+          fragment: 'A#B'
+        })
+
+        return createElement('a', {
+          className,
+          href,
+          title
+        }, children)
+      }
+    }
+  })
+
+  assert.equal(renderHref, '/wiki/Page#A#B')
+  assert.match(html, /href="\/wiki\/Page#A#B"/)
+})
+
 test('createOfmReactPreset rewrites ordinary markdown image src values through image.transformSrc', () => {
   const html = renderWithPreset('![hero](assets/image.svg)', {
     image: {
@@ -120,6 +155,39 @@ test('createOfmReactPreset keeps note embeds out of paragraph wrappers', () => {
   assert.doesNotMatch(html, /<p><div[^>]*class="[^"]*note-embed/)
 })
 
+test('createOfmReactPreset expands note embeds with following paragraph content', () => {
+  const options: OfmReactPresetOptions = {
+    noteEmbed: {
+      resolve(target) {
+        assert.deepEqual(target, {path: 'Project Notes'})
+
+        return {
+          markdown: ['# Project Notes', '', 'Intro paragraph.'].join('\n'),
+          title: 'Project Notes'
+        }
+      }
+    },
+    wikiLink: {
+      resolve(target) {
+        return {
+          href: `/wiki/${encodeURIComponent(target.path)}`,
+          title: target.path
+        }
+      }
+    }
+  }
+
+  const trailingText = renderWithPreset('![[Project Notes]] trailing text', options)
+  assert.match(trailingText, /^<section[^>]*class="[^"]*note-embed[^"]*"/)
+  assert.match(trailingText, /<\/section><p> trailing text<\/p>$/)
+  assert.doesNotMatch(trailingText, /<p><section/)
+
+  const nextLine = renderWithPreset('![[Project Notes]]\nnext line', options)
+  assert.match(nextLine, /^<section[^>]*class="[^"]*note-embed[^"]*"/)
+  assert.match(nextLine, /<\/section><p>\nnext line<\/p>$/)
+  assert.doesNotMatch(nextLine, /<p><section/)
+})
+
 test('resolveOfmNoteEmbedBody resolves heading and block fragments from the React target model', () => {
   const headingMarkdown = [
     '# Project Notes',
@@ -158,6 +226,44 @@ test('resolveOfmNoteEmbedBody resolves heading and block fragments from the Reac
     ].join('\n')
   })
 
+  assert.deepEqual(resolveOfmNoteEmbedBody({
+    markdown: headingMarkdown,
+    target: {
+      fragment: 'Overview#Detail',
+      path: 'Project Notes'
+    }
+  }), {
+    kind: 'heading',
+    markdown: [
+      '### Detail',
+      '',
+      'Nested content.'
+    ].join('\n')
+  })
+
+  const hashHeadingMarkdown = [
+    '# Project Notes',
+    '',
+    '## A#B',
+    '',
+    'Fragment with hash content.'
+  ].join('\n')
+
+  assert.deepEqual(resolveOfmNoteEmbedBody({
+    markdown: hashHeadingMarkdown,
+    target: {
+      fragment: 'A#B',
+      path: 'Project Notes'
+    }
+  }), {
+    kind: 'heading',
+    markdown: [
+      '## A#B',
+      '',
+      'Fragment with hash content.'
+    ].join('\n')
+  })
+
   const blockMarkdown = [
     '# Roadmap',
     '',
@@ -169,7 +275,7 @@ test('resolveOfmNoteEmbedBody resolves heading and block fragments from the Reac
   assert.deepEqual(resolveOfmNoteEmbedBody({
     markdown: blockMarkdown,
     target: {
-      blockId: 'next-step',
+      fragment: '^next-step',
       path: 'Roadmap'
     }
   }), {
@@ -192,7 +298,7 @@ test('resolveOfmNoteEmbedBody preserves the full block around a block ref marker
   assert.deepEqual(resolveOfmNoteEmbedBody({
     markdown,
     target: {
-      blockId: 'next-step',
+      fragment: '^next-step',
       path: 'Roadmap'
     }
   }), {
@@ -201,6 +307,39 @@ test('resolveOfmNoteEmbedBody preserves the full block around a block ref marker
       '- Ship the React preset this cycle.',
       '  Keep pure unified users off React installs.',
       '  Finish release notes before tagging. ^next-step'
+    ].join('\n')
+  })
+})
+
+test('resolveOfmNoteEmbedBody treats heading-plus-block fragments as unsupported', () => {
+  const markdown = [
+    '# Project Notes',
+    '',
+    '## Overview',
+    '',
+    'Overview content. ^next-step',
+    '',
+    '## Navigation',
+    '',
+    'Navigation content.'
+  ].join('\n')
+
+  assert.deepEqual(resolveOfmNoteEmbedBody({
+    markdown,
+    target: {
+      fragment: 'Overview#^next-step',
+      path: 'Project Notes'
+    }
+  }), {
+    kind: 'document',
+    markdown: [
+      '## Overview',
+      '',
+      'Overview content. ^next-step',
+      '',
+      '## Navigation',
+      '',
+      'Navigation content.'
     ].join('\n')
   })
 })

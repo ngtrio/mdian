@@ -8,16 +8,14 @@
           "type": "wikiLink",
           "value": "A",
           "path": "A",
-          "permalink": "A",
           "data": {
             "hName": "a",
             "hProperties": {
               "dataOfmKind": "wikilink",
               "dataOfmValue": "A",
               "dataOfmPath": "A",
-              "dataOfmPermalink": "A",
-              "dataOfmAlias": "",
-              "dataOfmBlockId": ""
+              "dataOfmFragment": "",
+              "dataOfmAlias": ""
             },
             "hChildren": [
               {
@@ -35,16 +33,14 @@
           "type": "embed",
           "value": "B",
           "path": "B",
-          "permalink": "B",
           "data": {
             "hName": "span",
             "hProperties": {
               "dataOfmKind": "embed",
               "dataOfmValue": "B",
               "dataOfmPath": "B",
-              "dataOfmPermalink": "B",
-              "dataOfmAlias": "",
-              "dataOfmBlockId": ""
+              "dataOfmFragment": "",
+              "dataOfmAlias": ""
             },
             "hChildren": [
               {

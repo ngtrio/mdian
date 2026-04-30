@@ -3,6 +3,7 @@ import type { CompileContext, Extension, Handle } from 'mdast-util-from-markdown
 import type { Token } from 'micromark-util-types'
 
 import type { OfmRemarkOptions } from '../types.js'
+import {decodeOfmFragment} from '../shared/ofm-url.js'
 import type { WikiLink } from './types.js'
 
 export function wikiLinkMast(options: OfmRemarkOptions = {}): Extension {
@@ -35,28 +36,25 @@ function createWikiLinkNode(context: CompileContext, token: Token): WikiLink {
     type: 'wikiLink',
     value,
     path: fields.path,
-    permalink: fields.permalink,
+    ...(fields.fragment === undefined ? {} : {fragment: fields.fragment}),
     ...(fields.alias === undefined ? {} : { alias: fields.alias }),
-    ...(fields.blockId === undefined ? {} : { blockId: fields.blockId }),
-    data: createWikiLinkData(value, fields.path, fields.permalink, fields.alias, fields.blockId)
+    data: createWikiLinkData(value, fields.path, fields.fragment, fields.alias)
   }
 }
 
 function createWikiLinkData(
   value: string,
   path: string,
-  permalink: string,
-  alias?: string | null,
-  blockId?: string | null
+  fragment?: string | null,
+  alias?: string | null
 ) {
-  const label = alias ?? path ?? permalink ?? value ?? 'wiki link'
+  const label = alias ?? path ?? value ?? 'wiki link'
   const hProperties: Properties = {
     dataOfmKind: 'wikilink',
     dataOfmValue: value,
     dataOfmPath: path,
-    dataOfmPermalink: permalink,
-    dataOfmAlias: alias ?? '',
-    dataOfmBlockId: blockId ?? ''
+    dataOfmFragment: fragment ?? '',
+    dataOfmAlias: alias ?? ''
   }
   const hChildren: ElementContent[] = [{ type: 'text', value: label } as Text]
 
@@ -69,13 +67,13 @@ function createWikiLinkData(
 
 export function parseWikiValue(value: string) {
   const pipeIndex = value.indexOf('|')
-  const permalink = pipeIndex === -1 ? value : value.slice(0, pipeIndex)
+  const target = pipeIndex === -1 ? value : value.slice(0, pipeIndex)
   const alias = pipeIndex === -1 ? undefined : value.slice(pipeIndex + 1)
 
-  const hashIndex = permalink.indexOf('#')
-  const path = hashIndex === -1 ? permalink : permalink.slice(0, hashIndex)
-  const anchor = hashIndex === -1 ? undefined : permalink.slice(hashIndex + 1)
-  const blockId = anchor?.startsWith('^') ? anchor.slice(1) : undefined
+  const hashIndex = target.indexOf('#')
+  const path = hashIndex === -1 ? target : target.slice(0, hashIndex)
+  const fragmentValue = hashIndex === -1 ? undefined : decodeOfmFragment(target.slice(hashIndex + 1))
+  const fragment = fragmentValue && fragmentValue.length > 0 ? fragmentValue : undefined
 
-  return { alias, blockId, path, permalink }
+  return { alias, fragment, path }
 }
