@@ -152,7 +152,9 @@ describe('demo note embed integration', () => {
   test('builds and resolves demo wiki routes by slug while preserving fragments', () => {
     expect(buildDemoWikiSlug('Project Notes')).toBe('project-notes')
     expect(buildDemoWikiSlug('Folder Name/Page Name')).toBe('folder-name/page-name')
+    expect(buildDemoWikiSlug('学习/first-map')).toBe('学习/first-map')
     expect(buildDemoWikiHref('Folder Name/Page Name', 'Heading Here')).toBe('/wiki/folder-name/page-name#heading-here')
+    expect(buildDemoWikiHref('学习/first-map', '学习 地图')).toBe('/wiki/学习/first-map#学习-地图')
     expect(getDemoWikiPageBySlug('folder-name/page-name')?.path).toBe('Folder Name/Page Name')
     expect(getDemoWikiPageBySlug('project-notes')?.title).toBe('Project Notes')
   })

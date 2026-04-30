@@ -59,7 +59,7 @@ function slugifyOfmPathSegment(segment: string): string {
   return segment
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
     .replace(/^-+|-+$/g, '')
 }
 

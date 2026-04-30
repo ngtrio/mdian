@@ -136,7 +136,7 @@ Block refs are represented as `fragment: '^block-id'`.
 Nested headings are represented as `fragment: 'Heading#Subheading'`.
 `[[Page#Heading#^block-id]]` is intentionally unsupported and is not assigned special semantics.
 
-`buildOfmTargetUrl()` accepts that shape directly and emits slug URLs from both the target path and fragment. Rendered OFM metadata still exposes the original `data-ofm-fragment`, while wikilinks and embeds no longer emit `data-ofm-block-id`.
+`buildOfmTargetUrl()` accepts that shape directly and emits slug URLs from both the target path and fragment, preserving Unicode letters and numbers while normalizing separators. Rendered OFM metadata still exposes the original `data-ofm-fragment`, while wikilinks and embeds no longer emit `data-ofm-block-id`.
 
 ## External Embeds
 

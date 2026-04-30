@@ -1000,6 +1000,7 @@ test('normalizeOfmAnchorKey matches anchor normalization behavior', () => {
   assert.equal(normalizeOfmAnchorKey('#Heading%20Here'), 'heading-here')
   assert.equal(normalizeOfmAnchorKey('#Heading#Subheading'), 'heading#subheading')
   assert.equal(normalizeOfmAnchorKey('#^Block-ID'), '^block-id')
+  assert.equal(normalizeOfmAnchorKey('#学习 地图'), '学习-地图')
 })
 
 test('findOfmAnchorTarget locates the first matching data-anchor-key', () => {
@@ -1007,15 +1008,17 @@ test('findOfmAnchorTarget locates the first matching data-anchor-key', () => {
   const headingHere = {dataset: {anchorKey: 'heading-here'}}
   const nestedHeading = {dataset: {anchorKey: 'overview#detail'}}
   const headingWithHash = {dataset: {anchorKey: 'a#b'}}
+  const cjkHeading = {dataset: {anchorKey: '学习-地图'}}
   const root = {
     querySelectorAll() {
-      return [alpha, headingHere, nestedHeading, headingWithHash]
+      return [alpha, headingHere, nestedHeading, headingWithHash, cjkHeading]
     }
   }
 
   assert.equal(findOfmAnchorTarget(root, '#Heading%20Here'), headingHere)
   assert.equal(findOfmAnchorTarget(root, '#Overview#Detail'), nestedHeading)
   assert.equal(findOfmAnchorTarget(root, '#A#B'), headingWithHash)
+  assert.equal(findOfmAnchorTarget(root, '#学习 地图'), cjkHeading)
   assert.equal(findOfmAnchorTarget(root, '#missing'), undefined)
 })
 
@@ -1321,6 +1324,17 @@ test('buildOfmTargetUrl slugifies mixed case, spaces, and symbols per path segme
       'wiki'
     ),
     '/wiki/mixed-case/hidden-file'
+  )
+
+  assert.equal(
+    buildOfmTargetUrl(
+      {
+        path: '学习/first-map',
+        fragment: '学习 地图'
+      },
+      'wiki'
+    ),
+    '/wiki/学习/first-map#学习-地图'
   )
 })
 
