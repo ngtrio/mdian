@@ -161,11 +161,8 @@ pnpm demo:dev
 ## Releasing
 
 - Regular feature and fix PRs do not change `package.json.version`.
-- To cut a release from `main`, create a HEAD commit whose subject is exactly `chore: release v<version>`.
-- The `<version>` in that commit subject must match `package.json.version`.
-- The publish workflow verifies the package with `pnpm check` and `PAGES_BASE_PATH=/mdian pnpm demo:build` before publishing.
-- If the release is valid, the workflow publishes the package to npm, creates the matching git tag `v<version>`, and creates the GitHub Release when those side effects do not already exist.
-- If a release partially fails, rerun the workflow with `workflow_dispatch` from `main`; the workflow is safe to retry because it checks the existing npm package, git tag, and GitHub Release state before acting.
+- To cut a release, create a `chore: release v<version>` commit on `main` and make sure `<version>` matches `package.json.version`.
+- The publish workflow then verifies the package, publishes to npm, and creates the matching git tag and GitHub Release.
 
 ## License
 
