@@ -161,8 +161,9 @@ pnpm demo:dev
 ## Releasing
 
 - Regular feature and fix PRs do not change `package.json.version`.
-- To cut a release, create a `chore: release v<version>` commit on `main` and make sure `<version>` matches `package.json.version`.
-- The publish workflow then verifies the package, publishes to npm, and creates the matching git tag and GitHub Release.
+- To cut a release, merge the desired version bump to `main`, then run `pnpm release`.
+- `pnpm release` tags the current `main` commit as `v<version>` and pushes that tag to `origin`.
+- The publish workflow runs from that tag, verifies the package, publishes to npm, and creates the matching GitHub Release.
 
 ## License
 
