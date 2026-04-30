@@ -6,7 +6,11 @@ import ReactMarkdown from 'react-markdown'
 import {TwitterEmbedCard, readTwitterEmbedRenderData} from './external-embed.js'
 import {renderOfmNoteEmbed} from './note-embed.js'
 import {createOfmReactPreset} from './preset.js'
-import {readNoteEmbedRenderData, readWikiLinkRenderData} from './targets.js'
+import {
+  readImageEmbedRenderData,
+  readNoteEmbedRenderData,
+  readWikiLinkRenderData
+} from './targets.js'
 import type {OfmReactPresetOptions} from './types.js'
 
 function readNode(node: unknown): Element | undefined {
@@ -105,12 +109,15 @@ export function createOfmReactComponents(options: OfmReactPresetOptions = {}): C
 
       return createElement('div', {...props, className}, children)
     },
-    img({src, ...props}) {
+    img({node, src, ...props}) {
       if (typeof src !== 'string') {
         return createElement('img', props)
       }
 
-      const resolvedSrc = options.image?.transformSrc ? options.image.transformSrc(src) : src
+      const imageEmbed = readImageEmbedRenderData(readNode(node))
+      const resolvedSrc = options.image?.transformSrc
+        ? options.image.transformSrc(src, imageEmbed?.path)
+        : src
       return createElement('img', {...props, src: resolvedSrc})
     }
   }

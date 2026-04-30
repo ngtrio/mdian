@@ -29,7 +29,7 @@ export interface OfmReactWikiLinkOptions {
 }
 
 export interface OfmReactImageOptions {
-  transformSrc?: (src: string) => string
+  transformSrc?: (src: string, ofmPath?: string) => string
 }
 
 export interface ResolveOfmNoteEmbedResult {

@@ -293,13 +293,41 @@ export const demoWikiPages: DemoWikiPage[] = [
 ]
 
 const demoWikiPagesByPath = new Map(demoWikiPages.map((page) => [page.path, page]))
+const demoWikiSlugByPath = new Map(
+  demoWikiPages.map((page) => [page.path, buildDemoWikiSlug(page.path)])
+)
+const demoWikiPagesBySlug = new Map(
+  demoWikiPages.map((page) => [buildDemoWikiSlug(page.path), page])
+)
 
 export function getDemoWikiPage(path: string): DemoWikiPage | undefined {
   return demoWikiPagesByPath.get(normalizeDemoWikiPath(path))
 }
 
+export function getDemoWikiPageBySlug(slug: string): DemoWikiPage | undefined {
+  return demoWikiPagesBySlug.get(normalizeDemoWikiSlug(slug))
+}
+
 export function normalizeDemoWikiPath(path: string): string {
   return normalizeOfmPath(path)
+}
+
+export function normalizeDemoWikiSlug(slug: string): string {
+  return slug
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join('/')
+}
+
+export function buildDemoWikiSlug(path: string): string {
+  const normalizedPath = normalizeDemoWikiPath(path)
+  const slugPath = buildOfmTargetUrl({path: normalizedPath}).slice(1)
+  return normalizeDemoWikiSlug(slugPath)
+}
+
+export function getDemoWikiSlug(path: string): string | undefined {
+  return demoWikiSlugByPath.get(normalizeDemoWikiPath(path))
 }
 
 export function buildDemoWikiHref(path: string, fragment?: string): string {

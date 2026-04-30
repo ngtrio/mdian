@@ -1,6 +1,6 @@
 {
   "name": "mdian",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "remark and rehype plugins for Obsidian Flavored Markdown",
   "license": "Apache-2.0",
   "repository": {

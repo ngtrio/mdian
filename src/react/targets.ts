@@ -21,6 +21,10 @@ export interface NoteEmbedRenderData {
   title?: string
 }
 
+export interface ImageEmbedRenderData {
+  path: string
+}
+
 export function readWikiLinkRenderData(
   node: Element | undefined,
   href: string | undefined,
@@ -66,6 +70,16 @@ export function readNoteEmbedRenderData(node: Element | undefined): NoteEmbedRen
     ...(fallbackHref === undefined ? {} : {fallbackHref}),
     ...(title === undefined ? {} : {title})
   }
+}
+
+export function readImageEmbedRenderData(node: Element | undefined): ImageEmbedRenderData | undefined {
+  const props = readOfmPublicProps(node)
+
+  if (!props || props.kind !== ofmPublicKind.embed || props.variant !== ofmPublicVariant.image) {
+    return undefined
+  }
+
+  return {path: props.path}
 }
 
 function isAnchorElement(node: ElementContent): node is Element {

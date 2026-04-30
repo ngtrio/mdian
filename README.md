@@ -69,6 +69,7 @@ pnpm add mdian react react-markdown
 
 ```ts
 import ReactMarkdown from 'react-markdown'
+import {buildOfmTargetUrl} from 'mdian'
 import {createOfmReactPreset} from 'mdian/react'
 
 const notes = new Map([
@@ -83,7 +84,7 @@ const ofm = createOfmReactPreset({
   wikiLink: {
     resolve(target) {
       return {
-        href: `/wiki/${encodeURIComponent(target.path)}`,
+        href: buildOfmTargetUrl(target, 'wiki'),
         title: target.fragment
           ? `${target.path}#${target.fragment}`
           : target.path
@@ -135,7 +136,7 @@ Block refs are represented as `fragment: '^block-id'`.
 Nested headings are represented as `fragment: 'Heading#Subheading'`.
 `[[Page#Heading#^block-id]]` is intentionally unsupported and is not assigned special semantics.
 
-`buildOfmTargetUrl()` accepts that shape directly. Rendered OFM metadata exposes `data-ofm-fragment`, while wikilinks and embeds no longer emit `data-ofm-block-id`.
+`buildOfmTargetUrl()` accepts that shape directly and emits slug URLs from both the target path and fragment. Rendered OFM metadata still exposes the original `data-ofm-fragment`, while wikilinks and embeds no longer emit `data-ofm-block-id`.
 
 ## External Embeds
 

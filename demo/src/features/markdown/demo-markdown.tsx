@@ -116,8 +116,9 @@ function buildDemoTitle(
   return target.path;
 }
 
-function resolveDemoAssetHref(src: string): string {
-  const normalizedSrc = src.startsWith("/") ? src.slice(1) : src;
+function resolveDemoAssetHref(src: string, ofmPath?: string): string {
+  const candidateSrc = ofmPath ?? src
+  const normalizedSrc = candidateSrc.startsWith("/") ? candidateSrc.slice(1) : candidateSrc;
 
   if (!normalizedSrc.startsWith("assets/")) {
     return src;

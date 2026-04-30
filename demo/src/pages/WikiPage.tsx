@@ -2,19 +2,27 @@ import {useEffect, useRef} from 'react'
 import {Link, useLocation, useParams} from '@tanstack/react-router'
 
 import {
+  buildOfmTargetUrl,
   decodeOfmFragment,
   findOfmAnchorTarget,
 } from 'mdian'
-import {getDemoWikiPage, normalizeDemoWikiPath} from '../content/demo-content.js'
+import {
+  buildDemoWikiSlug,
+  getDemoWikiPageBySlug,
+  normalizeDemoWikiSlug
+} from '../content/demo-content.js'
 import {DemoMarkdown} from '../features/markdown/demo-markdown.js'
 
 export function WikiPage() {
   const params = useParams({strict: false})
   const locationHash = useLocation({select: (location) => location.hash})
   const articleRef = useRef<HTMLDivElement>(null)
-  const pagePath = normalizeDemoWikiPath(typeof params._splat === 'string' ? params._splat : '')
-  const page = getDemoWikiPage(pagePath)
+  const pageSlug = normalizeDemoWikiSlug(typeof params._splat === 'string' ? params._splat : '')
+  const page = getDemoWikiPageBySlug(pageSlug)
   const activeFragment = decodeOfmFragment(locationHash)
+  const activeTargetHash = page && activeFragment
+    ? buildOfmTargetUrl({path: page.path, fragment: activeFragment}).split('#')[1]
+    : activeFragment
 
   useEffect(() => {
     const root = articleRef.current
@@ -46,7 +54,7 @@ export function WikiPage() {
       window.clearTimeout(timeoutId)
       root.querySelectorAll('.is-targeted').forEach((element) => element.classList.remove('is-targeted'))
     }
-  }, [locationHash, pagePath])
+  }, [locationHash, pageSlug])
 
   return (
     <div className="demo-shell demo-shell--showcase wiki-shell">
@@ -58,12 +66,12 @@ export function WikiPage() {
         <div>
           <h1>{page?.title ?? 'Missing note'}</h1>
           <p>
-            {page?.summary ?? `No demo note matches "${pagePath || 'this route'}".`}
+            {page?.summary ?? `No demo note matches "${pageSlug || 'this route'}".`}
           </p>
         </div>
         <div className="wiki-target" aria-label="Current wiki target">
-          <span>Path: /{pagePath || 'missing-page'}</span>
-          {activeFragment ? <span>Target: #{activeFragment}</span> : null}
+          <span>Path: /{page ? buildDemoWikiSlug(page.path) : pageSlug || 'missing-page'}</span>
+          {activeTargetHash ? <span>Target: #{activeTargetHash}</span> : null}
         </div>
       </header>
 
@@ -85,7 +93,7 @@ export function WikiPage() {
             </div>
           </div>
           <p className="empty-state">
-            The route <code>{pagePath || '/wiki'}</code> does not exist in the demo note set.
+            The route <code>{pageSlug || '/wiki'}</code> does not exist in the demo note set.
           </p>
         </section>
       )}

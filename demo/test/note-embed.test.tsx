@@ -3,6 +3,11 @@ import ReactMarkdown from 'react-markdown'
 import {renderToStaticMarkup} from 'react-dom/server'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {
+  buildDemoWikiHref,
+  buildDemoWikiSlug,
+  getDemoWikiPageBySlug,
+} from '../src/content/demo-content.js'
 import {demoMarkdownPreset} from '../src/features/markdown/demo-markdown.js'
 
 const rootRoute = createRootRoute()
@@ -54,9 +59,9 @@ describe('demo note embed integration', () => {
       '> Basic callout body.'
     ].join('\n'))
 
-    expect(container.querySelector('a[href="/wiki/Project%20Notes"]')?.textContent).toBe('Open note')
-    expect(container.querySelector('a[href="/wiki/Project%20Notes#Overview#Detail"]')?.textContent).toBe('Nested target')
-    expect(container.querySelector('a[href="/wiki/Roadmap#^next-step"]')?.textContent).toBe('Block target')
+    expect(container.querySelector('a[href="/wiki/project-notes"]')?.textContent).toBe('Open note')
+    expect(container.querySelector('a[href="/wiki/project-notes#overview#detail"]')?.textContent).toBe('Nested target')
+    expect(container.querySelector('a[href="/wiki/roadmap#^next-step"]')?.textContent).toBe('Block target')
     expect(container.querySelector('.ofm-callout')).not.toBeNull()
     expect(container.querySelector('blockquote')).toBeNull()
   })
@@ -119,15 +124,15 @@ describe('demo note embed integration', () => {
   test('falls back to links for over-deep embeds and missing pages', () => {
     const recursive = renderDemoMarkdown('![[Recursive Embed]]')
     expect(recursive.querySelectorAll('.note-embed')).toHaveLength(2)
-    expect(recursive.querySelector('a[href="/wiki/Recursive%20Embed"]')?.textContent).toBe('Recursive Embed')
+    expect(recursive.querySelector('a[href="/wiki/recursive-embed"]')?.textContent).toBe('Recursive Embed')
 
     const deep = renderDemoMarkdown('![[Depth One]]')
     expect(deep.querySelectorAll('.note-embed')).toHaveLength(2)
-    expect(deep.querySelector('a[href="/wiki/Depth%20Three"]')?.textContent).toBe('Depth Three')
+    expect(deep.querySelector('a[href="/wiki/depth-three"]')?.textContent).toBe('Depth Three')
 
     const missing = renderDemoMarkdown('![[Missing Page]]')
     expect(missing.querySelectorAll('.note-embed')).toHaveLength(0)
-    expect(missing.querySelector('a[href="/wiki/Missing%20Page"]')?.textContent).toBe('Missing Page')
+    expect(missing.querySelector('a[href="/wiki/missing-page"]')?.textContent).toBe('Missing Page')
   })
 
   test('renders external tweet embeds through the dedicated tweet container path', () => {
@@ -142,5 +147,13 @@ describe('demo note embed integration', () => {
     expect(tweet?.textContent).toBe('')
     expect(tweet?.querySelector('div')).toBeNull()
     expect(tweet?.querySelector('p')).toBeNull()
+  })
+
+  test('builds and resolves demo wiki routes by slug while preserving fragments', () => {
+    expect(buildDemoWikiSlug('Project Notes')).toBe('project-notes')
+    expect(buildDemoWikiSlug('Folder Name/Page Name')).toBe('folder-name/page-name')
+    expect(buildDemoWikiHref('Folder Name/Page Name', 'Heading Here')).toBe('/wiki/folder-name/page-name#heading-here')
+    expect(getDemoWikiPageBySlug('folder-name/page-name')?.path).toBe('Folder Name/Page Name')
+    expect(getDemoWikiPageBySlug('project-notes')?.title).toBe('Project Notes')
   })
 })
