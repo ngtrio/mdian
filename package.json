@@ -1,6 +1,6 @@
 {
   "name": "mdian",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "remark and rehype plugins for Obsidian Flavored Markdown",
   "license": "Apache-2.0",
   "repository": {
@@ -60,6 +60,7 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "tsx": "^4.21.0",

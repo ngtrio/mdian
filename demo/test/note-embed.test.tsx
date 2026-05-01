@@ -83,6 +83,20 @@ describe('demo note embed integration', () => {
     expect(container.querySelector('a[href="/wiki/project-notes#^next-step"]')).not.toBeNull()
   })
 
+  test('renders gfm tables through the demo markdown preset', () => {
+    const container = renderDemoMarkdown([
+      '| Area | Target |',
+      '| --- | --- |',
+      '| Wikilinks | [[Project Notes#Overview]] |',
+      '| Embeds | ![[Project Notes#Overview#Detail]] |'
+    ].join('\n'))
+
+    expect(container.querySelector('table')).not.toBeNull()
+    expect(container.querySelector('th')?.textContent).toBe('Area')
+    expect(container.querySelector('td a[href="/wiki/project-notes#overview"]')?.textContent).toBe('Project Notes')
+    expect(container.querySelector('td .note-embed')).not.toBeNull()
+  })
+
   test('rewrites ordinary markdown image sources through the preset image.transformSrc hook', () => {
     const container = renderDemoMarkdown('![hero](assets/image.svg)')
     expect(container.querySelector('img')?.getAttribute('src')).toBe('/assets/image.svg')

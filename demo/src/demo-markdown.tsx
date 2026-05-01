@@ -5,7 +5,7 @@ import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import type {Components} from 'react-markdown'
-import type {PluggableList} from 'unified'
+import type {Pluggable, PluggableList} from 'unified'
 import {
   createOfmReactPreset,
 } from 'mdian/react'
@@ -25,9 +25,16 @@ interface DemoMarkdownProps {
   markdown: string
 }
 
+const demoRemarkPlugins: Pluggable[] = [remarkGfm, remarkMath]
+const demoRehypePlugins: Pluggable[] = [rehypeKatex]
+
 const ofmPreset = createOfmReactPreset({
   image: {
     transformSrc: resolveDemoAssetHref,
+  },
+  markdown: {
+    remarkPlugins: demoRemarkPlugins,
+    rehypePlugins: demoRehypePlugins,
   },
   ofm: {
     rehype: {
@@ -83,8 +90,8 @@ export function DemoMarkdown({className, markdown}: DemoMarkdownProps) {
 function createDemoMarkdownPreset(): DemoMarkdownPreset {
   return {
     components: ofmPreset.components,
-    remarkPlugins: [remarkGfm, remarkMath, ...ofmPreset.remarkPlugins],
-    rehypePlugins: [rehypeKatex, ...ofmPreset.rehypePlugins],
+    remarkPlugins: ofmPreset.remarkPlugins,
+    rehypePlugins: ofmPreset.rehypePlugins,
   }
 }
 

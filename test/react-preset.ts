@@ -6,6 +6,7 @@ import {act, createElement, StrictMode} from 'react'
 import {createRoot} from 'react-dom/client'
 import ReactMarkdown from 'react-markdown'
 import {renderToStaticMarkup} from 'react-dom/server'
+import remarkGfm from 'remark-gfm'
 
 import {createOfmReactPreset, loadTwitterWidgets} from '../src/react/index.js'
 import type {LoadTwitterWidgetsInput, OfmReactPresetOptions, TwitterWidgetsApi} from '../src/react/index.js'
@@ -40,6 +41,67 @@ test('createOfmReactPreset returns a react-markdown preset shape', () => {
   assert.equal(typeof preset.components.a, 'function')
   assert.equal(typeof preset.components.div, 'function')
   assert.equal(typeof preset.components.img, 'function')
+})
+
+test('createOfmReactPreset includes caller markdown plugins in the returned pipeline', () => {
+  const preset = createOfmReactPreset({
+    markdown: {
+      remarkPlugins: [remarkGfm]
+    }
+  })
+  const html = renderToStaticMarkup(
+    createElement(
+      ReactMarkdown,
+      {
+        components: preset.components,
+        rehypePlugins: preset.rehypePlugins,
+        remarkPlugins: preset.remarkPlugins
+      },
+      [
+        '| Column |',
+        '| --- |',
+        '| Value |'
+      ].join('\n')
+    )
+  )
+
+  assert.match(html, /<table>/)
+  assert.match(html, /<td>Value<\/td>/)
+})
+
+test('createOfmReactPreset reuses caller markdown plugins inside resolved note embeds', () => {
+  const preset = createOfmReactPreset({
+    markdown: {
+      remarkPlugins: [remarkGfm]
+    },
+    noteEmbed: {
+      resolve() {
+        return {
+          markdown: [
+            '| Column |',
+            '| --- |',
+            '| Value |'
+          ].join('\n'),
+          title: 'Table Note'
+        }
+      }
+    }
+  })
+  const html = renderToStaticMarkup(
+    createElement(
+      ReactMarkdown,
+      {
+        components: preset.components,
+        rehypePlugins: preset.rehypePlugins,
+        remarkPlugins: preset.remarkPlugins
+      },
+      '![[Table Note]]'
+    )
+  )
+
+  assert.match(html, /class="[^"]*note-embed[^"]*"/)
+  assert.match(html, /<table>/)
+  assert.match(html, /<td>Value<\/td>/)
 })
 
 test('createOfmReactPreset renders hrefPrefix-resolved wikilinks through wikiLink.render', () => {

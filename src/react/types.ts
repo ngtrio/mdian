@@ -55,9 +55,15 @@ export interface OfmReactExternalEmbedsOptions {
   twitter?: OfmReactTwitterOptions
 }
 
+export interface OfmReactMarkdownOptions {
+  rehypePlugins?: PluggableList
+  remarkPlugins?: PluggableList
+}
+
 export interface OfmReactPresetOptions {
   externalEmbeds?: OfmReactExternalEmbedsOptions
   image?: OfmReactImageOptions
+  markdown?: OfmReactMarkdownOptions
   noteEmbed?: OfmReactNoteEmbedOptions
   ofm?: {
     rehype?: OfmRehypeOptions

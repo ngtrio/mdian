@@ -5,7 +5,7 @@ import type {OfmReactPreset, OfmReactPresetOptions} from './types.js'
 export function createOfmReactPreset(options: OfmReactPresetOptions = {}): OfmReactPreset {
   return {
     components: createOfmReactComponents(options),
-    remarkPlugins: [[remarkOfm, options.ofm?.remark ?? {}]],
-    rehypePlugins: [[rehypeOfm, options.ofm?.rehype ?? {}]]
+    remarkPlugins: [...(options.markdown?.remarkPlugins ?? []), [remarkOfm, options.ofm?.remark ?? {}]],
+    rehypePlugins: [...(options.markdown?.rehypePlugins ?? []), [rehypeOfm, options.ofm?.rehype ?? {}]]
   }
 }

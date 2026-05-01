@@ -75,12 +75,16 @@ pnpm add mdian react react-markdown
 import ReactMarkdown from 'react-markdown'
 import {buildOfmSlugPath} from 'mdian'
 import {createOfmReactPreset} from 'mdian/react'
+import remarkGfm from 'remark-gfm'
 
 const notes = new Map([
   ['Project Notes', {markdown: '# Project Notes\n\nHello world.', title: 'Project Notes'}]
 ])
 
 const ofm = createOfmReactPreset({
+  markdown: {
+    remarkPlugins: [remarkGfm]
+  },
   ofm: {
     remark: {wikilinks: true, embeds: true},
     rehype: {
@@ -125,7 +129,7 @@ export function Markdown({markdown}: {markdown: string}) {
 }
 ```
 
-This path keeps OFM parsing in `mdian` while letting your app choose a URL namespace, note resolution, image URL rewriting, and optional router rendering. `rehypeOfm.resolvePathCandidates(path)` receives the raw OFM target path and lets your app return zero or more candidate note paths; when any candidates are returned, the first one wins and becomes the rendered `data-ofm-path`, `title`, and canonical href target for both wikilinks and note embeds. `rehypeOfm.hrefPrefix` is then prepended as-is ahead of that canonical target path and fragment. When you need the canonical slug path without any prefix, use `buildOfmSlugPath(path)` or `buildOfmTargetPath({path, fragment})`. If you provide `noteEmbed.resolve()`, it receives only `path` and must always return markdown content; missing-note fallbacks are now your app's responsibility. Set `externalEmbeds.twitter.enhance` to `true` only when you want the built-in X/Twitter widget enhancement path; otherwise the preset keeps the static fallback container while the core OFM output remains a single Twitter container `div` with canonical URL text content. You can also override the script loader with `loadTwitterWidgets({loadScript})`.
+This path keeps OFM parsing in `mdian` while letting your app choose a URL namespace, note resolution, image URL rewriting, router rendering, and any surrounding Markdown plugins such as GFM or math. Pass those shared Markdown extensions once through `createOfmReactPreset({markdown: {remarkPlugins, rehypePlugins}})`, then use the returned `ofm.remarkPlugins` and `ofm.rehypePlugins` directly on your outer `ReactMarkdown`; resolved `![[note]]` embeds reuse the same pipeline internally. `rehypeOfm.resolvePathCandidates(path)` receives the raw OFM target path and lets your app return zero or more candidate note paths; when any candidates are returned, the first one wins and becomes the rendered `data-ofm-path`, `title`, and canonical href target for both wikilinks and note embeds. `rehypeOfm.hrefPrefix` is then prepended as-is ahead of that canonical target path and fragment. When you need the canonical slug path without any prefix, use `buildOfmSlugPath(path)` or `buildOfmTargetPath({path, fragment})`. If you provide `noteEmbed.resolve()`, it receives only `path` and must always return markdown content; missing-note fallbacks are now your app's responsibility. Set `externalEmbeds.twitter.enhance` to `true` only when you want the built-in X/Twitter widget enhancement path; otherwise the preset keeps the static fallback container while the core OFM output remains a single Twitter container `div` with canonical URL text content. You can also override the script loader with `loadTwitterWidgets({loadScript})`.
 
 
 ## Development

@@ -5,6 +5,7 @@ export type DemoSampleKey =
   | 'embeds'
   | 'external-embeds'
   | 'callouts'
+  | 'tables'
   | 'highlights'
   | 'comments'
 
@@ -105,6 +106,23 @@ export const demoSamples: DemoSample[] = [
       '>',
       '> > [!example] Nested callout',
       '> > Inner content that still reads cleanly in the rendered stage.'
+    ].join('\n')
+  },
+  {
+    key: 'tables',
+    title: 'Tables',
+    markdown: [
+      '# Release Matrix',
+      '',
+      'GFM tables should render in both the live preview and resolved note embeds.',
+      '',
+      '| Area | Status | Target | Notes |',
+      '| --- | --- | --- | --- |',
+      '| Wikilinks | Stable | [[Project Notes#Overview]] | Route + fragment output stays canonical. |',
+      '| Embeds | Stable | ![[Project Notes#Overview#Detail]] | Nested note embeds reuse the same markdown pipeline. |',
+      '| Blocks | In progress | [[Roadmap#^next-step]] | Block refs still point at the native HTML id. |',
+      '',
+      'The sample mixes plain text, wikilinks, and note embeds inside table cells.'
     ].join('\n')
   },
   {
