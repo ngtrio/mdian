@@ -2,7 +2,7 @@ import {createContext, createElement, useContext} from 'react'
 import type {ReactNode} from 'react'
 
 import {formatOfmTargetLabel, isOfmBlockFragment, normalizeOfmFragmentAnchorKey} from '../lib/shared/ofm-url.js'
-import type {OfmReactTarget, ResolveOfmNoteEmbedResult} from './types.js'
+import type {OfmInternalTarget, ResolveOfmNoteEmbedResult} from './types.js'
 
 export interface OfmNoteEmbedState {
   depth: number
@@ -21,7 +21,7 @@ export interface GuardOfmNoteEmbedResult {
 
 export interface ResolveOfmNoteEmbedBodyInput {
   markdown: string
-  target: OfmReactTarget
+  target: OfmInternalTarget
 }
 
 export interface ResolveOfmNoteEmbedBodyResult {
@@ -36,7 +36,7 @@ export interface RenderOfmNoteEmbedInput {
   maxDepth?: number
   renderBody: (markdown: string) => ReactNode
   resolved: ResolveOfmNoteEmbedResult
-  target: OfmReactTarget
+  target: OfmInternalTarget
 }
 
 const noteEmbedStateContext = createContext<OfmNoteEmbedState>({depth: 0})

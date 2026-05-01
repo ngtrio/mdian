@@ -3,8 +3,26 @@ export interface OfmTargetUrlInput {
   path: string
 }
 
-export function buildOfmTargetUrl(target: OfmTargetUrlInput, prefix?: string): string {
-  return `/${joinPathSegments(prefix, buildOfmSlugPath(normalizeOfmPath(target.path)))}${formatOfmHash(buildOfmSlugFragment(target.fragment))}`
+export function buildOfmTargetHref(target: OfmTargetUrlInput, prefix?: string): string {
+  return `/${joinPathSegments(prefix, buildOfmTargetPath(target))}`
+}
+
+export function buildOfmTargetPath(target: OfmTargetUrlInput): string {
+  return `${buildOfmSlugPath(target.path)}${buildOfmFragmentHash(target.fragment)}`
+}
+
+export function buildOfmSlugPath(path: string): string {
+  return path
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .map((segment) => slugifyOfmPathSegment(segment))
+    .join('/')
+}
+
+export function buildOfmFragmentHash(fragment: string | null | undefined): string {
+  const cleanFragment = readOfmFragment(fragment)
+  return formatOfmHash(slugifyCleanOfmFragment(cleanFragment))
 }
 
 export function formatOfmTargetLabel(target: OfmTargetUrlInput): string {
@@ -15,43 +33,23 @@ export function formatOfmTargetLabel(target: OfmTargetUrlInput): string {
   return `${target.path}#${target.fragment}`
 }
 
-export function normalizeOfmPath(path: string): string {
-  return path
-    .split('/')
-    .map((segment) => decodeUriComponentSafe(segment.trim()))
-    .filter(Boolean)
-    .join('/')
-}
-
-export function decodeOfmFragment(value: string): string {
-  const fragment = value.startsWith('#') ? value.slice(1) : value
-  return decodeUriComponentSafe(fragment)
-}
-
 export function normalizeOfmFragmentAnchorKey(value: string | null | undefined): string {
-  const fragment = decodeOfmFragment(value ?? '').trim()
+  const fragment = readOfmFragment(value)
 
   if (!fragment) {
     return ''
   }
 
-  return buildOfmSlugFragment(fragment)
+  return slugifyCleanOfmFragment(fragment)
 }
 
 export function isOfmBlockFragment(fragment: string | null | undefined): boolean {
-  return decodeOfmFragment(fragment ?? '').trim().startsWith('^')
+  return readOfmFragment(fragment).startsWith('^')
 }
 
 function joinPathSegments(...segments: Array<string | undefined>): string {
   return segments
     .flatMap((segment) => segment && segment.length > 0 ? [segment] : [])
-    .join('/')
-}
-
-function buildOfmSlugPath(path: string): string {
-  return path
-    .split('/')
-    .map((segment) => slugifyOfmPathSegment(segment))
     .join('/')
 }
 
@@ -63,18 +61,22 @@ function slugifyOfmPathSegment(segment: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-function buildOfmSlugFragment(fragment: string | null | undefined): string {
-  const normalizedFragment = decodeOfmFragment(fragment ?? '').trim()
-
-  if (!normalizedFragment) {
+function slugifyCleanOfmFragment(cleanFragment: string): string {
+  if (!cleanFragment) {
     return ''
   }
 
-  return normalizedFragment
+  return cleanFragment
     .split('#')
     .map((segment) => slugifyOfmFragmentSegment(segment))
     .filter(Boolean)
     .join('#')
+}
+
+function readOfmFragment(fragment: string | null | undefined): string {
+  const rawFragment = fragment ?? ''
+  const withoutHash = rawFragment.startsWith('#') ? rawFragment.slice(1) : rawFragment
+  return withoutHash.trim()
 }
 
 function slugifyOfmFragmentSegment(segment: string): string {
@@ -98,12 +100,4 @@ function formatOfmHash(fragment: string | null | undefined): string {
   }
 
   return `#${fragment}`
-}
-
-function decodeUriComponentSafe(value: string): string {
-  try {
-    return decodeURIComponent(value)
-  } catch {
-    return value
-  }
 }

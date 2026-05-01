@@ -10,7 +10,8 @@
   --ofm-callout-title-color: #223247;
 }
 
-.ofm-anchor-target {
+.ofm-heading-target,
+.ofm-block-target {
   scroll-margin-top: 2rem;
 }
 
@@ -180,9 +181,7 @@ details.ofm-callout[open] > .ofm-callout-title::before {
   transform: rotate(90deg);
 }
 
-.ofm-block-target {
-  position: relative;
-}
+.ofm-block-target { position: relative; }
 
 .ofm-block-anchor-label {
   display: inline-block;

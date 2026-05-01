@@ -4,7 +4,6 @@ type ValueOf<T> = T[keyof T]
 
 export const ofmPublicPropKeys = {
   alias: 'data-ofm-alias',
-  blockId: 'data-ofm-block-id',
   fragment: 'data-ofm-fragment',
   kind: 'data-ofm-kind',
   path: 'data-ofm-path',
@@ -13,7 +12,6 @@ export const ofmPublicPropKeys = {
 } as const
 
 export const ofmPublicKind = {
-  anchorTarget: 'anchor-target',
   callout: 'callout',
   embed: 'embed',
   highlight: 'highlight',
@@ -26,10 +24,8 @@ export const ofmPublicProvider = {
 } as const
 
 export const ofmPublicVariant = {
-  block: 'block',
   external: 'external',
   file: 'file',
-  heading: 'heading',
   image: 'image',
   note: 'note'
 } as const
@@ -63,17 +59,6 @@ export interface OfmExternalEmbedPublicProps {
   variant: typeof ofmPublicVariant.external
 }
 
-export interface OfmAnchorHeadingPublicProps {
-  kind: typeof ofmPublicKind.anchorTarget
-  variant: typeof ofmPublicVariant.heading
-}
-
-export interface OfmAnchorBlockPublicProps {
-  blockId: string
-  kind: typeof ofmPublicKind.anchorTarget
-  variant: typeof ofmPublicVariant.block
-}
-
 export interface OfmCalloutPublicProps {
   kind: typeof ofmPublicKind.callout
 }
@@ -83,8 +68,6 @@ export interface OfmHighlightPublicProps {
 }
 
 export type OfmPublicProps =
-  | OfmAnchorBlockPublicProps
-  | OfmAnchorHeadingPublicProps
   | OfmCalloutPublicProps
   | OfmExternalEmbedPublicProps
   | OfmHighlightPublicProps
@@ -96,7 +79,6 @@ export function setOfmPublicProps(properties: Properties, value: OfmPublicProps)
   delete properties[ofmPublicPropKeys.variant]
   delete properties[ofmPublicPropKeys.path]
   delete properties[ofmPublicPropKeys.alias]
-  delete properties[ofmPublicPropKeys.blockId]
   delete properties[ofmPublicPropKeys.fragment]
   delete properties[ofmPublicPropKeys.provider]
 
@@ -117,10 +99,6 @@ export function setOfmPublicProps(properties: Properties, value: OfmPublicProps)
       setOptionalString(properties, ofmPublicPropKeys.path, value.path)
       setOptionalString(properties, ofmPublicPropKeys.alias, value.alias)
       setOptionalString(properties, ofmPublicPropKeys.fragment, value.fragment)
-      return
-    case ofmPublicKind.anchorTarget:
-      setOptionalString(properties, ofmPublicPropKeys.variant, value.variant)
-      setOptionalString(properties, ofmPublicPropKeys.blockId, 'blockId' in value ? value.blockId : undefined)
       return
     case ofmPublicKind.callout:
     case ofmPublicKind.highlight:
@@ -194,32 +172,6 @@ export function readOfmPublicProps(node: Element | undefined): OfmPublicProps | 
         path,
         ...(alias === undefined ? {} : {alias}),
         ...(fragment === undefined ? {} : {fragment})
-      }
-    }
-    case ofmPublicKind.anchorTarget: {
-      const variant = readOptionalVariant(properties, ofmPublicPropKeys.variant)
-
-      if (variant === ofmPublicVariant.heading) {
-        return {
-          kind,
-          variant
-        }
-      }
-
-      if (variant !== ofmPublicVariant.block) {
-        return undefined
-      }
-
-      const blockId = readRequiredString(properties, ofmPublicPropKeys.blockId)
-
-      if (blockId === undefined) {
-        return undefined
-      }
-
-      return {
-        kind,
-        variant,
-        blockId
       }
     }
     case ofmPublicKind.callout:

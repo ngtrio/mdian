@@ -5,7 +5,6 @@
 It provides:
 
 - `remarkOfm` and `rehypeOfm` for OFM syntax and HTML transforms
-- URL and anchor helpers for applications that need OFM-style wiki navigation
 - a small CSS entrypoint for sensible default styling
 
 ## Supported OFM Syntax
@@ -50,7 +49,12 @@ const html = String(
     .use(remarkParse)
     .use(remarkOfm, {wikilinks: true, embeds: true})
     .use(remarkRehype)
-    .use(rehypeOfm, {hrefPrefix: 'wiki'})
+    .use(rehypeOfm, {
+      hrefPrefix: 'wiki',
+      resolvePathCandidates(path) {
+        return path === 'note' ? ['learning/note'] : []
+      }
+    })
     .use(rehypeStringify)
     .process(source)
 )
@@ -69,7 +73,7 @@ pnpm add mdian react react-markdown
 
 ```ts
 import ReactMarkdown from 'react-markdown'
-import {buildOfmTargetUrl} from 'mdian'
+import {buildOfmSlugPath} from 'mdian'
 import {createOfmReactPreset} from 'mdian/react'
 
 const notes = new Map([
@@ -79,22 +83,21 @@ const notes = new Map([
 const ofm = createOfmReactPreset({
   ofm: {
     remark: {wikilinks: true, embeds: true},
-    rehype: {externalEmbeds: true}
-  },
-  wikiLink: {
-    resolve(target) {
-      return {
-        href: buildOfmTargetUrl(target, 'wiki'),
-        title: target.fragment
-          ? `${target.path}#${target.fragment}`
-          : target.path
+    rehype: {
+      externalEmbeds: true,
+      hrefPrefix: 'wiki',
+      resolvePathCandidates(path) {
+        return path === 'Project Notes' ? ['workspace/Project Notes'] : []
       }
     }
   },
   noteEmbed: {
-    resolve(target) {
-      const note = notes.get(target.path)
-      return note ? {markdown: note.markdown, title: note.title} : undefined
+    resolve({path}) {
+      const note = notes.get(path)
+      return note ?? {
+        markdown: `# ${path}\n\nMissing note content.`,
+        title: path
+      }
     }
   },
   image: {
@@ -122,31 +125,8 @@ export function Markdown({markdown}: {markdown: string}) {
 }
 ```
 
-This path keeps OFM parsing in `mdian` while letting your app inject link resolution, note resolution, image URL rewriting, and optional router rendering. Set `externalEmbeds.twitter.enhance` to `true` only when you want the built-in X/Twitter widget enhancement path; otherwise the preset keeps the static fallback container while the core OFM output remains a single Twitter container `div` with canonical URL text content. You can also override the script loader with `loadTwitterWidgets({loadScript})`.
+This path keeps OFM parsing in `mdian` while letting your app choose a URL namespace, note resolution, image URL rewriting, and optional router rendering. `rehypeOfm.resolvePathCandidates(path)` receives the raw OFM target path and lets your app return zero or more candidate note paths; when any candidates are returned, the first one wins and becomes the rendered `data-ofm-path`, `title`, and canonical href target for both wikilinks and note embeds. `rehypeOfm.hrefPrefix` is then prepended as-is ahead of that canonical target path and fragment. When you need the canonical slug path without any prefix, use `buildOfmSlugPath(path)` or `buildOfmTargetPath({path, fragment})`. If you provide `noteEmbed.resolve()`, it receives only `path` and must always return markdown content; missing-note fallbacks are now your app's responsibility. Set `externalEmbeds.twitter.enhance` to `true` only when you want the built-in X/Twitter widget enhancement path; otherwise the preset keeps the static fallback container while the core OFM output remains a single Twitter container `div` with canonical URL text content. You can also override the script loader with `loadTwitterWidgets({loadScript})`.
 
-## Breaking Target Model
-
-`mdian` models OFM targets as `path + fragment`:
-
-- `path: string`
-- `fragment?: string`
-
-`fragment` never includes the leading `#`.
-Block refs are represented as `fragment: '^block-id'`.
-Nested headings are represented as `fragment: 'Heading#Subheading'`.
-`[[Page#Heading#^block-id]]` is intentionally unsupported and is not assigned special semantics.
-
-`buildOfmTargetUrl()` accepts that shape directly and emits slug URLs from both the target path and fragment, preserving Unicode letters and numbers while normalizing separators. Rendered OFM metadata still exposes the original `data-ofm-fragment`, while wikilinks and embeds no longer emit `data-ofm-block-id`.
-
-## External Embeds
-
-`rehypeOfm` also upgrades plain Markdown image URLs from supported providers into embeds:
-
-- `![](https://www.youtube.com/watch?v=...)`, `![](https://youtu.be/...)`, and `![](https://www.youtube.com/shorts/...)` render as YouTube `<iframe>` embeds with the `ofm-external-embed` class.
-- `![](https://x.com/.../status/...)` and `![](https://twitter.com/.../status/...)` render as tweet embed containers with `data-ofm-provider="twitter"` and the `ofm-external-embed` class; the static core output is a single `div` whose text content is the canonical Twitter status URL.
-
-Set `externalEmbeds: false` to keep those URLs on the normal Markdown image path.
-If you want interactive X/Twitter widgets instead of the static container output, load the provider script in your app after render.
 
 ## Development
 

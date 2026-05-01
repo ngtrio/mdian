@@ -4,9 +4,8 @@ export type {LoadTwitterWidgetsInput} from './twitter.js'
 export type {
   OfmReactPreset,
   OfmReactPresetOptions,
-  OfmReactTarget,
   RenderOfmWikiLinkInput,
+  ResolveOfmNoteEmbedInput,
   ResolveOfmNoteEmbedResult,
-  ResolvedOfmWikiLink,
   TwitterWidgetsApi
 } from './types.js'

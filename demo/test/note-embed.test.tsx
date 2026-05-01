@@ -3,12 +3,8 @@ import ReactMarkdown from 'react-markdown'
 import {renderToStaticMarkup} from 'react-dom/server'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {
-  buildDemoWikiHref,
-  buildDemoWikiSlug,
-  getDemoWikiPageBySlug,
-} from '../src/content/demo-content.js'
-import {demoMarkdownPreset} from '../src/features/markdown/demo-markdown.js'
+import {getDemoWikiPageBySlug} from '../src/demo-content.js'
+import {demoMarkdownPreset} from '../src/demo-markdown.js'
 
 const rootRoute = createRootRoute()
 const indexRoute = createRoute({
@@ -64,6 +60,27 @@ describe('demo note embed integration', () => {
     expect(container.querySelector('a[href="/wiki/roadmap#^next-step"]')?.textContent).toBe('Block target')
     expect(container.querySelector('.ofm-callout')).not.toBeNull()
     expect(container.querySelector('blockquote')).toBeNull()
+  })
+
+  test('renders native id anchor targets that match canonical wikilink hashes', () => {
+    const container = renderDemoMarkdown([
+      '# Project Notes',
+      '',
+      '## Overview',
+      '',
+      '### Detail',
+      '',
+      'Target paragraph. ^next-step',
+      '',
+      '[[Project Notes#Overview#Detail|Nested target]]',
+      '[[Project Notes#^next-step|Block target]]'
+    ].join('\n'))
+
+    expect(container.querySelector('h2[id="overview"]')).not.toBeNull()
+    expect(container.querySelector('h3[id="overview#detail"]')).not.toBeNull()
+    expect(container.querySelector('p[id="^next-step"]')).not.toBeNull()
+    expect(container.querySelector('a[href="/wiki/project-notes#overview#detail"]')).not.toBeNull()
+    expect(container.querySelector('a[href="/wiki/project-notes#^next-step"]')).not.toBeNull()
   })
 
   test('rewrites ordinary markdown image sources through the preset image.transformSrc hook', () => {
@@ -124,15 +141,18 @@ describe('demo note embed integration', () => {
   test('falls back to links for over-deep embeds and missing pages', () => {
     const recursive = renderDemoMarkdown('![[Recursive Embed]]')
     expect(recursive.querySelectorAll('.note-embed')).toHaveLength(2)
-    expect(recursive.querySelector('a[href="/wiki/recursive-embed"]')?.textContent).toBe('Recursive Embed')
+    const recursiveFallback = [...recursive.querySelectorAll('a')].find((element) => element.textContent === 'Recursive Embed')
+    expect(recursiveFallback?.getAttribute('href')).toBe('/wiki/recursive-embed')
 
     const deep = renderDemoMarkdown('![[Depth One]]')
     expect(deep.querySelectorAll('.note-embed')).toHaveLength(2)
-    expect(deep.querySelector('a[href="/wiki/depth-three"]')?.textContent).toBe('Depth Three')
+    const depthFallback = [...deep.querySelectorAll('a')].find((element) => element.textContent === 'Depth Three')
+    expect(depthFallback?.getAttribute('href')).toBe('/wiki/depth-three')
 
     const missing = renderDemoMarkdown('![[Missing Page]]')
-    expect(missing.querySelectorAll('.note-embed')).toHaveLength(0)
-    expect(missing.querySelector('a[href="/wiki/missing-page"]')?.textContent).toBe('Missing Page')
+    expect(missing.querySelectorAll('.note-embed')).toHaveLength(1)
+    expect(missing.querySelector('.note-embed__header strong')?.textContent).toBe('Missing Page')
+    expect(missing.textContent).toContain('This demo note could not be resolved.')
   })
 
   test('renders external tweet embeds through the dedicated tweet container path', () => {
@@ -149,12 +169,7 @@ describe('demo note embed integration', () => {
     expect(tweet?.querySelector('p')).toBeNull()
   })
 
-  test('builds and resolves demo wiki routes by slug while preserving fragments', () => {
-    expect(buildDemoWikiSlug('Project Notes')).toBe('project-notes')
-    expect(buildDemoWikiSlug('Folder Name/Page Name')).toBe('folder-name/page-name')
-    expect(buildDemoWikiSlug('学习/first-map')).toBe('学习/first-map')
-    expect(buildDemoWikiHref('Folder Name/Page Name', 'Heading Here')).toBe('/wiki/folder-name/page-name#heading-here')
-    expect(buildDemoWikiHref('学习/first-map', '学习 地图')).toBe('/wiki/学习/first-map#学习-地图')
+  test('resolves demo wiki routes by slug', () => {
     expect(getDemoWikiPageBySlug('folder-name/page-name')?.path).toBe('Folder Name/Page Name')
     expect(getDemoWikiPageBySlug('project-notes')?.title).toBe('Project Notes')
   })

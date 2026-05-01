@@ -5,6 +5,7 @@ import { access, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import * as publicApi from '../src/index.js'
 
 import type { Element, Root } from 'hast'
 
@@ -12,20 +13,21 @@ import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 
 import {
-  buildOfmTargetUrl,
-  decodeOfmFragment,
-  findOfmAnchorTarget,
-  normalizeOfmPath,
   rehypeOfm as publicRehypeOfm,
   remarkOfm as publicRemarkOfm
 } from '../src/index.js'
-import { anchorHast, normalizeOfmAnchorKey } from '../src/lib/anchor/hast.js'
+import {anchorHast} from '../src/lib/anchor/hast.js'
 import { calloutHast } from '../src/lib/callout/hast.js'
 import { embedHast } from '../src/lib/embed/hast.js'
 import { highlightHast } from '../src/lib/highlight/hast.js'
 import {rehypeOfm, remarkOfm} from '../src/lib/index.js'
 import {ofmClassNames} from '../src/lib/shared/class-name.js'
 import {getOfmNodeData, stripOfmDataProps} from '../src/lib/shared/ofm-node.js'
+import {
+  buildOfmSlugPath,
+  buildOfmTargetHref,
+  buildOfmTargetPath
+} from '../src/lib/shared/ofm-url.js'
 import {readOfmPublicProps, setOfmPublicProps} from '../src/lib/shared/public-props.js'
 import type {OfmRemarkOptions} from '../src/lib/types.js'
 import {parseWikiValue} from '../src/lib/wikilink/mdast.js'
@@ -63,6 +65,12 @@ for (const fixtureName of fixtures) {
 test('root public API re-exports the core OFM plugins', () => {
   assert.equal(publicRemarkOfm, remarkOfm)
   assert.equal(publicRehypeOfm, rehypeOfm)
+})
+
+test('root public API exposes OFM URL helpers', () => {
+  assert.equal(publicApi.buildOfmTargetHref, buildOfmTargetHref)
+  assert.equal(publicApi.buildOfmTargetPath, buildOfmTargetPath)
+  assert.equal(publicApi.buildOfmSlugPath, buildOfmSlugPath)
 })
 
 test('readOfmPublicProps reads shared OFM public props from an element', () => {
@@ -142,7 +150,7 @@ test('wikiLinkHast uses root-path default when hrefPrefix is omitted', () => {
   assert.equal(node.properties.dataOfmKind, undefined)
 })
 
-test('wikiLinkHast uses hrefPrefix path plus fragment when provided', () => {
+test('wikiLinkHast prepends hrefPrefix and preserves fragments', () => {
   const node = createWikiLinkElement({
     value: 'Page#Heading',
     path: 'Page',
@@ -196,7 +204,7 @@ test('wikiLinkHast preserves block fragments with hrefPrefix', () => {
   })
 })
 
-test('wikiLinkHast slugifies path segments and heading fragments with hrefPrefix', () => {
+test('wikiLinkHast slugifies nested paths and preserves fragments with hrefPrefix', () => {
   const node = createWikiLinkElement({
     value: 'Folder Name/Page Name#Heading Here',
     path: 'Folder Name/Page Name',
@@ -214,15 +222,15 @@ test('wikiLinkHast slugifies path segments and heading fragments with hrefPrefix
   })
 })
 
-test('wikiLinkHast collapses symbols into slug separators with hrefPrefix', () => {
+test('wikiLinkHast falls back to core slugging when hrefPrefix is omitted', () => {
   const node = createWikiLinkElement({
     value: 'R&D?Notes',
     path: 'R&D?Notes'
   })
 
-  wikiLinkHast({ hrefPrefix: 'notes' })(node)
+  wikiLinkHast()(node)
 
-  assert.equal(node.properties.href, '/notes/r-d-notes')
+  assert.equal(node.properties.href, '/r-d-notes')
 })
 
 test('wikiLinkHast preserves # inside a heading fragment', () => {
@@ -253,6 +261,94 @@ test('wikiLinkHast can skip title assignment', () => {
 
   assert.equal(node.properties.href, '/notes/page')
   assert.equal(node.properties.title, undefined)
+})
+
+test('wikiLinkHast keeps the original path when no path candidates are returned', () => {
+  const node = createWikiLinkElement({
+    value: 'note',
+    path: 'note'
+  })
+
+  wikiLinkHast({
+    hrefPrefix: 'wiki',
+    resolvePathCandidates(path) {
+      assert.equal(path, 'note')
+      return []
+    }
+  })(node)
+
+  assert.equal(node.properties.href, '/wiki/note')
+  assert.equal(node.properties.title, 'note')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'note'
+  })
+})
+
+test('wikiLinkHast resolves the path from the first returned candidate', () => {
+  const node = createWikiLinkElement({
+    value: 'note',
+    path: 'note'
+  })
+
+  wikiLinkHast({
+    hrefPrefix: 'wiki',
+    resolvePathCandidates(path) {
+      assert.equal(path, 'note')
+      return ['learning/note']
+    }
+  })(node)
+
+  assert.equal(node.properties.href, '/wiki/learning/note')
+  assert.equal(node.properties.title, 'learning/note')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'learning/note'
+  })
+})
+
+test('wikiLinkHast uses the first path candidate when multiple matches are returned', () => {
+  const node = createWikiLinkElement({
+    value: 'note',
+    path: 'note'
+  })
+
+  wikiLinkHast({
+    hrefPrefix: 'wiki',
+    resolvePathCandidates(path) {
+      assert.equal(path, 'note')
+      return ['learning/note', 'work/note']
+    }
+  })(node)
+
+  assert.equal(node.properties.href, '/wiki/learning/note')
+  assert.equal(node.properties.title, 'learning/note')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'learning/note'
+  })
+})
+
+test('wikiLinkHast resolves multi-segment paths through path candidates', () => {
+  const node = createWikiLinkElement({
+    value: 'learning/note',
+    path: 'learning/note'
+  })
+
+  wikiLinkHast({
+    hrefPrefix: 'wiki',
+    resolvePathCandidates(path) {
+      assert.equal(path, 'learning/note')
+      return ['archive/learning/note']
+    }
+  })(node)
+
+  assert.equal(node.properties.href, '/wiki/archive/learning/note')
+  assert.equal(node.properties.title, 'archive/learning/note')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'archive/learning/note'
+  })
 })
 
 test('calloutHast renders foldable callouts as details with open state metadata', () => {
@@ -630,7 +726,7 @@ test('embedHast preserves block fragments with hrefPrefix for note embeds', () =
   assert.equal(node.properties.title, 'Page#^block-id')
 })
 
-test('embedHast slugifies path segments and heading fragments with hrefPrefix', () => {
+test('embedHast slugifies nested paths and preserves fragments with hrefPrefix', () => {
   const node = createEmbedElement({
     value: 'Folder Name/Page Name#Heading Here',
     path: 'Folder Name/Page Name',
@@ -655,19 +751,19 @@ test('embedHast slugifies path segments and heading fragments with hrefPrefix', 
   }])
 })
 
-test('embedHast collapses symbols into slug separators with hrefPrefix', () => {
+test('embedHast falls back to core slugging when hrefPrefix is omitted', () => {
   const node = createEmbedElement({
     value: 'R&D?Notes',
     path: 'R&D?Notes'
   })
 
-  embedHast({ hrefPrefix: 'notes' })(node)
+  embedHast()(node)
 
   assert.equal(node.tagName, 'div')
   assert.deepEqual(node.children, [{
     type: 'element',
     tagName: 'a',
-    properties: {href: '/notes/r-d-notes'},
+    properties: {href: '/r-d-notes'},
     children: [{type: 'text', value: 'R&D?Notes'}]
   }])
 })
@@ -707,6 +803,122 @@ test('embedHast can skip title assignment', () => {
 
   assert.equal(node.tagName, 'div')
   assert.equal(node.properties.title, undefined)
+})
+
+test('embedHast keeps the original path when no path candidates are returned', () => {
+  const node = createEmbedElement({
+    value: 'note',
+    path: 'note'
+  })
+
+  embedHast({
+    hrefPrefix: 'wiki',
+    resolvePathCandidates(path) {
+      assert.equal(path, 'note')
+      return []
+    }
+  })(node)
+
+  assert.equal(node.tagName, 'div')
+  assert.equal(node.properties.title, 'note')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'note'
+  })
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/wiki/note'},
+    children: [{type: 'text', value: 'note'}]
+  }])
+})
+
+test('embedHast resolves the path from the first returned candidate', () => {
+  const node = createEmbedElement({
+    value: 'note',
+    path: 'note'
+  })
+
+  embedHast({
+    hrefPrefix: 'wiki',
+    resolvePathCandidates(path) {
+      assert.equal(path, 'note')
+      return ['learning/note']
+    }
+  })(node)
+
+  assert.equal(node.tagName, 'div')
+  assert.equal(node.properties.title, 'learning/note')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'learning/note'
+  })
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/wiki/learning/note'},
+    children: [{type: 'text', value: 'learning/note'}]
+  }])
+})
+
+test('embedHast uses the first path candidate when multiple matches are returned', () => {
+  const node = createEmbedElement({
+    value: 'note',
+    path: 'note'
+  })
+
+  embedHast({
+    hrefPrefix: 'wiki',
+    resolvePathCandidates(path) {
+      assert.equal(path, 'note')
+      return ['learning/note', 'work/note']
+    }
+  })(node)
+
+  assert.equal(node.tagName, 'div')
+  assert.equal(node.properties.title, 'learning/note')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'learning/note'
+  })
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/wiki/learning/note'},
+    children: [{type: 'text', value: 'learning/note'}]
+  }])
+})
+
+test('embedHast resolves multi-segment paths through path candidates', () => {
+  const node = createEmbedElement({
+    value: 'learning/note',
+    path: 'learning/note'
+  })
+
+  embedHast({
+    hrefPrefix: 'wiki',
+    resolvePathCandidates(path) {
+      assert.equal(path, 'learning/note')
+      return ['archive/learning/note']
+    }
+  })(node)
+
+  assert.equal(node.tagName, 'div')
+  assert.equal(node.properties.title, 'archive/learning/note')
+  assertOfmPublicProps(node, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'archive/learning/note'
+  })
+  assert.deepEqual(node.children, [{
+    type: 'element',
+    tagName: 'a',
+    properties: {href: '/wiki/archive/learning/note'},
+    children: [{type: 'text', value: 'archive/learning/note'}]
+  }])
 })
 
 test('rendering note embeds preserves fragment metadata and slug href output', () => {
@@ -857,7 +1069,7 @@ test('rehypeOfm keeps block anchor props on the last paragraph after note embed 
   const trailing = tree.children[2]
   assert.equal(trailing?.type, 'element')
   assert.equal(trailing.tagName, 'p')
-  assert.equal(trailing.properties['data-anchor-key'], '^block-id')
+  assert.equal(trailing.properties.id, '^block-id')
   assert.equal(trailing.properties['data-ofm-block-id'], 'block-id')
   assert.deepEqual(trailing.children, [
     {type: 'text', value: 'after'},
@@ -995,34 +1207,7 @@ test('rehypeOfm can keep external image URLs on the normal image path', () => {
   assert.equal(image.properties['data-ofm-kind'], undefined)
 })
 
-
-test('normalizeOfmAnchorKey matches anchor normalization behavior', () => {
-  assert.equal(normalizeOfmAnchorKey('#Heading%20Here'), 'heading-here')
-  assert.equal(normalizeOfmAnchorKey('#Heading#Subheading'), 'heading#subheading')
-  assert.equal(normalizeOfmAnchorKey('#^Block-ID'), '^block-id')
-  assert.equal(normalizeOfmAnchorKey('#学习 地图'), '学习-地图')
-})
-
-test('findOfmAnchorTarget locates the first matching data-anchor-key', () => {
-  const alpha = {dataset: {anchorKey: 'alpha'}}
-  const headingHere = {dataset: {anchorKey: 'heading-here'}}
-  const nestedHeading = {dataset: {anchorKey: 'overview#detail'}}
-  const headingWithHash = {dataset: {anchorKey: 'a#b'}}
-  const cjkHeading = {dataset: {anchorKey: '学习-地图'}}
-  const root = {
-    querySelectorAll() {
-      return [alpha, headingHere, nestedHeading, headingWithHash, cjkHeading]
-    }
-  }
-
-  assert.equal(findOfmAnchorTarget(root, '#Heading%20Here'), headingHere)
-  assert.equal(findOfmAnchorTarget(root, '#Overview#Detail'), nestedHeading)
-  assert.equal(findOfmAnchorTarget(root, '#A#B'), headingWithHash)
-  assert.equal(findOfmAnchorTarget(root, '#学习 地图'), cjkHeading)
-  assert.equal(findOfmAnchorTarget(root, '#missing'), undefined)
-})
-
-test('anchorHast adds data-anchor-key to headings', () => {
+test('anchorHast adds id to headings', () => {
   const node: Element = {
     type: 'element',
     tagName: 'h2',
@@ -1040,12 +1225,13 @@ test('anchorHast adds data-anchor-key to headings', () => {
 
   anchorHast()(node)
 
-  assert.equal(node.properties['data-anchor-key'], 'heading-here')
-  assertOfmPublicProps(node, {kind: 'anchor-target', variant: 'heading'})
-  assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.headingTarget])
+  assert.equal(node.properties.id, 'heading-here')
+  assert.equal(node.properties['data-ofm-kind'], undefined)
+  assert.equal(node.properties['data-ofm-variant'], undefined)
+  assertClassNames(node, [ofmClassNames.headingTarget])
 })
 
-test('anchorHast derives nested heading keys from the heading path fragment', () => {
+test('anchorHast derives nested heading ids from the heading path fragment', () => {
   const transform = anchorHast()
   const section: Element = {
     type: 'element',
@@ -1063,8 +1249,8 @@ test('anchorHast derives nested heading keys from the heading path fragment', ()
   transform(section)
   transform(subheading)
 
-  assert.equal(section.properties['data-anchor-key'], 'overview')
-  assert.equal(subheading.properties['data-anchor-key'], 'overview#detail')
+  assert.equal(section.properties.id, 'overview')
+  assert.equal(subheading.properties.id, 'overview#detail')
 })
 
 test('anchorHast extracts trailing block refs and renders labels by default', () => {
@@ -1077,9 +1263,11 @@ test('anchorHast extracts trailing block refs and renders labels by default', ()
 
   anchorHast()(node)
 
-  assert.equal(node.properties['data-anchor-key'], '^block-id')
-  assertOfmPublicProps(node, {kind: 'anchor-target', variant: 'block', blockId: 'block-id'})
-  assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
+  assert.equal(node.properties.id, '^block-id')
+  assert.equal(node.properties['data-ofm-kind'], undefined)
+  assert.equal(node.properties['data-ofm-variant'], undefined)
+  assert.equal(node.properties['data-ofm-block-id'], 'block-id')
+  assertClassNames(node, [ofmClassNames.blockTarget])
   assert.deepEqual(node.children, [
     {type: 'text', value: 'Paragraph target.'},
     {
@@ -1103,9 +1291,11 @@ test('anchorHast can skip block anchor labels when disabled', () => {
 
   anchorHast({renderBlockAnchorLabels: false})(node)
 
-  assert.equal(node.properties['data-anchor-key'], '^block-id')
-  assertOfmPublicProps(node, {kind: 'anchor-target', variant: 'block', blockId: 'block-id'})
-  assertClassNames(node, [ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
+  assert.equal(node.properties.id, '^block-id')
+  assert.equal(node.properties['data-ofm-kind'], undefined)
+  assert.equal(node.properties['data-ofm-variant'], undefined)
+  assert.equal(node.properties['data-ofm-block-id'], 'block-id')
+  assertClassNames(node, [ofmClassNames.blockTarget])
   assert.deepEqual(node.children, [{type: 'text', value: 'Paragraph target.'}])
 })
 
@@ -1176,7 +1366,7 @@ test('anchorHast preserves existing class names on block targets', () => {
 
   anchorHast()(node)
 
-  assertClassNames(node, ['existing-item', ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
+  assertClassNames(node, ['existing-item', ofmClassNames.blockTarget])
 })
 
 test('anchorHast leaves non-target paragraphs unchanged', () => {
@@ -1246,33 +1436,45 @@ test('stripOfmDataProps removes internal ofm markers but preserves normal props'
       dataOfmKind: 'embed',
       dataOfmPath: 'Page',
       dataOfmValue: 'Page#Heading',
-      'data-anchor-key': 'heading',
+      id: 'heading',
       alt: 'example',
       className: 'embed-card'
     }),
     {
-      'data-anchor-key': 'heading',
+      id: 'heading',
       alt: 'example',
       className: 'embed-card'
     }
   )
 })
 
-test('normalizeOfmPath decodes segments, trims whitespace, and drops empties', () => {
-  assert.equal(normalizeOfmPath(' Folder%20Name / Page%20Name '), 'Folder Name/Page Name')
-  assert.equal(normalizeOfmPath('Section//Nested%2FPage'), 'Section/Nested/Page')
-  assert.equal(normalizeOfmPath('Bad%ZZ/Path'), 'Bad%ZZ/Path')
+test('buildOfmSlugPath generates the canonical slug path without a prefix', () => {
+  assert.equal(buildOfmSlugPath(' Folder%20Name / Page%20Name '), 'folder-20name/page-20name')
+  assert.equal(buildOfmSlugPath('学习/first-map'), '学习/first-map')
+  assert.equal(buildOfmSlugPath(' Folder Name / R&D?Notes '), 'folder-name/r-d-notes')
 })
 
-test('decodeOfmFragment safely decodes hashes without lowercasing them', () => {
-  assert.equal(decodeOfmFragment('#Heading%20Here'), 'Heading Here')
-  assert.equal(decodeOfmFragment('^Block-ID'), '^Block-ID')
-  assert.equal(decodeOfmFragment('Bad%ZZ'), 'Bad%ZZ')
-})
-
-test('buildOfmTargetUrl normalizes paths and slugifies heading or block fragments', () => {
+test('buildOfmTargetPath generates the canonical path plus fragment without a prefix', () => {
   assert.equal(
-    buildOfmTargetUrl(
+    buildOfmTargetPath({
+      path: ' Folder%20Name / Page%20Name ',
+      fragment: 'Heading Here'
+    }),
+    'folder-20name/page-20name#heading-here'
+  )
+
+  assert.equal(
+    buildOfmTargetPath({
+      path: 'Page',
+      fragment: '^block-id'
+    }),
+    'page#^block-id'
+  )
+})
+
+test('buildOfmTargetHref normalizes paths and slugifies heading or block fragments', () => {
+  assert.equal(
+    buildOfmTargetHref(
       {
         path: 'Page',
         fragment: 'A#B'
@@ -1283,18 +1485,18 @@ test('buildOfmTargetUrl normalizes paths and slugifies heading or block fragment
   )
 
   assert.equal(
-    buildOfmTargetUrl(
+    buildOfmTargetHref(
       {
         path: ' Folder%20Name / Page%20Name ',
         fragment: 'Heading Here'
       },
       'wiki'
     ),
-    '/wiki/folder-name/page-name#heading-here'
+    '/wiki/folder-20name/page-20name#heading-here'
   )
 
   assert.equal(
-    buildOfmTargetUrl(
+    buildOfmTargetHref(
       {
         path: 'Page',
         fragment: '^block-id'
@@ -1305,9 +1507,9 @@ test('buildOfmTargetUrl normalizes paths and slugifies heading or block fragment
   )
 })
 
-test('buildOfmTargetUrl slugifies mixed case, spaces, and symbols per path segment', () => {
+test('buildOfmTargetHref slugifies mixed case, spaces, and symbols per path segment', () => {
   assert.equal(
-    buildOfmTargetUrl(
+    buildOfmTargetHref(
       {
         path: ' Folder Name / R&D?Notes '
       },
@@ -1317,7 +1519,7 @@ test('buildOfmTargetUrl slugifies mixed case, spaces, and symbols per path segme
   )
 
   assert.equal(
-    buildOfmTargetUrl(
+    buildOfmTargetHref(
       {
         path: '  Mixed___Case  /  .Hidden File.  '
       },
@@ -1327,7 +1529,7 @@ test('buildOfmTargetUrl slugifies mixed case, spaces, and symbols per path segme
   )
 
   assert.equal(
-    buildOfmTargetUrl(
+    buildOfmTargetHref(
       {
         path: '学习/first-map',
         fragment: '学习 地图'

@@ -2,27 +2,17 @@ import {useEffect, useRef} from 'react'
 import {Link, useLocation, useParams} from '@tanstack/react-router'
 
 import {
-  buildOfmTargetUrl,
-  decodeOfmFragment,
-  findOfmAnchorTarget,
-} from 'mdian'
-import {
-  buildDemoWikiSlug,
-  getDemoWikiPageBySlug,
-  normalizeDemoWikiSlug
-} from '../content/demo-content.js'
-import {DemoMarkdown} from '../features/markdown/demo-markdown.js'
+  getDemoWikiPageBySlug
+} from './demo-content.js'
+import {DemoMarkdown} from './demo-markdown.js'
 
 export function WikiPage() {
   const params = useParams({strict: false})
   const locationHash = useLocation({select: (location) => location.hash})
   const articleRef = useRef<HTMLDivElement>(null)
-  const pageSlug = normalizeDemoWikiSlug(typeof params._splat === 'string' ? params._splat : '')
+  const pageSlug = decodeDemoRoutePath(typeof params._splat === 'string' ? params._splat : '')
   const page = getDemoWikiPageBySlug(pageSlug)
-  const activeFragment = decodeOfmFragment(locationHash)
-  const activeTargetHash = page && activeFragment
-    ? buildOfmTargetUrl({path: page.path, fragment: activeFragment}).split('#')[1]
-    : activeFragment
+  const activeTargetHash = decodeDemoLocationHash(locationHash).trim()
 
   useEffect(() => {
     const root = articleRef.current
@@ -38,14 +28,15 @@ export function WikiPage() {
 
     let timeoutId = 0
     const frameId = window.requestAnimationFrame(() => {
-      const target = findOfmAnchorTarget(root, locationHash) as HTMLElement | undefined
+      const target = activeTargetHash
+        ? root.ownerDocument.getElementById(activeTargetHash)
+        : null
 
-      if (!target) {
+      if (!target || !root.contains(target)) {
         return
       }
 
       target.classList.add('is-targeted')
-      target.scrollIntoView({block: 'start', behavior: 'smooth'})
       timeoutId = window.setTimeout(() => target.classList.remove('is-targeted'), 1800)
     })
 
@@ -54,7 +45,7 @@ export function WikiPage() {
       window.clearTimeout(timeoutId)
       root.querySelectorAll('.is-targeted').forEach((element) => element.classList.remove('is-targeted'))
     }
-  }, [locationHash, pageSlug])
+  }, [activeTargetHash, locationHash, pageSlug])
 
   return (
     <div className="demo-shell demo-shell--showcase wiki-shell">
@@ -70,7 +61,7 @@ export function WikiPage() {
           </p>
         </div>
         <div className="wiki-target" aria-label="Current wiki target">
-          <span>Path: /{page ? buildDemoWikiSlug(page.path) : pageSlug || 'missing-page'}</span>
+          <span>Path: /{pageSlug || 'missing-page'}</span>
           {activeTargetHash ? <span>Target: #{activeTargetHash}</span> : null}
         </div>
       </header>
@@ -99,4 +90,24 @@ export function WikiPage() {
       )}
     </div>
   )
+}
+
+function decodeDemoLocationHash(value: string): string {
+  const fragment = value.startsWith('#') ? value.slice(1) : value
+
+  try {
+    return decodeURIComponent(fragment)
+  } catch {
+    return fragment
+  }
+}
+
+function decodeDemoRoutePath(value: string): string {
+  const trimmed = value.trim()
+
+  try {
+    return decodeURIComponent(trimmed)
+  } catch {
+    return trimmed
+  }
 }

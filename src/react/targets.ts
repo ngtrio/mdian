@@ -6,19 +6,24 @@ import {
   readOfmPublicProps
 } from '../lib/shared/public-props.js'
 import {formatOfmTargetLabel} from '../lib/shared/ofm-url.js'
-import type {OfmReactTarget} from './types.js'
+import type {OfmInternalTarget} from './types.js'
 
 export interface WikiLinkRenderData {
   fallbackHref?: string
   fallbackTitle?: string
-  target: OfmReactTarget
+  target: OfmInternalTarget
 }
 
 export interface NoteEmbedRenderData {
   fallbackHref?: string
   fallbackLabel: string
-  target: OfmReactTarget
+  target: OfmInternalTarget
   title?: string
+}
+
+export interface RenderTargetData {
+  fallbackHref?: string
+  target: OfmInternalTarget
 }
 
 export interface ImageEmbedRenderData {

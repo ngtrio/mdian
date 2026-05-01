@@ -5,8 +5,8 @@ import {
   demoSamples,
   getDemoSample,
   type DemoSampleKey
-} from '../content/demo-content.js'
-import {DemoMarkdown} from '../features/markdown/demo-markdown.js'
+} from './demo-content.js'
+import {DemoMarkdown} from './demo-markdown.js'
 
 export function ShowcasePage() {
   const [activeSampleKey, setActiveSampleKey] = useState<DemoSampleKey>(defaultDemoSampleKey)

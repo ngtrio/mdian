@@ -3,7 +3,6 @@ import type { CompileContext, Extension, Handle } from 'mdast-util-from-markdown
 import type { Token } from 'micromark-util-types'
 
 import type { OfmRemarkOptions } from '../types.js'
-import {decodeOfmFragment} from '../shared/ofm-url.js'
 import type { WikiLink } from './types.js'
 
 export function wikiLinkMast(options: OfmRemarkOptions = {}): Extension {
@@ -72,7 +71,7 @@ export function parseWikiValue(value: string) {
 
   const hashIndex = target.indexOf('#')
   const path = hashIndex === -1 ? target : target.slice(0, hashIndex)
-  const fragmentValue = hashIndex === -1 ? undefined : decodeOfmFragment(target.slice(hashIndex + 1))
+  const fragmentValue = hashIndex === -1 ? undefined : target.slice(hashIndex + 1)
   const fragment = fragmentValue && fragmentValue.length > 0 ? fragmentValue : undefined
 
   return { alias, fragment, path }

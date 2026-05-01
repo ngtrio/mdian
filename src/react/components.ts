@@ -3,10 +3,12 @@ import {createElement} from 'react'
 import type {Components} from 'react-markdown'
 import ReactMarkdown from 'react-markdown'
 
+import {buildOfmTargetHref} from '../lib/shared/ofm-url.js'
 import {TwitterEmbedCard, readTwitterEmbedRenderData} from './external-embed.js'
 import {renderOfmNoteEmbed} from './note-embed.js'
 import {createOfmReactPreset} from './preset.js'
 import {
+  type RenderTargetData,
   readImageEmbedRenderData,
   readNoteEmbedRenderData,
   readWikiLinkRenderData
@@ -19,13 +21,26 @@ function readNode(node: unknown): Element | undefined {
 
 type NoteEmbedRenderData = NonNullable<ReturnType<typeof readNoteEmbedRenderData>>
 
+function resolveTargetHref(
+  data: RenderTargetData,
+  options: OfmReactPresetOptions
+): string | undefined {
+  const hrefPrefix = options.ofm?.rehype?.hrefPrefix
+
+  if (hrefPrefix !== undefined) {
+    return buildOfmTargetHref(data.target, hrefPrefix)
+  }
+
+  return data.fallbackHref
+}
+
 function renderResolvedNoteEmbed(
   data: NoteEmbedRenderData,
   options: OfmReactPresetOptions,
   className: string | undefined
 ) {
-  const fallbackHref = options.wikiLink?.resolve?.(data.target)?.href ?? data.fallbackHref
-  const resolved = options.noteEmbed?.resolve?.(data.target)
+  const fallbackHref = resolveTargetHref(data, options)
+  const resolved = options.noteEmbed?.resolve?.({path: data.target.path})
 
   if (!resolved) {
     return createElement('a', {...(fallbackHref === undefined ? {} : {href: fallbackHref})}, data.fallbackLabel)
@@ -57,33 +72,29 @@ export function createOfmReactComponents(options: OfmReactPresetOptions = {}): C
   return {
     a({children, className, href, node, title, ...props}) {
       const data = readWikiLinkRenderData(readNode(node), href, typeof title === 'string' ? title : undefined)
+      const resolvedHref = data ? resolveTargetHref(data, options) : href
 
-      if (!data || !options.wikiLink?.resolve) {
-        return createElement('a', {...props, className, href, title}, children)
+      if (!data) {
+        return createElement('a', {...props, className, href: resolvedHref, title}, children)
       }
 
-      const resolved = options.wikiLink.resolve(data.target)
+      const renderWikiLink = options.wikiLink?.render
+      const resolvedTitle = data.fallbackTitle ?? title
 
-      if (!resolved) {
-        return createElement('a', {...props, className, href, title}, children)
-      }
-
-      if (options.wikiLink.render) {
-        return options.wikiLink.render({
-          href: resolved.href,
-          resolved,
-          target: data.target,
+      if (renderWikiLink) {
+        return renderWikiLink({
+          href: resolvedHref ?? '',
           ...(children === undefined ? {} : {children}),
           ...(className === undefined ? {} : {className}),
-          ...(resolved.title === undefined ? {} : {title: resolved.title})
+          ...(resolvedTitle === undefined ? {} : {title: resolvedTitle})
         })
       }
 
       return createElement('a', {
         ...props,
         className,
-        href: resolved.href,
-        ...(resolved.title === undefined ? {} : {title: resolved.title})
+        href: resolvedHref,
+        ...(resolvedTitle === undefined ? {} : {title: resolvedTitle})
       }, children)
     },
     p({children, className, node, ...props}) {

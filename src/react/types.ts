@@ -4,28 +4,20 @@ import type {PluggableList} from 'unified'
 
 import type {OfmRehypeOptions, OfmRemarkOptions} from '../lib/types.js'
 
-export interface OfmReactTarget {
+export interface OfmInternalTarget {
   fragment?: string
   path: string
-}
-
-export interface ResolvedOfmWikiLink {
-  href: string
-  title?: string
 }
 
 export interface RenderOfmWikiLinkInput {
   children?: ReactNode
   className?: string
   href: string
-  resolved: ResolvedOfmWikiLink
-  target: OfmReactTarget
   title?: string
 }
 
 export interface OfmReactWikiLinkOptions {
   render?: (input: RenderOfmWikiLinkInput) => ReactNode
-  resolve?: (target: OfmReactTarget) => ResolvedOfmWikiLink | undefined
 }
 
 export interface OfmReactImageOptions {
@@ -37,9 +29,13 @@ export interface ResolveOfmNoteEmbedResult {
   title?: string
 }
 
+export interface ResolveOfmNoteEmbedInput {
+  path: string
+}
+
 export interface OfmReactNoteEmbedOptions {
   maxDepth?: number
-  resolve?: (target: OfmReactTarget) => ResolveOfmNoteEmbedResult | undefined
+  resolve?: (input: ResolveOfmNoteEmbedInput) => ResolveOfmNoteEmbedResult
 }
 
 export interface TwitterWidgetsApi {

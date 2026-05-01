@@ -5,7 +5,8 @@ import {addClassName, ofmClassNames} from '../shared/class-name.js'
 import {getOfmNodeData, stripOfmDataProps} from '../shared/ofm-node.js'
 import {splitParagraphChildren} from '../shared/paragraph-split.js'
 import {ofmPublicKind, ofmPublicVariant, readOfmPublicProps, setOfmPublicProps} from '../shared/public-props.js'
-import {buildOfmTargetUrl, formatOfmTargetLabel} from '../shared/ofm-url.js'
+import {buildOfmTargetHref, formatOfmTargetLabel} from '../shared/ofm-url.js'
+import {resolveOfmPath} from '../shared/resolve-ofm-path.js'
 
 const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'])
 
@@ -27,24 +28,28 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
       return
     }
 
-    const href = buildOfmTargetUrl(embed, options.hrefPrefix)
-    const title = formatOfmTargetLabel(embed)
+    const resolvedEmbed = {
+      ...embed,
+      path: resolveOfmPath(embed.path, options)
+    }
+    const href = resolveTargetHref(resolvedEmbed, options)
+    const title = formatOfmTargetLabel(resolvedEmbed)
     const publicProps = {
       kind: ofmPublicKind.embed,
-      path: embed.path,
-      ...(embed.alias === undefined ? {} : {alias: embed.alias}),
-      ...(embed.fragment === undefined ? {} : {fragment: embed.fragment})
+      path: resolvedEmbed.path,
+      ...(resolvedEmbed.alias === undefined ? {} : {alias: resolvedEmbed.alias}),
+      ...(resolvedEmbed.fragment === undefined ? {} : {fragment: resolvedEmbed.fragment})
     }
 
-    if (isImageEmbed(embed.path)) {
+    if (isImageEmbed(resolvedEmbed.path)) {
       node.tagName = 'img'
       node.properties.src = href
       node.properties.alt = embed.value
-      if (embed.size?.width !== undefined) {
-        node.properties.width = embed.size.width
+      if (resolvedEmbed.size?.width !== undefined) {
+        node.properties.width = resolvedEmbed.size.width
       }
-      if (embed.size?.height !== undefined) {
-        node.properties.height = embed.size.height
+      if (resolvedEmbed.size?.height !== undefined) {
+        node.properties.height = resolvedEmbed.size.height
       }
       node.children = []
       setOfmPublicProps(node.properties, {...publicProps, variant: ofmPublicVariant.image})
@@ -54,9 +59,9 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
       return
     }
 
-    if (isMarkdownEmbed(embed.path)) {
+    if (isMarkdownEmbed(resolvedEmbed.path)) {
       node.tagName = 'div'
-      node.children = [createFallbackLink(href, getFallbackLabel(embed))]
+      node.children = [createFallbackLink(href, getFallbackLabel(resolvedEmbed))]
       setOfmPublicProps(node.properties, {...publicProps, variant: ofmPublicVariant.note})
       addClassName(node.properties, ofmClassNames.embed)
       applyTitle(node.properties, title, setTitle)
@@ -66,7 +71,7 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
 
     node.tagName = 'a'
     node.properties.href = href
-    node.children = [{type: 'text', value: getFallbackLabel(embed)} satisfies Text]
+    node.children = [{type: 'text', value: getFallbackLabel(resolvedEmbed)} satisfies Text]
     setOfmPublicProps(node.properties, {...publicProps, variant: ofmPublicVariant.file})
     addClassName(node.properties, ofmClassNames.embed)
     applyTitle(node.properties, title, setTitle)
@@ -122,4 +127,11 @@ function applyTitle(properties: Record<string, unknown>, title: string, setTitle
 
 function getFallbackLabel(node: {alias?: string | null, fragment?: string | null, path: string}): string {
   return node.alias || formatOfmTargetLabel(node)
+}
+
+function resolveTargetHref(
+  target: {fragment?: string | null; path: string},
+  options: OfmRehypeOptions
+): string {
+  return buildOfmTargetHref(target, options.hrefPrefix)
 }

@@ -99,14 +99,12 @@ function findLastParagraph(nodes: RootContent[]): Element | undefined {
 }
 
 function readBlockAnchorProps(node: Element): {label?: ElementContent; properties: Properties} | undefined {
-  if (node.properties['data-ofm-kind'] !== 'anchor-target' || node.properties['data-ofm-variant'] !== 'block') {
+  if (typeof node.properties['data-ofm-block-id'] !== 'string' || node.properties['data-ofm-block-id'].length === 0) {
     return undefined
   }
 
   const properties: Properties = {}
-  copyStringProp(node.properties, properties, 'data-anchor-key')
-  copyStringProp(node.properties, properties, 'data-ofm-kind')
-  copyStringProp(node.properties, properties, 'data-ofm-variant')
+  copyStringProp(node.properties, properties, 'id')
   copyStringProp(node.properties, properties, 'data-ofm-block-id')
 
   const className = readBlockAnchorClassNames(node.properties.className)
@@ -129,7 +127,7 @@ function readBlockAnchorProps(node: Element): {label?: ElementContent; propertie
 function readBlockAnchorClassNames(value: unknown, excludeBlockAnchorClasses = false): string[] {
   const names = new Set<string>()
   const blacklist = excludeBlockAnchorClasses
-    ? new Set<string>([ofmClassNames.anchorTarget, ofmClassNames.blockTarget])
+    ? new Set<string>([ofmClassNames.blockTarget])
     : undefined
 
   const add = (token: string) => {

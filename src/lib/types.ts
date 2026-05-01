@@ -10,5 +10,6 @@ export interface OfmRehypeOptions {
   externalEmbeds?: boolean
   hrefPrefix?: string
   renderBlockAnchorLabels?: boolean
+  resolvePathCandidates?: (path: string) => readonly string[]
   setTitle?: boolean
 }

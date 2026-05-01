@@ -56,11 +56,12 @@ Module naming is based on responsibility, not just the data structure being touc
 ### Shared utilities
 
 - `src/lib/shared/ofm-url.ts` centralizes OFM path normalization and target URL generation. Reuse it instead of rebuilding link/embed URLs by hand.
+- `src/lib/shared/resolve-ofm-path.ts` centralizes rehype-side candidate selection for wiki/embed target paths before URL generation.
 - `src/lib/shared/class-name.ts` centralizes OFM class name constants and class merging behavior for rehype transforms.
 - `src/lib/shared/ofm-node.ts` centralizes shared parsing and cleanup for internal `dataOfm*` bridge properties.
 - `src/lib/shared/public-props.ts` centralizes the stable `data-ofm-*` output contract used across rehype transforms.
 - Feature-local `hast.ts` files own the temporary `dataOfm*` property parsing/cleanup used during rehype transforms.
-- `src/lib/types.ts` defines the public option surface. `OfmRemarkOptions` controls which syntax extensions are enabled; `OfmRehypeOptions` controls URL prefixing, title assignment, block-anchor label rendering, and external URL embed upgrades.
+- `src/lib/types.ts` defines the public option surface. `OfmRemarkOptions` controls which syntax extensions are enabled; `OfmRehypeOptions` controls URL prefixing, title assignment, path-candidate resolution, block-anchor label rendering, and external URL embed upgrades.
 
 ### Tests
 
@@ -69,7 +70,7 @@ Tests live in `test/index.ts` and run against built output in `dist/`, so `pnpm 
 There are two layers of coverage:
 
 - Fixture-driven parser snapshots in `test/fixtures/*` validate mdast output from markdown input, with optional per-fixture config in `config.json`.
-- Direct unit tests in `test/index.ts` validate rehype transforms and shared helpers like URL building, anchor lookup, and external embed upgrades.
+- Direct unit tests in `test/index.ts` validate rehype transforms and shared helpers like URL building and external embed upgrades.
 
 When adding syntax support, update both the fixture set and the direct transform/helper tests if behavior changes in HTML output or utility functions.
 
@@ -77,9 +78,9 @@ When adding syntax support, update both the fixture set and the direct transform
 
 The demo is intentionally thin:
 
-- `demo/src/app/App.tsx` is the playground for editing markdown and toggling OFM remark and rehype features.
-- `demo/src/pages/WikiPage.tsx` exercises routed wiki navigation, fragment targeting, and `findOfmAnchorTarget()` scrolling behavior.
-- `demo/src/features/markdown/markdown-pipeline.ts` shows one app-layer integration for `react-markdown`, router-aware wikilinks, note embeds, and external embeds.
+- `demo/src/showcase-page.tsx` is the playground for editing markdown and switching focused OFM samples.
+- `demo/src/wiki-page.tsx` exercises routed wiki navigation, fragment targeting, and native hash-based anchor highlighting.
+- `demo/src/demo-markdown.tsx` shows one app-layer integration for `react-markdown`, router-aware wikilinks, note embeds, and external embeds.
 
 If you change parser or rehype behavior that affects rendered markup, verify both the library tests and the demo behavior.
 
@@ -109,8 +110,9 @@ If you change parser or rehype behavior that affects rendered markup, verify bot
 | Option | Default | Effect |
 |--------|---------|--------|
 | `externalEmbeds` | `true` | Upgrade supported external media URLs written as Markdown images into embeds |
-| `hrefPrefix` | `undefined` | Prefix prepended to all wiki/embed `href` values |
+| `hrefPrefix` | `undefined` | Prefix the canonical wiki/embed target href path, such as `wiki` -> `/wiki/page` |
 | `renderBlockAnchorLabels` | `true` | Render visible `^blockId` labels inside block-anchor elements |
+| `resolvePathCandidates` | `undefined` | Return candidate page paths for a raw wiki/embed target path; when any candidates are returned, the first candidate becomes the rendered `data-ofm-path`, `title`, and href target |
 | `setTitle` | `true` | Populate `title` on wikilinks and embeds |
 
 ### Rendered HTML contract
@@ -122,26 +124,9 @@ Generated elements use stable `data-ofm-*` attributes:
 - `data-ofm-kind="embed"` with `data-ofm-provider="youtube" | "twitter"` for external embeds
 - `data-ofm-kind="callout"`
 - `data-ofm-kind="highlight"`
-- `data-ofm-kind="anchor-target"` with `data-ofm-variant="heading" | "block"`
 
 Additional metadata may include `data-ofm-path`, `data-ofm-alias`, `data-ofm-fragment`, and `data-ofm-block-id`.
-For wikilinks and embeds, the target contract is `data-ofm-path` plus optional `data-ofm-fragment`. `data-ofm-block-id` remains specific to rendered block anchor targets.
+For wikilinks and embeds, the target contract is `data-ofm-path` plus optional `data-ofm-fragment`. `data-ofm-block-id` remains optional metadata specific to rendered block anchor targets.
+Heading and block anchor targets render a native HTML `id` whose value matches the canonical OFM fragment slug, so browser hash navigation works directly.
 
-Generated elements also use stable `ofm-*` class names defined in `src/lib/shared/class-name.ts`, including `ofm-wikilink`, `ofm-embed`, `ofm-external-embed`, `ofm-highlight`, `ofm-callout`, `ofm-callout-title`, `ofm-callout-content`, `ofm-anchor-target`, `ofm-heading-target`, `ofm-block-target`, and `ofm-block-anchor-label`.
-
-### Root entrypoint exports
-
-| Export | Signature | Purpose |
-|--------|-----------|---------|
-| `buildOfmTargetUrl` | `(target: OfmTargetUrlInput, prefix?: string) => string` | Build a full `/{prefix}/{path}#{fragment}` URL |
-| `decodeOfmFragment` | `(value: string) => string` | Decode a URL fragment, with or without a leading `#` |
-| `findOfmAnchorTarget` | `<T>(root: OfmAnchorRootLike<T>, hash: string \| null \| undefined) => T \| undefined` | Query the DOM for the element matching a hash |
-| `normalizeOfmPath` | `(path: string) => string` | Decode, trim, and normalize wiki-style paths |
-
-`OfmTargetUrlInput` requires `path`; optional `fragment` adds a `#fragment`.
-`fragment` never includes the leading `#`.
-Block refs use `fragment: '^block-id'`.
-Nested headings use `fragment: 'Heading#Subheading'`.
-`[[Page#Heading#^block-id]]` is intentionally unsupported.
-
-Types `OfmAnchorRootLike` and `OfmAnchorTargetLike` define the minimal interface consumers must implement for `findOfmAnchorTarget()` to work with their DOM layer.
+Generated elements also use stable `ofm-*` class names defined in `src/lib/shared/class-name.ts`, including `ofm-wikilink`, `ofm-embed`, `ofm-external-embed`, `ofm-highlight`, `ofm-callout`, `ofm-callout-title`, `ofm-callout-content`, `ofm-heading-target`, `ofm-block-target`, and `ofm-block-anchor-label`.

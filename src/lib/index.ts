@@ -144,6 +144,3 @@ function visit(node: HastRoot | RootContent, visitor: (node: HastRoot | RootCont
 
   return false
 }
-
-export {findOfmAnchorTarget, normalizeOfmAnchorKey} from './anchor/index.js'
-export {buildOfmTargetUrl, decodeOfmFragment, normalizeOfmPath} from './shared/ofm-url.js'

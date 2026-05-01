@@ -1,7 +1,6 @@
 import type {Properties} from 'hast'
 
 export const ofmClassNames = {
-  anchorTarget: 'ofm-anchor-target',
   blockAnchorLabel: 'ofm-block-anchor-label',
   blockTarget: 'ofm-block-target',
   callout: 'ofm-callout',
