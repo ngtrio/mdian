@@ -80,7 +80,10 @@ const html = String(
     .use(remarkOfm)
     .use(remarkRehype)
     .use(rehypeOfm, {
-      hrefPrefix: 'wiki',
+      resolveHref({path, fragment}) {
+        const hash = fragment ? `#${fragment}` : ''
+        return path ? `/wiki/${path}${hash}` : hash
+      },
       resolvePathCandidates(path) {
         return path === 'Roadmap' ? ['docs/Roadmap'] : []
       }
@@ -112,7 +115,10 @@ const ofm = createOfmReactPreset({
   },
   ofm: {
     rehype: {
-      hrefPrefix: 'wiki',
+      resolveHref({path, fragment}) {
+        const hash = fragment ? `#${fragment}` : ''
+        return path ? `/wiki/${path}${hash}` : hash
+      },
       resolvePathCandidates(path) {
         return path === 'Project Notes' ? ['workspace/Project Notes'] : []
       }
@@ -166,7 +172,7 @@ The React preset keeps application-specific behavior in your app:
 
 | Import | Exports |
 | --- | --- |
-| `mdian` | `remarkOfm`, `rehypeOfm`, `buildOfmFragmentHash`, `buildOfmSlugPath`, `buildOfmTargetHref`, `buildOfmTargetPath` |
+| `mdian` | `remarkOfm`, `rehypeOfm`, `buildOfmFragmentHash`, `buildOfmSlugPath`, `buildOfmTargetHref` |
 | `mdian/react` | `createOfmReactPreset`, `loadTwitterWidgets`, React preset types |
 | `mdian/styles.css` | Optional default styles for generated OFM markup |
 
@@ -189,7 +195,7 @@ The React preset keeps application-specific behavior in your app:
 | Option | Default | Effect |
 | --- | --- | --- |
 | `externalEmbeds` | `true` | Upgrade supported Markdown image URLs into external embeds. |
-| `hrefPrefix` | `undefined` | Prefix generated wiki and embed hrefs, such as `wiki` -> `/wiki/page`. |
+| `resolveHref` | `undefined` | Resolve the final href/src for a wikilink or embed target; receives `{kind, path, fragment?, variant?}`, returns a URL string. When omitted, defaults to relative paths like `page#heading` or `#heading`. |
 | `renderBlockAnchorLabels` | `true` | Render visible `^blockId` labels inside block-anchor targets. |
 | `resolvePathCandidates` | `undefined` | Resolve a raw OFM target path to zero or more canonical candidate paths. |
 | `setTitle` | `true` | Populate `title` attributes on wikilinks and embeds. |
@@ -201,7 +207,6 @@ import {
   buildOfmFragmentHash,
   buildOfmSlugPath,
   buildOfmTargetHref,
-  buildOfmTargetPath
 } from 'mdian'
 ```
 

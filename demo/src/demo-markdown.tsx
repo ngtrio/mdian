@@ -6,9 +6,7 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import type {Components} from 'react-markdown'
 import type {Pluggable, PluggableList} from 'unified'
-import {
-  createOfmReactPreset,
-} from 'mdian/react'
+import {createOfmReactPreset} from 'mdian/react'
 
 import {
   getDemoWikiPage,
@@ -38,7 +36,9 @@ const ofmPreset = createOfmReactPreset({
   },
   ofm: {
     rehype: {
-      hrefPrefix: 'wiki',
+      resolveHref(href) {
+        return href.startsWith('#') ? href : `/wiki${href}`
+      },
     },
   },
   noteEmbed: {
@@ -53,15 +53,13 @@ const ofmPreset = createOfmReactPreset({
   },
   wikiLink: {
     render({ children, className, href, title }) {
-      return createElement(
-        Link,
-        {
-          className,
-          title,
-          to: href,
-        },
-        children,
-      )
+      const hashIndex = href.indexOf('#')
+      if (hashIndex === -1) {
+        return createElement(Link, { className, title, to: href }, children)
+      }
+      const to = href.slice(0, hashIndex) || undefined
+      const hash = href.slice(hashIndex + 1) || undefined
+      return createElement(Link, { className, title, to, hash }, children)
     },
   },
   externalEmbeds: {

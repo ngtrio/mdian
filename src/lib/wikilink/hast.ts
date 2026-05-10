@@ -26,7 +26,9 @@ export function wikiLinkHast(options: OfmRehypeOptions = {}): (node: Root | Root
       path: resolveOfmPath(ofmNode.path, options)
     }
 
-    node.properties.href = buildOfmTargetHref(resolvedTarget, options.hrefPrefix)
+    node.properties.href = options.resolveHref
+      ? options.resolveHref(buildOfmTargetHref(resolvedTarget))
+      : buildOfmTargetHref(resolvedTarget)
     setOfmPublicProps(node.properties, {
       kind: ofmPublicKind.wikilink,
       path: resolvedTarget.path,

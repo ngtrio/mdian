@@ -13,6 +13,7 @@ export interface RenderOfmWikiLinkInput {
   children?: ReactNode
   className?: string
   href: string
+  target: OfmInternalTarget
   title?: string
 }
 

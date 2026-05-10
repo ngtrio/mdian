@@ -8,8 +8,8 @@ export interface OfmRemarkOptions {
 
 export interface OfmRehypeOptions {
   externalEmbeds?: boolean
-  hrefPrefix?: string
   renderBlockAnchorLabels?: boolean
+  resolveHref?: (href: string) => string
   resolvePathCandidates?: (path: string) => readonly string[]
   setTitle?: boolean
 }

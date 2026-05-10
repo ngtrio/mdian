@@ -103,12 +103,11 @@ test('createOfmReactPreset reuses caller markdown plugins inside resolved note e
   assert.match(html, /<td>Value<\/td>/)
 })
 
-test('createOfmReactPreset renders hrefPrefix-resolved wikilinks through wikiLink.render', () => {
+test('createOfmReactPreset renders wikilinks through wikiLink.render', () => {
   let renderHref = ''
   const html = renderWithPreset('[[Project Notes|Open note]]', {
     ofm: {
       rehype: {
-        hrefPrefix: 'wiki'
       }
     },
     wikiLink: {
@@ -126,18 +125,17 @@ test('createOfmReactPreset renders hrefPrefix-resolved wikilinks through wikiLin
     }
   })
 
-  assert.equal(renderHref, '/wiki/project-notes')
+  assert.equal(renderHref, '/project-notes')
   assert.match(html, /data-router-link=""/)
-  assert.match(html, /href="\/wiki\/project-notes"/)
+  assert.match(html, /href="\/project-notes"/)
   assert.match(html, />Open note<\/a>/)
 })
 
-test('createOfmReactPreset passes heading fragments through the React target model with hrefPrefix output', () => {
+test('createOfmReactPreset passes heading fragments through the React target model', () => {
   let renderHref = ''
   const html = renderWithPreset('[[Page#A#B]]', {
     ofm: {
       rehype: {
-        hrefPrefix: 'wiki'
       }
     },
     wikiLink: {
@@ -154,8 +152,8 @@ test('createOfmReactPreset passes heading fragments through the React target mod
     }
   })
 
-  assert.equal(renderHref, '/wiki/page#a#b')
-  assert.match(html, /href="\/wiki\/page#a#b"/)
+  assert.equal(renderHref, '/page#a#b')
+  assert.match(html, /href="\/page#a#b"/)
 })
 
 test('createOfmReactPreset resolves current-page heading links through path candidates', () => {
@@ -163,7 +161,6 @@ test('createOfmReactPreset resolves current-page heading links through path cand
   const html = renderWithPreset('[[#Overview]]', {
     ofm: {
       rehype: {
-        hrefPrefix: 'wiki',
         resolvePathCandidates(path) {
           assert.equal(path, '')
           return ['Project Notes']
@@ -183,58 +180,54 @@ test('createOfmReactPreset resolves current-page heading links through path cand
     }
   })
 
-  assert.equal(renderHref, '/wiki/project-notes#overview')
-  assert.match(html, /href="\/wiki\/project-notes#overview"/)
+  assert.equal(renderHref, '/project-notes#overview')
+  assert.match(html, /href="\/project-notes#overview"/)
   assert.match(html, />Overview<\/a>/)
 })
 
-test('createOfmReactPreset appends normalized nested heading fragments to hrefPrefix paths', () => {
+test('createOfmReactPreset appends normalized nested heading fragments', () => {
   const html = renderWithPreset('[[Page#Overview#Detail]]', {
     ofm: {
       rehype: {
-        hrefPrefix: 'wiki'
       }
     }
   })
 
-  assert.match(html, /href="\/wiki\/page#overview#detail"/)
+  assert.match(html, /href="\/page#overview#detail"/)
 })
 
-test('createOfmReactPreset appends normalized block fragments to hrefPrefix paths', () => {
+test('createOfmReactPreset appends normalized block fragments', () => {
   const html = renderWithPreset('[[Roadmap#^next-step]]', {
     ofm: {
       rehype: {
-        hrefPrefix: 'wiki'
       }
     }
   })
 
-  assert.match(html, /href="\/wiki\/roadmap#\^next-step"/)
+  assert.match(html, /href="\/roadmap#\^next-step"/)
 })
 
-test('createOfmReactPreset appends normalized unicode fragments to hrefPrefix paths', () => {
+test('createOfmReactPreset appends normalized unicode fragments', () => {
   const html = renderWithPreset('[[学习/地图#学习 地图]]', {
     ofm: {
       rehype: {
-        hrefPrefix: 'wiki'
       }
     }
   })
 
-  assert.match(html, /href="\/wiki\/学习\/地图#学习-地图"/)
+  assert.match(html, /href="\/学习\/地图#学习-地图"/)
 })
 
-test('createOfmReactPreset leaves hrefPrefix paths unchanged when the target has no fragment', () => {
+test('createOfmReactPreset leaves paths unchanged when the target has no fragment', () => {
   const html = renderWithPreset('[[Project Notes]]', {
     ofm: {
       rehype: {
-        hrefPrefix: 'wiki'
       }
     }
   })
 
-  assert.match(html, /href="\/wiki\/project-notes"/)
-  assert.doesNotMatch(html, /href="\/wiki\/project-notes#/)
+  assert.match(html, /href="\/project-notes"/)
+  assert.doesNotMatch(html, /href="\/project-notes#/)
 })
 
 test('createOfmReactPreset rewrites ordinary markdown image src values through image.transformSrc', () => {
@@ -280,7 +273,6 @@ test('createOfmReactPreset keeps note embeds out of paragraph wrappers', () => {
     },
     ofm: {
       rehype: {
-        hrefPrefix: 'wiki'
       }
     }
   })
@@ -304,7 +296,6 @@ test('createOfmReactPreset expands note embeds with following paragraph content'
     },
     ofm: {
       rehype: {
-        hrefPrefix: 'wiki'
       }
     }
   }
@@ -543,7 +534,6 @@ test('createOfmReactPreset renders note embeds recursively and falls back to pla
   const resolved = renderWithPreset(['![[Project Notes]]', '', '![[Project Notes#Overview]]', '', '![[Missing Page]]', '', '![[Depth One]]'].join('\n'), {
     ofm: {
       rehype: {
-        hrefPrefix: 'wiki'
       }
     },
     noteEmbed: {
@@ -566,10 +556,10 @@ test('createOfmReactPreset renders note embeds recursively and falls back to pla
   assert.match(resolved, />Project Notes#Overview<\/strong>/)
   assert.match(resolved, />Missing Page<\/strong>/)
   assert.match(resolved, /Missing note content\./)
-  assert.match(resolved, /href="\/wiki\/depth-three"/)
+  assert.match(resolved, /href="\/depth-three"/)
 })
 
-test('createOfmReactPreset uses core fallback href for note-embed fallback links when rehype hrefPrefix is not provided', () => {
+test('createOfmReactPreset uses core fallback href for note-embed fallback links', () => {
   const html = renderWithPreset('![[Project Notes#Overview]]', {
     noteEmbed: {
       maxDepth: 0,

@@ -69,6 +69,7 @@ export function createOfmReactComponents(options: OfmReactPresetOptions = {}): C
       if (renderWikiLink) {
         return renderWikiLink({
           href: resolvedHref ?? '',
+          target: data.target,
           ...(children === undefined ? {} : {children}),
           ...(className === undefined ? {} : {className}),
           ...(resolvedTitle === undefined ? {} : {title: resolvedTitle})

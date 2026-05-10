@@ -3,12 +3,9 @@ export interface OfmTargetUrlInput {
   path: string
 }
 
-export function buildOfmTargetHref(target: OfmTargetUrlInput, prefix?: string): string {
-  return `/${joinPathSegments(prefix, buildOfmTargetPath(target))}`
-}
-
-export function buildOfmTargetPath(target: OfmTargetUrlInput): string {
-  return `${buildOfmSlugPath(target.path)}${buildOfmFragmentHash(target.fragment)}`
+export function buildOfmTargetHref(target: OfmTargetUrlInput): string {
+  const href = `${buildOfmSlugPath(target.path)}${buildOfmFragmentHash(target.fragment)}`
+  return href.startsWith('#') ? href : `/${href}`
 }
 
 export function buildOfmSlugPath(path: string): string {
@@ -45,12 +42,6 @@ export function normalizeOfmFragmentAnchorKey(value: string | null | undefined):
 
 export function isOfmBlockFragment(fragment: string | null | undefined): boolean {
   return readOfmFragment(fragment).startsWith('^')
-}
-
-function joinPathSegments(...segments: Array<string | undefined>): string {
-  return segments
-    .flatMap((segment) => segment && segment.length > 0 ? [segment] : [])
-    .join('/')
 }
 
 function slugifyOfmPathSegment(segment: string): string {

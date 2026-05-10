@@ -32,7 +32,6 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
       ...embed,
       path: resolveOfmPath(embed.path, options)
     }
-    const href = buildOfmTargetHref(resolvedEmbed, options.hrefPrefix)
     const title = formatOfmTargetLabel(resolvedEmbed)
     const publicProps = {
       kind: ofmPublicKind.embed,
@@ -42,6 +41,8 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
     }
 
     if (isImageEmbed(resolvedEmbed.path)) {
+      const defaultHref = buildOfmTargetHref(resolvedEmbed)
+      const href = options.resolveHref ? options.resolveHref(defaultHref) : defaultHref
       node.tagName = 'img'
       node.properties.src = href
       node.properties.alt = embed.value
@@ -60,6 +61,8 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
     }
 
     if (isMarkdownEmbed(resolvedEmbed.path)) {
+      const defaultHref = buildOfmTargetHref(resolvedEmbed)
+      const href = options.resolveHref ? options.resolveHref(defaultHref) : defaultHref
       node.tagName = 'div'
       node.children = [createFallbackLink(href, getFallbackLabel(resolvedEmbed))]
       setOfmPublicProps(node.properties, {...publicProps, variant: ofmPublicVariant.note})
@@ -69,6 +72,8 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
       return
     }
 
+    const defaultHref = buildOfmTargetHref(resolvedEmbed)
+      const href = options.resolveHref ? options.resolveHref(defaultHref) : defaultHref
     node.tagName = 'a'
     node.properties.href = href
     node.children = [{type: 'text', value: getFallbackLabel(resolvedEmbed)} satisfies Text]

@@ -3,6 +3,5 @@ export type {OfmRehypeOptions, OfmRemarkOptions} from './lib/types.js'
 export {
   buildOfmFragmentHash,
   buildOfmSlugPath,
-  buildOfmTargetHref,
-  buildOfmTargetPath
+  buildOfmTargetHref
 } from './lib/shared/ofm-url.js'
