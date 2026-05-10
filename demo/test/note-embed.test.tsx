@@ -123,7 +123,7 @@ describe('demo note embed integration', () => {
 
     expect(container.querySelectorAll('.note-embed')).toHaveLength(1)
     expect(container.querySelector('.note-embed')?.parentElement).toBe(container)
-    expect(container.querySelector('p:last-child')?.textContent).toBe('\nfollowing text')
+    expect(container.querySelector('p:last-child')?.textContent).toBe('following text')
   })
 
   test('expands whole-page, heading, nested-heading, and block note embeds', () => {

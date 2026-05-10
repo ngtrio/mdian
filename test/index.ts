@@ -583,6 +583,89 @@ test('remarkOfm still enables callout conversion without micromark callout exten
   assert.equal(tree.children[0]?.type, 'callout')
 })
 
+test('remarkOfm renders ordinary soft line endings as hard breaks', async () => {
+  const tree = await parseOfm('第一行\n第二行')
+  const paragraph = tree.children[0]
+
+  assert.equal(paragraph?.type, 'paragraph')
+  assert.deepEqual(stripPositions(paragraph?.children), [
+    {type: 'text', value: '第一行'},
+    {type: 'break'},
+    {type: 'text', value: '第二行'}
+  ])
+})
+
+test('remarkOfm preserves paragraph breaks and existing hard breaks', async () => {
+  const tree = await parseOfm('第一行  \n第二行\n\n第三行')
+  const [firstParagraph, secondParagraph] = tree.children
+
+  assert.equal(firstParagraph?.type, 'paragraph')
+  assert.equal(secondParagraph?.type, 'paragraph')
+  assert.deepEqual(stripPositions(firstParagraph?.children), [
+    {type: 'text', value: '第一行'},
+    {type: 'break'},
+    {type: 'text', value: '第二行'}
+  ])
+  assert.deepEqual(stripPositions(secondParagraph?.children), [
+    {type: 'text', value: '第三行'}
+  ])
+})
+
+test('remarkOfm renders callout body soft line endings as hard breaks', async () => {
+  const tree = await parseOfm('> [!note] 标题\n> 第一行\n> 第二行')
+  const callout = tree.children[0]
+  const body = callout?.type === 'callout' ? callout.children[0] : undefined
+
+  assert.equal(callout?.type, 'callout')
+  assert.equal(callout?.title, '标题')
+  assert.equal(body?.type, 'paragraph')
+  assert.deepEqual(stripPositions(body?.children), [
+    {type: 'text', value: '第一行'},
+    {type: 'break'},
+    {type: 'text', value: '第二行'}
+  ])
+})
+
+test('remarkOfm preserves inline OFM nodes around soft line endings', async () => {
+  const tree = await parseOfm('[[Alpha]]\n==Beta==')
+  const paragraph = tree.children[0]
+
+  assert.equal(paragraph?.type, 'paragraph')
+  assert.deepEqual(stripPositions(paragraph?.children), [
+    {
+      type: 'wikiLink',
+      value: 'Alpha',
+      path: 'Alpha',
+      data: {
+        hName: 'a',
+        hProperties: {
+          dataOfmKind: 'wikilink',
+          dataOfmValue: 'Alpha',
+          dataOfmPath: 'Alpha',
+          dataOfmFragment: '',
+          dataOfmAlias: ''
+        },
+        hChildren: [
+          {type: 'text', value: 'Alpha'}
+        ]
+      }
+    },
+    {type: 'break'},
+    {
+      type: 'highlight',
+      children: [
+        {type: 'text', value: 'Beta'}
+      ],
+      data: {
+        hName: 'mark',
+        hProperties: {
+          dataOfmKind: 'highlight'
+        }
+      }
+    }
+  ])
+})
+
 test('calloutHast strips internal OFM properties after rendering', () => {
   const node = createCalloutElement({
     calloutType: 'warning',
@@ -1110,6 +1193,60 @@ test('rehypeOfm splits paragraphs around note embeds', () => {
   })
 
   assert.deepEqual(tree.children[2], createParagraphElement([{type: 'text', value: ' after'}]))
+})
+
+test('rehypeOfm removes boundary line breaks when splitting note embeds', () => {
+  const tree: Root = {
+    type: 'root',
+    children: [createParagraphElement([
+      createEmbedElement({value: 'Project Notes', path: 'Project Notes'}),
+      {type: 'element', tagName: 'br', properties: {}, children: []},
+      {type: 'text', value: '\nnext line'}
+    ])]
+  }
+
+  const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
+  transform(tree)
+
+  assert.equal(tree.children.length, 2)
+
+  const embed = tree.children[0]
+  assert.equal(embed?.type, 'element')
+  assert.equal(embed.tagName, 'div')
+  assertOfmPublicProps(embed, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Project Notes'
+  })
+
+  assert.deepEqual(tree.children[1], createParagraphElement([{type: 'text', value: 'next line'}]))
+})
+
+test('rehypeOfm removes trailing line breaks before split note embeds', () => {
+  const tree: Root = {
+    type: 'root',
+    children: [createParagraphElement([
+      {type: 'text', value: 'previous line'},
+      {type: 'element', tagName: 'br', properties: {}, children: []},
+      {type: 'text', value: '\n'},
+      createEmbedElement({value: 'Project Notes', path: 'Project Notes'})
+    ])]
+  }
+
+  const transform = rehypeOfm.call(unified(), {}) as (tree: Root) => void
+  transform(tree)
+
+  assert.equal(tree.children.length, 2)
+  assert.deepEqual(tree.children[0], createParagraphElement([{type: 'text', value: 'previous line'}]))
+
+  const embed = tree.children[1]
+  assert.equal(embed?.type, 'element')
+  assert.equal(embed.tagName, 'div')
+  assertOfmPublicProps(embed, {
+    kind: 'embed',
+    variant: 'note',
+    path: 'Project Notes'
+  })
 })
 
 test('rehypeOfm keeps block anchor props on the last paragraph after note embed splitting', () => {
@@ -1657,6 +1794,11 @@ async function readOptionalJson(filePath: string): Promise<unknown | undefined> 
   } catch {
     return undefined
   }
+}
+
+async function parseOfm(input: string) {
+  const processor = unified().use(remarkParse).use(remarkOfm)
+  return processor.run(processor.parse(input))
 }
 
 function stripPositions(value: unknown): unknown {

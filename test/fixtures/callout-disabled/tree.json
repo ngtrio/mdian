@@ -9,7 +9,14 @@
           "children": [
             {
               "type": "text",
-              "value": "[!note] Hidden\nbody"
+              "value": "[!note] Hidden"
+            },
+            {
+              "type": "break"
+            },
+            {
+              "type": "text",
+              "value": "body"
             }
           ]
         }

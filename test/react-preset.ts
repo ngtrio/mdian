@@ -316,7 +316,7 @@ test('createOfmReactPreset expands note embeds with following paragraph content'
 
   const nextLine = renderWithPreset('![[Project Notes]]\nnext line', options)
   assert.match(nextLine, /^<section[^>]*class="[^"]*note-embed[^"]*"/)
-  assert.match(nextLine, /<\/section><p>\nnext line<\/p>$/)
+  assert.match(nextLine, /<\/section><p>next line<\/p>$/)
   assert.doesNotMatch(nextLine, /<p><section/)
 })
 

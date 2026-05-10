@@ -14,6 +14,7 @@ import { commentRehypeFeature, commentRemarkFeature } from './comment/index.js'
 import { embedRehypeFeature, embedRemarkFeature } from './embed/index.js'
 import { externalEmbedRehypeFeature } from './external-embed/index.js'
 import { highlightRehypeFeature, highlightRemarkFeature } from './highlight/index.js'
+import { softBreakRemarkFeature } from './soft-break/index.js'
 import type { OfmRemarkOptions, OfmRehypeOptions } from './types.js'
 import { wikiLinkRehypeFeature, wikiLinkRemarkFeature } from './wikilink/index.js'
 
@@ -25,7 +26,8 @@ const remarkFeatures: OfmRemarkFeature[] = [
   wikiLinkRemarkFeature,
   embedRemarkFeature,
   highlightRemarkFeature,
-  calloutRemarkFeature
+  calloutRemarkFeature,
+  softBreakRemarkFeature
 ]
 
 const rehypeFeatures: OfmRehypeFeature[] = [

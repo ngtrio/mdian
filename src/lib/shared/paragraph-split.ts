@@ -39,6 +39,7 @@ function splitParagraphElement(node: Element, isSplitPoint: (child: ElementConte
     }
 
     didSplit = true
+    trimTrailingBreak(paragraphChildren)
     pushParagraphSegment(segments, paragraphChildren)
     paragraphChildren = []
     segments.push(child)
@@ -54,6 +55,8 @@ function splitParagraphElement(node: Element, isSplitPoint: (child: ElementConte
 }
 
 function pushParagraphSegment(segments: RootContent[], children: ElementContent[]): void {
+  trimLeadingBreak(children)
+
   if (children.length === 0) {
     return
   }
@@ -64,6 +67,34 @@ function pushParagraphSegment(segments: RootContent[], children: ElementContent[
     properties: {},
     children: [...children]
   })
+}
+
+function trimLeadingBreak(children: ElementContent[]): void {
+  if (isBreakElement(children[0])) {
+    children.shift()
+  }
+
+  const firstChild = children[0]
+  if (isText(firstChild)) {
+    firstChild.value = firstChild.value.replace(/^\r?\n/, '')
+    if (firstChild.value.length === 0) {
+      children.shift()
+    }
+  }
+}
+
+function trimTrailingBreak(children: ElementContent[]): void {
+  const lastChild = children.at(-1)
+  if (isText(lastChild)) {
+    lastChild.value = lastChild.value.replace(/\r?\n$/, '')
+    if (lastChild.value.length === 0) {
+      children.pop()
+    }
+  }
+
+  if (isBreakElement(children.at(-1))) {
+    children.pop()
+  }
 }
 
 function moveBlockAnchorPropsToLastParagraph(
@@ -163,6 +194,14 @@ function copyStringProp(source: Properties, target: Properties, key: string): vo
 
 function isParagraphElement(node: RootContent | ElementContent): node is Element {
   return node.type === 'element' && node.tagName === 'p'
+}
+
+function isBreakElement(node: ElementContent | undefined): node is Element {
+  return node?.type === 'element' && node.tagName === 'br'
+}
+
+function isText(node: ElementContent | undefined): node is ElementContent & {type: 'text'; value: string} {
+  return node?.type === 'text'
 }
 
 function isBlockAnchorLabel(node: ElementContent | undefined): node is Element {
