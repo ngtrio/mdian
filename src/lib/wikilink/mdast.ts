@@ -47,7 +47,7 @@ function createWikiLinkData(
   fragment?: string | null,
   alias?: string | null
 ) {
-  const label = alias ?? path ?? value ?? 'wiki link'
+  const label = getWikiLinkLabel({alias, fragment, path, value})
   const hProperties: Properties = {
     dataOfmKind: 'wikilink',
     dataOfmValue: value,
@@ -62,6 +62,28 @@ function createWikiLinkData(
     hProperties,
     hChildren
   }
+}
+
+function getWikiLinkLabel({
+  alias,
+  fragment,
+  path,
+  value
+}: {
+  alias: string | null | undefined
+  fragment: string | null | undefined
+  path: string
+  value: string
+}): string {
+  if (alias !== undefined && alias !== null) {
+    return alias
+  }
+
+  if (path.length > 0) {
+    return path
+  }
+
+  return fragment ?? value ?? 'wiki link'
 }
 
 export function parseWikiValue(value: string) {

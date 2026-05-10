@@ -96,6 +96,27 @@ test('readOfmPublicProps reads shared OFM public props from an element', () => {
   })
 })
 
+test('readOfmPublicProps preserves empty current-page target paths', () => {
+  const node: Element = {
+    type: 'element',
+    tagName: 'a',
+    properties: {},
+    children: []
+  }
+
+  setOfmPublicProps(node.properties, {
+    kind: 'wikilink',
+    path: '',
+    fragment: 'Heading'
+  })
+
+  assert.deepEqual(readOfmPublicProps(node), {
+    kind: 'wikilink',
+    path: '',
+    fragment: 'Heading'
+  })
+})
+
 test('readOfmPublicProps ignores invalid public-prop values on an element', () => {
   const node: Element = {
     type: 'element',
@@ -164,6 +185,48 @@ test('wikiLinkHast prepends hrefPrefix and preserves fragments', () => {
   assertOfmPublicProps(node, {
     kind: 'wikilink',
     path: 'Page',
+    fragment: 'Heading'
+  })
+})
+
+test('wikiLinkHast resolves current-page heading fragments through path candidates', () => {
+  const node = createWikiLinkElement({
+    value: '#Heading',
+    path: '',
+    fragment: 'Heading'
+  })
+
+  wikiLinkHast({
+    hrefPrefix: 'notes',
+    resolvePathCandidates(path) {
+      assert.equal(path, '')
+      return ['Current Page']
+    }
+  })(node)
+
+  assert.equal(node.properties.href, '/notes/current-page#heading')
+  assert.equal(node.properties.title, 'Current Page#Heading')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: 'Current Page',
+    fragment: 'Heading'
+  })
+})
+
+test('wikiLinkHast uses the core target href when no current-page candidates are returned', () => {
+  const node = createWikiLinkElement({
+    value: '#Heading',
+    path: '',
+    fragment: 'Heading'
+  })
+
+  wikiLinkHast({ hrefPrefix: 'notes' })(node)
+
+  assert.equal(node.properties.href, '/notes/#heading')
+  assert.equal(node.properties.title, '#Heading')
+  assertOfmPublicProps(node, {
+    kind: 'wikilink',
+    path: '',
     fragment: 'Heading'
   })
 })
@@ -1457,6 +1520,14 @@ test('buildOfmSlugPath generates the canonical slug path without a prefix', () =
 test('buildOfmTargetPath generates the canonical path plus fragment without a prefix', () => {
   assert.equal(
     buildOfmTargetPath({
+      path: '',
+      fragment: 'Heading Here'
+    }),
+    '#heading-here'
+  )
+
+  assert.equal(
+    buildOfmTargetPath({
       path: ' Folder%20Name / Page%20Name ',
       fragment: 'Heading Here'
     }),
@@ -1473,6 +1544,17 @@ test('buildOfmTargetPath generates the canonical path plus fragment without a pr
 })
 
 test('buildOfmTargetHref normalizes paths and slugifies heading or block fragments', () => {
+  assert.equal(
+    buildOfmTargetHref(
+      {
+        path: '',
+        fragment: 'Heading Here'
+      },
+      'wiki'
+    ),
+    '/wiki/#heading-here'
+  )
+
   assert.equal(
     buildOfmTargetHref(
       {
@@ -1545,6 +1627,14 @@ test('parseWikiValue keeps unsupported heading-plus-block syntax as a plain frag
 
   assert.equal(parsed.path, 'Page')
   assert.equal(parsed.fragment, 'Heading#^block-id')
+  assert.equal(parsed.alias, undefined)
+})
+
+test('parseWikiValue supports current-page heading targets', () => {
+  const parsed = parseWikiValue('#Heading')
+
+  assert.equal(parsed.path, '')
+  assert.equal(parsed.fragment, 'Heading')
   assert.equal(parsed.alias, undefined)
 })
 

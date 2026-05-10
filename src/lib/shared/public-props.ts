@@ -84,7 +84,7 @@ export function setOfmPublicProps(properties: Properties, value: OfmPublicProps)
 
   switch (value.kind) {
     case ofmPublicKind.wikilink:
-      setOptionalString(properties, ofmPublicPropKeys.path, value.path)
+      properties[ofmPublicPropKeys.path] = value.path
       setOptionalString(properties, ofmPublicPropKeys.alias, value.alias)
       setOptionalString(properties, ofmPublicPropKeys.fragment, value.fragment)
       return
@@ -96,7 +96,7 @@ export function setOfmPublicProps(properties: Properties, value: OfmPublicProps)
         return
       }
 
-      setOptionalString(properties, ofmPublicPropKeys.path, value.path)
+      properties[ofmPublicPropKeys.path] = value.path
       setOptionalString(properties, ofmPublicPropKeys.alias, value.alias)
       setOptionalString(properties, ofmPublicPropKeys.fragment, value.fragment)
       return
@@ -195,7 +195,8 @@ function readOptionalString(properties: Properties | undefined, key: string): st
 }
 
 function readRequiredString(properties: Properties | undefined, key: string): string | undefined {
-  return readOptionalString(properties, key)
+  const value = properties?.[key]
+  return typeof value === 'string' ? value : undefined
 }
 
 function readOptionalKind(properties: Properties | undefined, key: string): OfmPublicKind | undefined {

@@ -11,7 +11,6 @@ import type {OfmInternalTarget} from './types.js'
 export interface WikiLinkRenderData {
   fallbackHref?: string
   fallbackTitle?: string
-  target: OfmInternalTarget
 }
 
 export interface NoteEmbedRenderData {
@@ -19,11 +18,6 @@ export interface NoteEmbedRenderData {
   fallbackLabel: string
   target: OfmInternalTarget
   title?: string
-}
-
-export interface RenderTargetData {
-  fallbackHref?: string
-  target: OfmInternalTarget
 }
 
 export interface ImageEmbedRenderData {
@@ -42,10 +36,6 @@ export function readWikiLinkRenderData(
   }
 
   return {
-    target: {
-      path: props.path,
-      ...(props.fragment === undefined ? {} : {fragment: props.fragment})
-    },
     ...(href === undefined ? {} : {fallbackHref: href}),
     ...(title === undefined ? {} : {fallbackTitle: title})
   }

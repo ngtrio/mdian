@@ -3,12 +3,10 @@ import {createElement} from 'react'
 import type {Components} from 'react-markdown'
 import ReactMarkdown from 'react-markdown'
 
-import {buildOfmTargetHref} from '../lib/shared/ofm-url.js'
 import {TwitterEmbedCard, readTwitterEmbedRenderData} from './external-embed.js'
 import {renderOfmNoteEmbed} from './note-embed.js'
 import {createOfmReactPreset} from './preset.js'
 import {
-  type RenderTargetData,
   readImageEmbedRenderData,
   readNoteEmbedRenderData,
   readWikiLinkRenderData
@@ -21,25 +19,12 @@ function readNode(node: unknown): Element | undefined {
 
 type NoteEmbedRenderData = NonNullable<ReturnType<typeof readNoteEmbedRenderData>>
 
-function resolveTargetHref(
-  data: RenderTargetData,
-  options: OfmReactPresetOptions
-): string | undefined {
-  const hrefPrefix = options.ofm?.rehype?.hrefPrefix
-
-  if (hrefPrefix !== undefined) {
-    return buildOfmTargetHref(data.target, hrefPrefix)
-  }
-
-  return data.fallbackHref
-}
-
 function renderResolvedNoteEmbed(
   data: NoteEmbedRenderData,
   options: OfmReactPresetOptions,
   className: string | undefined
 ) {
-  const fallbackHref = resolveTargetHref(data, options)
+  const fallbackHref = data.fallbackHref
   const resolved = options.noteEmbed?.resolve?.({path: data.target.path})
 
   if (!resolved) {
@@ -72,7 +57,7 @@ export function createOfmReactComponents(options: OfmReactPresetOptions = {}): C
   return {
     a({children, className, href, node, title, ...props}) {
       const data = readWikiLinkRenderData(readNode(node), href, typeof title === 'string' ? title : undefined)
-      const resolvedHref = data ? resolveTargetHref(data, options) : href
+      const resolvedHref = data?.fallbackHref ?? href
 
       if (!data) {
         return createElement('a', {...props, className, href: resolvedHref, title}, children)

@@ -15,7 +15,6 @@ import {
   guardOfmNoteEmbed,
   resolveOfmNoteEmbedBody
 } from '../src/react/note-embed.js'
-import {buildOfmTargetHref} from '../src/lib/shared/ofm-url.js'
 
 function renderWithPreset(markdown: string, options: OfmReactPresetOptions = {}) {
   const preset = createOfmReactPreset(options)
@@ -157,6 +156,36 @@ test('createOfmReactPreset passes heading fragments through the React target mod
 
   assert.equal(renderHref, '/wiki/page#a#b')
   assert.match(html, /href="\/wiki\/page#a#b"/)
+})
+
+test('createOfmReactPreset resolves current-page heading links through path candidates', () => {
+  let renderHref = ''
+  const html = renderWithPreset('[[#Overview]]', {
+    ofm: {
+      rehype: {
+        hrefPrefix: 'wiki',
+        resolvePathCandidates(path) {
+          assert.equal(path, '')
+          return ['Project Notes']
+        }
+      }
+    },
+    wikiLink: {
+      render({href, title, children}) {
+        renderHref = href
+        assert.equal(title, 'Project Notes#Overview')
+
+        return createElement('a', {
+          href,
+          title
+        }, children)
+      }
+    }
+  })
+
+  assert.equal(renderHref, '/wiki/project-notes#overview')
+  assert.match(html, /href="\/wiki\/project-notes#overview"/)
+  assert.match(html, />Overview<\/a>/)
 })
 
 test('createOfmReactPreset appends normalized nested heading fragments to hrefPrefix paths', () => {

@@ -1,0 +1,32 @@
+{
+  "type": "root",
+  "children": [
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "wikiLink",
+          "value": "#Head",
+          "path": "",
+          "fragment": "Head",
+          "data": {
+            "hName": "a",
+            "hProperties": {
+              "dataOfmKind": "wikilink",
+              "dataOfmValue": "#Head",
+              "dataOfmPath": "",
+              "dataOfmFragment": "Head",
+              "dataOfmAlias": ""
+            },
+            "hChildren": [
+              {
+                "type": "text",
+                "value": "Head"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

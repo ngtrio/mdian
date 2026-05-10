@@ -32,7 +32,7 @@ export function embedHast(options: OfmRehypeOptions = {}): (node: Root | RootCon
       ...embed,
       path: resolveOfmPath(embed.path, options)
     }
-    const href = resolveTargetHref(resolvedEmbed, options)
+    const href = buildOfmTargetHref(resolvedEmbed, options.hrefPrefix)
     const title = formatOfmTargetLabel(resolvedEmbed)
     const publicProps = {
       kind: ofmPublicKind.embed,
@@ -127,11 +127,4 @@ function applyTitle(properties: Record<string, unknown>, title: string, setTitle
 
 function getFallbackLabel(node: {alias?: string | null, fragment?: string | null, path: string}): string {
   return node.alias || formatOfmTargetLabel(node)
-}
-
-function resolveTargetHref(
-  target: {fragment?: string | null; path: string},
-  options: OfmRehypeOptions
-): string {
-  return buildOfmTargetHref(target, options.hrefPrefix)
 }
