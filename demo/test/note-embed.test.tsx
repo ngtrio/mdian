@@ -94,7 +94,7 @@ describe('demo note embed integration', () => {
 
     expect(container.querySelector('table')).not.toBeNull()
     expect(container.querySelector('th')?.textContent).toBe('Area')
-    expect(container.querySelector('td a[href="/wiki/project-notes#overview"]')?.textContent).toBe('Project Notes')
+    expect(container.querySelector('td a[href="/wiki/project-notes#overview"]')?.textContent).toBe('Project Notes#Overview')
     expect(container.querySelector('td .note-embed')).not.toBeNull()
   })
 
@@ -143,10 +143,10 @@ describe('demo note embed integration', () => {
     expect(embeds[0]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes')
     expect(embeds[0]?.textContent).toContain('A working note for the demo knowledge base.')
     expect(embeds[1]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes#Overview')
-    expect(embeds[1]?.textContent).toContain('This section is the destination for Project Notes in the mixed showcase example.')
+    expect(embeds[1]?.textContent).toContain('This section is the destination for Project Notes#Overview in the mixed showcase example.')
     expect(embeds[1]?.textContent).not.toContain('## Navigation')
     expect(embeds[2]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes#Project Notes#Overview#Detail')
-    expect(embeds[2]?.textContent).toContain('This nested heading is the destination for Project Notes and ![[Project Notes#Project Notes#Overview#Detail]].')
+    expect(embeds[2]?.textContent).toContain('This nested heading is the destination for Project Notes#Project Notes#Overview#Detail and ![[Project Notes#Project Notes#Overview#Detail]].')
     expect(embeds[2]?.textContent).not.toContain('## Navigation')
     expect(embeds[3]?.querySelector('.note-embed__header strong')?.textContent).toBe('Roadmap#^next-step')
     expect(embeds[3]?.textContent).toContain('Finish real wiki navigation, keep heading anchors stable, and make block references scroll correctly.')

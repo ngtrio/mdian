@@ -660,6 +660,54 @@ test('remarkOfm preserves inline OFM nodes around soft line endings', async () =
   ])
 })
 
+test('remarkOfm uses the full target label for fragment wikilinks without aliases', async () => {
+  const tree = await parseOfm('[[Demo 1#H1]]\n[[Demo 1#H1#Callout Tour#]]')
+  const paragraph = tree.children[0]
+
+  assert.equal(paragraph?.type, 'paragraph')
+  assert.deepEqual(stripPositions(paragraph?.children), [
+    {
+      type: 'wikiLink',
+      value: 'Demo 1#H1',
+      path: 'Demo 1',
+      fragment: 'H1',
+      data: {
+        hName: 'a',
+        hProperties: {
+          dataOfmKind: 'wikilink',
+          dataOfmValue: 'Demo 1#H1',
+          dataOfmPath: 'Demo 1',
+          dataOfmFragment: 'H1',
+          dataOfmAlias: ''
+        },
+        hChildren: [
+          {type: 'text', value: 'Demo 1#H1'}
+        ]
+      }
+    },
+    {type: 'break'},
+    {
+      type: 'wikiLink',
+      value: 'Demo 1#H1#Callout Tour#',
+      path: 'Demo 1',
+      fragment: 'H1#Callout Tour#',
+      data: {
+        hName: 'a',
+        hProperties: {
+          dataOfmKind: 'wikilink',
+          dataOfmValue: 'Demo 1#H1#Callout Tour#',
+          dataOfmPath: 'Demo 1',
+          dataOfmFragment: 'H1#Callout Tour#',
+          dataOfmAlias: ''
+        },
+        hChildren: [
+          {type: 'text', value: 'Demo 1#H1#Callout Tour#'}
+        ]
+      }
+    }
+  ])
+})
+
 test('calloutHast strips internal OFM properties after rendering', () => {
   const node = createCalloutElement({
     calloutType: 'warning',

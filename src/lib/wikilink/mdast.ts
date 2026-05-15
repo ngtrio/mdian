@@ -79,6 +79,10 @@ function getWikiLinkLabel({
     return alias
   }
 
+  if (fragment !== undefined && fragment !== null) {
+    return path.length > 0 ? `${path}#${fragment}` : `#${fragment}`
+  }
+
   if (path.length > 0) {
     return path
   }

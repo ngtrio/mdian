@@ -182,7 +182,7 @@ test('createOfmReactPreset resolves current-page heading links through path cand
 
   assert.equal(renderHref, '/project-notes#overview')
   assert.match(html, /href="\/project-notes#overview"/)
-  assert.match(html, />Overview<\/a>/)
+  assert.match(html, />#Overview<\/a>/)
 })
 
 test('createOfmReactPreset appends normalized nested heading fragments', () => {
