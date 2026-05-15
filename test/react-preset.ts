@@ -352,7 +352,7 @@ test('resolveOfmNoteEmbedBody resolves heading and block fragments from the Reac
   assert.deepEqual(resolveOfmNoteEmbedBody({
     markdown: headingMarkdown,
     target: {
-      fragment: 'Overview#Detail',
+      fragment: 'Project Notes#Overview#Detail',
       path: 'Project Notes'
     }
   }), {

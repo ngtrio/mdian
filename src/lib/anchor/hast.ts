@@ -53,12 +53,11 @@ function getHeadingAnchorKey(node: Element, headingPathKeys: string[]): string {
 
   const level = Number(node.tagName.slice(1))
 
-  if (!Number.isFinite(level) || level <= 1) {
-    headingPathKeys.length = 0
+  if (!Number.isFinite(level)) {
     return titleKey
   }
 
-  const hierarchyIndex = level - 2
+  const hierarchyIndex = level - 1
   headingPathKeys.length = hierarchyIndex
   const parentKey = headingPathKeys[hierarchyIndex - 1]
   const anchorKey = parentKey ? `${parentKey}#${titleKey}` : titleKey

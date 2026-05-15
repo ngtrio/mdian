@@ -235,12 +235,7 @@ function collectMarkdownHeadings(lines: string[]) {
 }
 
 function buildHeadingPathKey(level: number, titleKey: string, pathKeys: string[]): string {
-  if (level <= 1) {
-    pathKeys.length = 0
-    return titleKey
-  }
-
-  const hierarchyIndex = level - 2
+  const hierarchyIndex = Math.max(0, level - 1)
   pathKeys.length = hierarchyIndex
   const parentKey = pathKeys[hierarchyIndex - 1]
   const pathKey = parentKey ? `${parentKey}#${titleKey}` : titleKey

@@ -1423,6 +1423,12 @@ test('anchorHast adds id to headings', () => {
 
 test('anchorHast derives nested heading ids from the heading path fragment', () => {
   const transform = anchorHast()
+  const root: Element = {
+    type: 'element',
+    tagName: 'h1',
+    properties: {},
+    children: [{type: 'text', value: 'Project Notes'}]
+  }
   const section: Element = {
     type: 'element',
     tagName: 'h2',
@@ -1436,11 +1442,13 @@ test('anchorHast derives nested heading ids from the heading path fragment', () 
     children: [{type: 'text', value: 'Detail'}]
   }
 
+  transform(root)
   transform(section)
   transform(subheading)
 
-  assert.equal(section.properties.id, 'overview')
-  assert.equal(subheading.properties.id, 'overview#detail')
+  assert.equal(root.properties.id, 'project-notes')
+  assert.equal(section.properties.id, 'project-notes#overview')
+  assert.equal(subheading.properties.id, 'project-notes#overview#detail')
 })
 
 test('anchorHast extracts trailing block refs and renders labels by default', () => {
@@ -1656,9 +1664,9 @@ test('buildOfmTargetHref normalizes paths and slugifies heading or block fragmen
   assert.equal(
     buildOfmTargetHref({
         path: 'Page',
-        fragment: 'A#B'
+        fragment: 'Header1#Header2'
       }),
-    '/page#a#b'
+    '/page#header1#header2'
   )
 
   assert.equal(

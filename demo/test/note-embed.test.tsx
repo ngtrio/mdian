@@ -48,7 +48,7 @@ describe('demo note embed integration', () => {
   test('renders routed wikilinks and callouts through the mdian react preset', () => {
     const container = renderDemoMarkdown([
       '[[Project Notes|Open note]]',
-      '[[Project Notes#Overview#Detail|Nested target]]',
+      '[[Project Notes#Project Notes#Overview#Detail|Nested target]]',
       '[[Roadmap#^next-step|Block target]]',
       '',
       '> [!note] Note title',
@@ -56,7 +56,7 @@ describe('demo note embed integration', () => {
     ].join('\n'))
 
     expect(container.querySelector('a[href="/wiki/project-notes"]')?.textContent).toBe('Open note')
-    expect(container.querySelector('a[href="/wiki/project-notes#overview#detail"]')?.textContent).toBe('Nested target')
+    expect(container.querySelector('a[href="/wiki/project-notes#project-notes#overview#detail"]')?.textContent).toBe('Nested target')
     expect(container.querySelector('a[href="/wiki/roadmap#^next-step"]')?.textContent).toBe('Block target')
     expect(container.querySelector('.ofm-callout')).not.toBeNull()
     expect(container.querySelector('blockquote')).toBeNull()
@@ -72,14 +72,15 @@ describe('demo note embed integration', () => {
       '',
       'Target paragraph. ^next-step',
       '',
-      '[[Project Notes#Overview#Detail|Nested target]]',
+      '[[Project Notes#Project Notes#Overview#Detail|Nested target]]',
       '[[Project Notes#^next-step|Block target]]'
     ].join('\n'))
 
-    expect(container.querySelector('h2[id="overview"]')).not.toBeNull()
-    expect(container.querySelector('h3[id="overview#detail"]')).not.toBeNull()
+    expect(container.querySelector('h1[id="project-notes"]')).not.toBeNull()
+    expect(container.querySelector('h2[id="project-notes#overview"]')).not.toBeNull()
+    expect(container.querySelector('h3[id="project-notes#overview#detail"]')).not.toBeNull()
     expect(container.querySelector('p[id="^next-step"]')).not.toBeNull()
-    expect(container.querySelector('a[href="/wiki/project-notes#overview#detail"]')).not.toBeNull()
+    expect(container.querySelector('a[href="/wiki/project-notes#project-notes#overview#detail"]')).not.toBeNull()
     expect(container.querySelector('a[href="/wiki/project-notes#^next-step"]')).not.toBeNull()
   })
 
@@ -88,7 +89,7 @@ describe('demo note embed integration', () => {
       '| Area | Target |',
       '| --- | --- |',
       '| Wikilinks | [[Project Notes#Overview]] |',
-      '| Embeds | ![[Project Notes#Overview#Detail]] |'
+      '| Embeds | ![[Project Notes#Project Notes#Overview#Detail]] |'
     ].join('\n'))
 
     expect(container.querySelector('table')).not.toBeNull()
@@ -132,7 +133,7 @@ describe('demo note embed integration', () => {
       '',
       '![[Project Notes#Overview]]',
       '',
-      '![[Project Notes#Overview#Detail]]',
+      '![[Project Notes#Project Notes#Overview#Detail]]',
       '',
       '![[Roadmap#^next-step]]'
     ].join('\n'))
@@ -144,8 +145,8 @@ describe('demo note embed integration', () => {
     expect(embeds[1]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes#Overview')
     expect(embeds[1]?.textContent).toContain('This section is the destination for Project Notes in the mixed showcase example.')
     expect(embeds[1]?.textContent).not.toContain('## Navigation')
-    expect(embeds[2]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes#Overview#Detail')
-    expect(embeds[2]?.textContent).toContain('This nested heading is the destination for Project Notes and ![[Project Notes#Overview#Detail]].')
+    expect(embeds[2]?.querySelector('.note-embed__header strong')?.textContent).toBe('Project Notes#Project Notes#Overview#Detail')
+    expect(embeds[2]?.textContent).toContain('This nested heading is the destination for Project Notes and ![[Project Notes#Project Notes#Overview#Detail]].')
     expect(embeds[2]?.textContent).not.toContain('## Navigation')
     expect(embeds[3]?.querySelector('.note-embed__header strong')?.textContent).toBe('Roadmap#^next-step')
     expect(embeds[3]?.textContent).toContain('Finish real wiki navigation, keep heading anchors stable, and make block references scroll correctly.')
